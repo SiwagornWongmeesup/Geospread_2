@@ -1,75 +1,28 @@
-# Nuxt Minimal Starter
+# GeoSpread
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+Location-based Community Safety Platform.
 
-## Setup
+## Project Structure
 
-Make sure to install dependencies:
+- `frontend/`: Nuxt 4 + Vue 3 + Tailwind CSS + Mapbox
+- `backend/`: Express.js + TypeScript + PostgreSQL + Prisma ORM
+- `docs/`: System documentation and architectural guidelines
+- `.agents/`: Project-wide agent rules and instructions
+
+## Quick Start
+
+### Backend
 
 ```bash
-# npm
+cd backend
 npm install
-
-# pnpm
-pnpm install
-
-# yarn
-yarn install
-
-# bun
-bun install
-```
-
-## Development Server
-
-Start the development server on `http://localhost:3000`:
-
-```bash
-# npm
 npm run dev
-
-# pnpm
-pnpm dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
 ```
 
-## Production
-
-Build the application for production:
+### Frontend
 
 ```bash
-# npm
-npm run build
-
-# pnpm
-pnpm build
-
-# yarn
-yarn build
-
-# bun
-bun run build
+cd frontend
+npm install
+npm run dev
 ```
-
-Locally preview production build:
-
-```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
-```
-
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
