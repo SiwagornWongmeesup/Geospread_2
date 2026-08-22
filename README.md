@@ -4,8 +4,8 @@ Location-based Community Safety Platform.
 
 ## Project Structure
 
-- `frontend/`: Nuxt 4 + Vue 3 + Tailwind CSS + Mapbox
-- `backend/`: Express.js + TypeScript + PostgreSQL + Prisma ORM
+- `frontend/`: Nuxt 4 + Vue 3 + Tailwind CSS
+- `backend/`: Express.js + JavaScript + PostgreSQL + pg (Raw SQL)
 - `docs/`: System documentation and architectural guidelines
 - `.agents/`: Project-wide agent rules and instructions
 

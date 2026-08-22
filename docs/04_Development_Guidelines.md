@@ -1,199 +1,59 @@
-# 04 — Development Guidelines
+# 04 — แนวทางการพัฒนา (Development Guidelines)
 
-> **Document Purpose:** Defines the coding standards, architectural conventions, Git workflow, security policies, and documentation practices that all contributors — human and AI — must follow.
-
----
-
-## Table of Contents
-
-1. [Code Structure](#1-code-structure)
-2. [Code Quality Standards](#2-code-quality-standards)
-3. [Project Boundaries](#3-project-boundaries)
-4. [Database Rules](#4-database-rules)
-5. [Git Workflow](#5-git-workflow)
-6. [API Rules](#6-api-rules)
-7. [Security Rules](#7-security-rules)
-8. [Documentation Rules](#8-documentation-rules)
+> **วัตถุประสงค์ของเอกสาร:** กำหนดมาตรฐานการเขียนโค้ด รูปแบบสถาปัตยกรรม กฎการใช้ Git ความปลอดภัย และการเขียนเอกสาร ที่นักพัฒนาทุกคน (รวมถึง AI) ต้องปฏิบัติตามอย่างเคร่งครัด
 
 ---
 
-## 1. Code Structure
+## สารบัญ
 
-### 1.1 TypeScript Everywhere
-
-TypeScript must be used in **all parts of the project** — frontend, backend, configuration files, and scripts.
-
-### 1.2 Strict Layer Separation
-
-Each architectural layer has a clearly defined responsibility. Do not cross these boundaries.
-
-| Layer | Responsibility | Where |
-|-------|---------------|-------|
-| **Vue Components** | Presentation only — render data, emit events | Frontend |
-| **Composables** | Reusable stateful logic | Frontend |
-| **Services** | API call wrappers, data transformation | Frontend |
-| **Controller** | Request parsing, input validation, response formation | Backend |
-| **Service** | Business logic, orchestration | Backend |
-| **Repository** | Database query abstraction (when needed) | Backend |
-
-### 1.3 Presentation-Only Components
-
-Vue components must focus on **rendering and user interaction**. They must not contain:
-
-- Complex business logic
-- Direct database or API calls (use composables or services instead)
-- Large data transformation logic
-
-> If a component is growing too complex, extract the logic into a composable or backend service.
+1. [โครงสร้างโค้ด (Code Structure)](#1-โครงสร้างโค้ด-code-structure)
+2. [มาตรฐานคุณภาพโค้ด (Code Quality Standards)](#2-มาตรฐานคุณภาพโค้ด-code-quality-standards)
+3. [ขอบเขตการทำงาน (Project Boundaries)](#3-ขอบเขตการทำงาน-project-boundaries)
+4. [การใช้ Git (Git Workflow)](#4-การใช้-git-git-workflow)
+5. [ความปลอดภัย (Security Rules)](#5-ความปลอดภัย-security-rules)
 
 ---
 
-## 2. Code Quality Standards
+## 1. โครงสร้างโค้ด (Code Structure)
 
-The following checks **must all pass** before any code is submitted or merged:
+- **Frontend:** ใช้ TypeScript เป็นหลัก (Nuxt 4 / Vue)
+- **Backend:** ใช้ JavaScript (Express.js)
+- **Layer Separation:** 
+  - Frontend: Component ห้ามมีตรรกะทางธุรกิจซับซ้อน ให้เรียกใช้ผ่าน Composables / Services
+  - Backend: ต้องแยกการทำงานเป็น Controller → Service → Repository เสมอ
+    - **Controller**: มีหน้าที่รับ Request, ตรวจสอบ (Validate) ข้อมูลเบื้องต้น และส่ง Response กลับเท่านั้น **ห้ามเขียน Business Logic ใน Controller โดยเด็ดขาด**
+    - **Service (Business Layer)**: เป็นที่อยู่ของ **Business Logic** หรือตรรกะทางธุรกิจทั้งหมด การทำงานที่ซับซ้อนต้องอยู่ในชั้นนี้
+    - **Repository**: รับผิดชอบการติดต่อกับ Database หรือ External Services
 
-| Check | Rule |
-|-------|------|
-| **TypeScript** | Zero TypeScript errors (`tsc --noEmit`) |
-| **ESLint** | Zero ESLint errors or warnings |
-| **Unused Imports** | No unused import statements |
-| **Type Safety** | Use explicit types; avoid `any` unless there is a documented, unavoidable reason |
-| **Naming** | Files, variables, functions, and types must be named descriptively and in English |
+## 2. มาตรฐานคุณภาพโค้ด (Code Quality Standards)
 
-> TODO: Define the ESLint configuration and extend rules (e.g., `@typescript-eslint/recommended`, `vue/recommended`).
+ก่อนจะ Commit หรือ Merge โค้ด ต้องผ่านเกณฑ์ต่อไปนี้เสมอ:
+- [ ] ไม่มีข้อผิดพลาดจาก TypeScript (`tsc --noEmit`)
+- [ ] ไม่มีข้อผิดพลาดหรือคำเตือนจาก ESLint
+- [ ] ไม่มีตัวแปรหรือ Imports ที่ไม่ได้ใช้งาน (Unused variables/imports)
+- [ ] ใช้ชื่อไฟล์ ตัวแปร และฟังก์ชันที่เป็น **ภาษาอังกฤษ** และสื่อความหมายชัดเจน
 
-> TODO: Define whether Prettier is used for formatting and specify the configuration.
+## 3. ขอบเขตการทำงาน (Project Boundaries)
 
----
+> กฎเหล่านี้รวมถึงผู้ช่วย AI ด้วย
 
-## 3. Project Boundaries
+- **ห้าม** แก้ไข Schema ของ Database สุ่มสี่สุ่มห้าโดยไม่ปรึกษาหรือไม่มีการอนุมัติ (ใช้ raw `schema.sql` ในการออกแบบโครงสร้าง)
+- **ห้าม** ลบไฟล์สำคัญ หรือจัดระเบียบโปรเจกต์ขนาดใหญ่โดยไม่มีแผนล่วงหน้า
+- **ต้องถามก่อนเสมอ** หากไม่แน่ใจในความต้องการของระบบ
 
-These rules apply to **all contributors**, including AI assistants.
+## 4. การใช้ Git (Git Workflow)
 
-### ❌ Prohibited Actions
+ข้อความ Commit ต้องเป็นไปตามมาตรฐาน **Conventional Commits**:
+- `feat:` เพิ่มฟีเจอร์ใหม่
+- `fix:` แก้ไขบั๊ก
+- `refactor:` จัดโครงสร้างโค้ดใหม่แต่ยังทำงานเหมือนเดิม
+- `docs:` แก้ไขเอกสารเท่านั้น
+- `style:` ปรับ Format โค้ด
+- `test:` เพิ่ม/แก้ไขเทสต์
 
-| Action | Rule |
-|--------|------|
-| Modify Prisma Schema or Database Schema | Not allowed without a clear, documented reason |
-| Delete important files | Not allowed without prior notification and approval |
-| Large-scale project structure refactoring | Not allowed without first proposing a written plan |
-| Proceeding when uncertain | When in doubt, ask before making any changes |
+*ตัวอย่าง: `feat: add realtime chat in event room`*
 
-### ✅ Required Actions
+## 5. ความปลอดภัย (Security Rules)
 
-| Action | Rule |
-|--------|------|
-| Changing the architecture | Must provide a written explanation of the rationale and the impact before implementation |
-
-> For AI-specific context and boundaries, see [10_AI_CONTEXT.md](./10_AI_CONTEXT.md).
-
----
-
-## 4. Database Rules
-
-| Rule | Detail |
-|------|--------|
-| **Use Prisma Migrations** | Every schema change must go through `prisma migrate dev` or `prisma migrate deploy` — never applied manually |
-| **No direct SQL edits** | Do not modify the database schema directly with raw SQL if Prisma supports the operation |
-| **Use PostGIS for spatial work** | All location storage, radius searches, and geographic queries must use PostGIS extensions |
-| **Normalized design** | Relational data must be designed with appropriate normalization — avoid denormalization unless there is a performance justification |
-
-> For full schema design details, see [05_Database_Design.md](./05_Database_Design.md).
-
----
-
-## 5. Git Workflow
-
-### 5.1 Commit Message Convention
-
-All commits must follow the **Conventional Commits** specification:
-
-```
-<type>: <short description>
-```
-
-| Type | When to Use |
-|------|-------------|
-| `feat` | Adding a new feature |
-| `fix` | Fixing a bug |
-| `refactor` | Restructuring code without changing behavior |
-| `docs` | Documentation changes only |
-| `style` | Formatting changes (no logic change) |
-| `test` | Adding or updating tests |
-
-**Examples:**
-
-```
-feat: add radius-based event filtering on map
-fix: correct JWT expiry handling in auth middleware
-docs: update API response format in 06_API_Design.md
-refactor: extract event ranking logic to EventRankingService
-```
-
-### 5.2 Branching Strategy
-
-> TODO: Define the branching strategy (e.g., `main` / `develop` / `feature/*` / `hotfix/*`).
-
-### 5.3 Pull Request Rules
-
-> TODO: Define PR review requirements (e.g., required reviewers, CI checks that must pass before merge).
-
----
-
-## 6. API Rules
-
-All API development must follow these conventions. For the full API specification, see [06_API_Design.md](./06_API_Design.md).
-
-| Rule | Detail |
-|------|--------|
-| **Protocol** | REST API over HTTPS |
-| **Architecture** | Layered: Controller → Service → Repository |
-| **Validation** | Every incoming request must be validated before processing |
-| **Response format** | All responses must follow the unified response structure (see below) |
-
-### Standard Response Format
-
-All API endpoints must return responses in the following format:
-
-```json
-{
-  "success": true,
-  "message": "Event created successfully",
-  "data": {}
-}
-```
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `success` | `boolean` | `true` on success, `false` on error |
-| `message` | `string` | Human-readable status message |
-| `data` | `object \| array \| null` | Response payload; `null` or empty `{}` if not applicable |
-
-> Error responses must also follow this format with `"success": false` and an appropriate `message`.
-
----
-
-## 7. Security Rules
-
-| Rule | Detail |
-|------|--------|
-| **No secrets in source code** | API keys, tokens, passwords, and any sensitive credentials must never be committed to version control |
-| **Use environment variables** | All sensitive configuration must be stored in `.env` files and accessed via `process.env` |
-| **`.env` in `.gitignore`** | Ensure `.env` and all environment-specific files are listed in `.gitignore` |
-| **`.env.example`** | Maintain a `.env.example` file with all required variable names (but no real values) for onboarding |
-
-> TODO: Define environment variable naming conventions (e.g., prefix by service: `MAPBOX_API_KEY`, `CLOUDINARY_SECRET`).
-
----
-
-## 8. Documentation Rules
-
-Documentation must be kept in sync with the codebase at all times.
-
-| Trigger | Required Updates |
-|---------|-----------------|
-| Adding a new feature | Update the project `README.md` and the relevant `docs/` files |
-| Adding or modifying an API endpoint | Update [06_API_Design.md](./06_API_Design.md) |
-| Changing the database schema | Update [05_Database_Design.md](./05_Database_Design.md) |
-| Changing the architecture | Update [03_System_Architecture.md](./03_System_Architecture.md) |
-| Any release or significant change | Add an entry to [CHANGELOG.md](./CHANGELOG.md) |
+- **ห้ามใส่ API Keys, Token หรือ Password** ลงในซอร์สโค้ดโดยเด็ดขาด 
+- ต้องใช้ Environment Variables (ไฟล์ `.env`) และใส่ `.env` ไว้ใน `.gitignore` เสมอ

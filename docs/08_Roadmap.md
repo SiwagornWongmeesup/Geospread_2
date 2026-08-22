@@ -1,123 +1,75 @@
-# 08 — Roadmap
+# 08 — แผนงานการพัฒนา (Roadmap & Development Backlog)
 
-> **Document Purpose:** Defines the MVP scope, explicitly excluded features, and future development phases for GeoSpread.
-
----
-
-## Table of Contents
-
-1. [MVP Scope](#1-mvp-scope)
-2. [Explicitly Excluded from MVP](#2-explicitly-excluded-from-mvp)
-3. [Permanently Out of Scope](#3-permanently-out-of-scope)
-4. [Future Phases](#4-future-phases)
-5. [Open Questions / TODO](#5-open-questions--todo)
+> **วัตถุประสงค์ของเอกสาร:** กำหนดขอบเขตของโปรเจกต์ GeoSpread, ลำดับความสำคัญในการพัฒนา (Backlog), เป้าหมายของแต่ละเฟส (Roadmap) และข้อกำหนดที่บ่งบอกว่า MVP เสร็จสมบูรณ์ (Definition of Done)
 
 ---
 
-## 1. MVP Scope
+## สารบัญ
 
-The MVP delivers the core platform experience: location-aware event awareness, community reporting, and help requests.
-
-### Core Features in MVP
-
-| Feature | Description |
-|---------|-------------|
-| **Live Map** | Full-screen interactive map with geolocated event markers |
-| **Event Feed** | Ranked list of nearby and followed-area events |
-| **Report Event** | Community incident submission with location, type, description, and images |
-| **Help Request** | Request assistance; other users can accept and navigate to the location |
-| **Search Area** | Explore events in any geographic area |
-| **Follow Area** | Subscribe to notifications for specific geographic areas |
-| **Notifications** | In-app alerts based on proximity, severity, or followed areas |
-| **User Profile** | Account management and notification preferences |
-| **Admin Dashboard** | Basic moderation queue for community reports |
-
-### Open Data Sources in MVP
-
-| Data Type | Status |
-|-----------|--------|
-| Earthquake | ✅ In MVP |
-| Heavy Rain | ✅ In MVP |
-| Flood | ✅ In MVP |
-| Storm | ✅ In MVP |
-| Landslide | ✅ In MVP |
-| Sinkhole | ⚠️ In MVP if data source is available |
-| Wildfire / Hotspot | ⚠️ In MVP if data source is available |
-
-### Community Report Types in MVP
-
-| Event Type | Status |
-|------------|--------|
-| Fire | ✅ In MVP |
-| Severe Traffic Accident | ✅ In MVP |
-| Fallen Tree | ✅ In MVP |
-| Road Closure | ✅ In MVP |
-| Area-wide Power Outage | ✅ In MVP |
-| Chemical Leak | ✅ In MVP |
-| Flood (community fallback) | ✅ In MVP |
+1. [MVP Roadmap (แผนงานตามระยะ)](#1-mvp-roadmap-แผนงานตามระยะ)
+2. [Development Backlog (รายการสิ่งที่ต้องพัฒนา)](#2-development-backlog-รายการสิ่งที่ต้องพัฒนา)
+3. [Definition of Done — MVP (เกณฑ์ความสำเร็จของ mvp)](#3-definition-of-done--mvp-เกณฑ์ความสำเร็จของ-mvp)
+4. [สิ่งที่ไม่อยู่ในขอบเขตการพัฒนา (Out of Scope)](#4-สิ่งที่ไม่อยู่ในขอบเขตการพัฒนา-out-of-scope)
 
 ---
 
-## 2. Explicitly Excluded from MVP
+## 1. MVP Roadmap (แผนงานตามระยะ)
 
-These features are safety-adjacent but are **not included in MVP** due to scope constraints. They may be considered in future phases.
+แผนการพัฒนา GeoSpread ถูกแบ่งออกเป็น 4 ระยะ (Phases) เพื่อให้ส่งมอบฟีเจอร์ที่สำคัญที่สุดได้ก่อน
 
-| Feature | Reason for Exclusion |
-|---------|---------------------|
-| Lost Items reporting | Out of MVP scope; low safety relevance |
-| Lost Phone reporting | Out of MVP scope; low safety relevance |
-| Lost Pets reporting | Out of MVP scope; low safety relevance |
-
-> The above features are NOT permanently out of scope — they are deferred to later phases.
+| ระยะ (Phase) | ขอบเขตการทำงาน (Scope) | เป้าหมาย (Goal) |
+|---|---|---|
+| **Phase 1** | Login, Location, Select Area, Feed, Distance Filter, Create Incident, Detail | ให้ผู้ใช้รู้ว่ากำลังเกิดอะไรขึ้นใกล้ตัว |
+| **Phase 2** | Follow, Event Room, Timeline, Chat, Notification | รวบรวมคนและข้อมูลของเหตุการณ์เดียวกันเข้าด้วยกัน |
+| **Phase 3** | Request Help, Offer Help, Nearby Help, Help Status | ทำให้ชุมชนสามารถให้ความช่วยเหลือกันได้จริง |
+| **Phase 4** | Verification, Priority Score, Report, Auto Event Grouping, Spam Detection | เพิ่มความน่าเชื่อถือและความฉลาดด้วย AI |
 
 ---
 
-## 3. Permanently Out of Scope
+## 2. Development Backlog (รายการสิ่งที่ต้องพัฒนา)
 
-These features are **never planned** for GeoSpread, regardless of phase. They fall outside the product's safety mission.
+การจัดลำดับความสำคัญของงาน (Epic) เพื่อการพัฒนา:
 
-| Feature | Reason |
+| หมวดหมู่ (Epic) | ตัวอย่างงาน (Task) | ความสำคัญ (Priority) |
+|---|---|---|
+| **Authentication** | สมัครสมาชิก / ล็อกอิน / จัดการ Role / เซสชัน | **P0** |
+| **Location** | ระบบ GPS / การขอสิทธิ์ / เลือกพื้นที่ / คำนวณระยะทาง | **P0** |
+| **Incident** | สร้างรายงาน / แสดงรายการ / ดูรายละเอียด / สถานะ | **P0** |
+| **Ranking** | คำนวณความสำคัญจากระดับความรุนแรง (Severity) + ระยะทาง + ความเคลื่อนไหว | **P0** |
+| **Event** | สร้างเหตุการณ์ / ผูก Incident เข้ากับ Event / รายละเอียด Event | **P0** |
+| **Admin** | ยืนยันข้อมูล (Verification) / คัดกรองเนื้อหา (Moderation) / จัดการผู้ใช้ | **P0** |
+| **Privacy** | การปิดบังตำแหน่งจริง / การขอสิทธิ์เปิดเผย / การเก็บ Audit Log | **P0** |
+| **Community** | ติดตามพื้นที่หรือเหตุการณ์ (Follow) / ดูไทม์ไลน์ / ระบบแชท | **P1** |
+| **Help** | ร้องขอความช่วยเหลือ / เสนอความช่วยเหลือ / จัดสรรคนดูแล / อัปเดตสถานะ | **P1** |
+| **Notification** | แจ้งเตือนเหตุการณ์ / ตามพื้นที่ / ตามระดับความรุนแรง | **P1** |
+| **AI** | จำแนกประเภทเหตุ / จับการแจ้งเตือนซ้ำ / จัดกลุ่มเป็น Event / สรุปเนื้อหา | **P1** |
+| **Analytics** | หน้า Dashboard สำหรับดูตัวชี้วัด (KPIs) / สถิติเหตุการณ์ | **P2** |
+
+---
+
+## 3. Definition of Done — MVP (เกณฑ์ความสำเร็จของ MVP)
+
+เวอร์ชันแรก (MVP) จะถือว่าพร้อมใช้งาน (Done) ก็ต่อเมื่อผู้ใช้สามารถทำสิ่งเหล่านี้ได้ครบถ้วน:
+
+1. [ ] ผู้ใช้ Login และสามารถกำหนดหรืออนุญาตให้เข้าถึง Location ได้
+2. [ ] ดูรายงาน (Incident) ใกล้ตัวและคัดกรองตามระยะทางได้
+3. [ ] สร้างรายงาน (Incident) พร้อมระบุตำแหน่งและรายละเอียดได้
+4. [ ] รายงาน (Incident) จะต้องมีระดับความรุนแรง (Severity) และสถานะการยืนยัน (Verification Status)
+5. [ ] ระบบสามารถจัดลำดับเหตุการณ์สำคัญหรือเร่งด่วนไว้ด้านบนของฟีดได้
+6. [ ] รายงาน (Incident) ที่เกี่ยวข้องกันหรือเกิดในพื้นที่เดียวกัน สามารถถูกจับกลุ่มรวมเป็นเหตุการณ์ใหญ่ (Event) ได้
+7. [ ] ผู้ใช้สามารถเปิดเข้าห้องเหตุการณ์ (Event Room) และกดติดตาม (Follow) ได้
+8. [ ] ผู้ใช้สามารถแชท (Chat) ภายใน Event Room ได้
+9. [ ] ผู้ใช้สามารถสร้างคำขอความช่วยเหลือ และรับคำขอ (Help Request) จากผู้อื่นได้
+10. [ ] แอดมิน (Admin) สามารถตรวจสอบ (Verify) / กลั่นกรองเนื้อหา (Moderate) / ปิดเหตุการณ์ (Close) ได้
+11. [ ] ระบบต้องมีการป้องกันการเปิดเผยข้อมูลพิกัด (Location) ที่ละเอียดเกินความจำเป็นต่อสาธารณะ
+
+---
+
+## 4. สิ่งที่ไม่อยู่ในขอบเขตการพัฒนา (Out of Scope)
+
+สิ่งต่อไปนี้ถูก **คัดออกอย่างถาวร** เนื่องจากไม่อยู่ในจุดประสงค์ด้านความปลอดภัยและภัยพิบัติของ GeoSpread
+
+| ฟีเจอร์ | เหตุผล |
 |---------|--------|
-| Marketplace | Commercially unrelated to the platform's core mission |
-
----
-
-## 4. Future Phases
-
-> TODO: Prioritize and schedule future phases based on user feedback after MVP launch.
-
-### Phase 2 — Community & Engagement (Proposed)
-
-| Feature | Description |
-|---------|-------------|
-| Lost items / pets reporting | User-submitted lost-and-found reports |
-| Event confirmation / upvoting | Users can confirm or flag an event as still active |
-| Reputation system | Trust scores for prolific, accurate community reporters |
-
-### Phase 3 — Advanced Geospatial (Proposed)
-
-| Feature | Description |
-|---------|-------------|
-| Route-based alerts | Notify users about events along a specific travel route |
-| Historical event heatmaps | Visualize event frequency over time in an area |
-| Custom alert polygons | Draw custom shapes as notification zones |
-
-### Phase 4 — Integration & Partnerships (Proposed)
-
-| Feature | Description |
-|---------|-------------|
-| Agency integration | Allow government agencies to push verified updates directly |
-| Embedded widgets | Allow third-party websites to embed GeoSpread event maps |
-| Public API | Open API for developers to access GeoSpread event data |
-
----
-
-## 5. Open Questions / TODO
-
-| # | Question |
-|---|----------|
-| 1 | What is the target launch date for MVP? |
-| 2 | What defines MVP "done" — feature-complete, or minimum viable for public beta? |
-| 3 | Is there a beta testing phase before public launch? |
-| 4 | What metrics will be used to decide when to move from MVP to Phase 2? |
-| 5 | Will push notifications (mobile / web push) be included in MVP or deferred? |
+| รายงานของหาย / สัตว์เลี้ยงหาย / โทรศัพท์หาย | ไม่มีความเกี่ยวข้องด้านความปลอดภัยและการช่วยเหลือฉุกเฉินระดับชุมชน |
+| ตลาดซื้อขาย (Marketplace) | ไม่เกี่ยวข้องในเชิงพาณิชย์กับเป้าหมายหลักของแอปพลิเคชัน |

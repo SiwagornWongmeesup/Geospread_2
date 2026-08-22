@@ -1,142 +1,68 @@
-# GeoSpread — AI Agent Rules
+# GeoSpread — กฎของ AI Agent (AI Agent Rules)
 
-> This file is auto-loaded by AI coding assistants (Antigravity, Cursor, Copilot, etc.) to enforce
-> project-wide rules and conventions for the GeoSpread workspace.
-
----
-
-## Project Identity
-
-**GeoSpread** is a **Location-based Community Safety Platform** built with TypeScript throughout.
-
-- Users receive real-time alerts about events near them or in areas they follow
-- Users can submit community reports and request / offer help during emergencies
-- Data comes from two sources: authoritative **Open Data feeds** and **Community Reports**
+> ไฟล์นี้ถูกโหลดอัตโนมัติโดยผู้ช่วย AI โค้ดดิ้ง (Antigravity, Cursor, Copilot ฯลฯ) เพื่อบังคับใช้กฎและข้อตกลงตลอดทั้งโปรเจกต์ GeoSpread
 
 ---
 
-## Technology Stack — Non-Negotiable
+## ข้อมูลโปรเจกต์ (Project Identity)
 
-Do **not** suggest replacing any of these. All decisions are final.
+**GeoSpread** คือ **แพลตฟอร์มแจ้งเตือนความปลอดภัยของชุมชนที่อิงตามตำแหน่ง (Location-based Community Safety Platform)**
+- ใช้ TypeScript ตลอดทั้งโปรเจกต์ (Frontend: TypeScript, Backend: JavaScript/TypeScript)
+- ผู้ใช้รับการแจ้งเตือนแบบเรียลไทม์, แชทใน Event Room, และขอความช่วยเหลือได้
+- ข้อมูลมาจาก: รายงานจากชุมชน (Community Reports) เป็นหลัก
 
-| Layer | Technology |
+---
+
+## เทคโนโลยีบังคับใช้ (Technology Stack — Non-Negotiable)
+
+**ห้าม** แนะนำให้เปลี่ยนเทคโนโลยีเหล่านี้ การตัดสินใจถือเป็นที่สิ้นสุด
+
+| ส่วน (Layer) | เทคโนโลยี |
 |---|---|
 | Frontend Framework | Nuxt 4 + Vue 3 |
 | Frontend Language | TypeScript |
 | Frontend Styling | Tailwind CSS |
 | Map | Mapbox |
 | Backend Framework | Express.js |
-| Backend Language | TypeScript |
+| Backend Language | JavaScript |
 | Database | PostgreSQL + PostGIS |
-| ORM | Prisma |
+| Database Driver | Raw SQL (pg) |
 | Authentication | JWT |
-| Image Storage | Cloudinary |
-| Frontend Deploy | Vercel |
-| Backend Deploy | Render |
-| Database Host | Supabase PostgreSQL or Neon PostgreSQL |
+| Realtime Chat | Socket.io / WebSocket |
 
 ---
 
-## Hard Rules — Prohibited Actions
+## กฎข้อห้ามเด็ดขาด (Hard Rules — Prohibited Actions)
 
-| ❌ Prohibited | Reason |
+| ❌ ห้ามทำ | เหตุผล |
 |---|---|
-| Modify Prisma schema without a documented reason | Schema changes cascade across migrations and data integrity |
-| Delete any file without prior notification | Irreversible action |
-| Large-scale project restructuring without a written proposal | High risk, requires human review |
-| Proceed when uncertain | Ask first — incorrect assumptions compound technical debt |
-| Store secrets / API keys in source code | Critical security violation |
+| แก้ไข Schema Database โดยไม่จำเป็น | กระทบต่อโครงสร้างรวมและ Migration ของระบบ |
+| ลบไฟล์ใดๆ โดยไม่บอกก่อน | เป็นการกระทำที่ไม่สามารถย้อนกลับได้ |
+| ปรับโครงสร้างโปรเจกต์ขนาดใหญ่โดยไม่มีแผน | มีความเสี่ยงสูง ต้องให้มนุษย์ตรวจก่อนเสมอ |
+| ดำเนินการต่อเมื่อไม่แน่ใจ | ให้ถามก่อนเสมอ — การทำไปก่อนมักก่อให้เกิดบั๊กสะสม |
+| เก็บรหัสผ่าน / API Keys ไว้ในโค้ดดิบ | ผิดกฎความปลอดภัยขั้นร้ายแรง |
+| เขียน Business Logic ปะปนใน Controller หรือ Route | ผิดหลักการโครงสร้าง ให้แยก Logic ไปที่ Service / Business Layer เสมอ |
 
 ---
 
-## Required Actions
+## สิ่งที่ต้องทำ (Required Actions)
 
-| ✅ Required | When |
+| ✅ สิ่งที่ต้องทำ | เมื่อใด |
 |---|---|
-| Ask before making changes when uncertain | Always |
-| Write an explanation of rationale before any architectural change | Any structural change |
-| Propose a plan before large refactors | Before executing |
-| Update `docs/06_API_Design.md` after any endpoint change | After every API change |
-| Update `docs/05_Database_Design.md` after any schema change | After every schema change |
-| Update `docs/README.md` after adding a new feature | After every feature addition |
-| Add an entry to `docs/CHANGELOG.md` | After any significant change or release |
+| ถามก่อนทำการเปลี่ยนแปลงเมื่อไม่แน่ใจ | ทุกครั้ง |
+| อัปเดต `docs/06_API_Design.md` | ทุกครั้งที่มีการแก้ Endpoint |
+| อัปเดต `docs/05_Database_Design.md` | ทุกครั้งที่มีการแก้ Schema |
+| สร้างและนำเสนอ Plan ก่อนทำเรื่องซับซ้อน | ก่อนเริ่มเขียนโค้ดปรับแก้ครั้งใหญ่ |
 
 ---
 
-## Architecture Rules
+## ดัชนีเอกสาร (Documentation Index)
 
-All layers must stay strictly separated. Do not mix responsibilities.
+ก่อนที่จะคาดเดา ให้อ่านเอกสารที่เกี่ยวข้อง:
 
-### Backend (Express.js)
-
-```
-Controller  → parse request, validate input, call service, return response
-Service     → business logic, orchestration
-Repository  → Prisma query abstraction (only when needed)
-```
-
-File naming: `*.controller.ts`, `*.service.ts`, `*.repository.ts`
-
-### Frontend (Nuxt 4 + Vue 3)
-
-```
-pages/          → route-level views ONLY
-components/     → pure presentation (no business logic)
-composables/    → reusable stateful logic
-services/       → API call wrappers and data transformation
-```
-
-> Vue components **must not** contain business logic. Extract to composables or services.
-
-### Database
-
-- All schema changes via **Prisma Migrations only** (`prisma migrate dev`)
-- Never modify the schema with raw SQL if Prisma supports the operation
-- All location data must use **PostGIS** types
-
----
-
-## API Response Format
-
-Every endpoint must return this exact structure:
-
-```json
-{
-  "success": true,
-  "message": "Human-readable status",
-  "data": {}
-}
-```
-
-Error responses use `"success": false` with an appropriate `message`.
-
----
-
-## Code Quality — Must Pass Before Any Commit
-
-- [ ] Zero TypeScript errors (`tsc --noEmit`)
-- [ ] Zero ESLint errors or warnings
-- [ ] No unused imports
-- [ ] No `any` type unless unavoidable and documented
-- [ ] All names are descriptive and in English
-- [ ] No secrets in source code — use `.env`
-- [ ] Commit message follows **Conventional Commits**: `feat:`, `fix:`, `refactor:`, `docs:`, `style:`, `test:`
-
----
-
-## Documentation Index
-
-Before making assumptions, read the relevant doc:
-
-| Question | Document |
-|---|---|
-| What is this project? | `docs/01_Project_Vision.md` |
-| What features are required? | `docs/02_Product_Requirements.md` |
-| Tech stack and system design? | `docs/03_System_Architecture.md` |
-| Coding standards and conventions? | `docs/04_Development_Guidelines.md` |
-| Database schema design? | `docs/05_Database_Design.md` |
-| API endpoint design? | `docs/06_API_Design.md` |
-| UI/UX patterns? | `docs/07_UI_UX.md` |
-| MVP scope and roadmap? | `docs/08_Roadmap.md` |
-| Open Data ingestion? | `docs/09_Open_Data_Integration.md` |
-| AI-specific rules and context? | `docs/10_AI_CONTEXT.md` |
+- **ภาพรวมและวิสัยทัศน์:** `docs/01_Project_Vision.md`
+- **ข้อกำหนดผลิตภัณฑ์:** `docs/02_Product_Requirements.md`
+- **สถาปัตยกรรม:** `docs/03_System_Architecture.md`
+- **การออกแบบ API:** `docs/06_API_Design.md`
+- **ฐานข้อมูล:** `docs/05_Database_Design.md`
+- **การจัดการของ AI:** `docs/10_AI_CONTEXT.md`

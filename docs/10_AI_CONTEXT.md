@@ -1,140 +1,62 @@
-# 10 — AI Developer Context
+# 10 — บริบทสำหรับผู้ช่วย AI (AI Developer Context)
 
-> **Document Purpose:** Provides critical context for AI assistants (e.g., Copilot, Cursor, Claude) working on this codebase. This document defines the project's hard boundaries, rules, and constraints that AI must respect at all times.
-
----
-
-## Table of Contents
-
-1. [Project Identity](#1-project-identity)
-2. [Technology Decisions — Non-Negotiable](#2-technology-decisions--non-negotiable)
-3. [Hard Rules (Prohibited Actions)](#3-hard-rules-prohibited-actions)
-4. [Required Actions](#4-required-actions)
-5. [Architecture Reference](#5-architecture-reference)
-6. [Code Quality Checklist](#6-code-quality-checklist)
-7. [Where to Find Information](#7-where-to-find-information)
+> **วัตถุประสงค์ของเอกสาร:** เป็นคู่มืออ้างอิงและให้บริบท (Context) สำหรับผู้ช่วย AI (เช่น Copilot, Cursor, Claude) ที่จะเข้ามาช่วยพัฒนาโค้ดในโปรเจกต์นี้ โดยกำหนดหน้าที่ของโมดูล AI ภายในระบบ กฎข้อบังคับด้านความปลอดภัย และขอบเขตการทำงานอย่างชัดเจน
 
 ---
 
-## 1. Project Identity
+## สารบัญ
 
-| Property | Value |
-|----------|-------|
-| **Project Name** | GeoSpread |
-| **Type** | Location-based Community Safety Platform |
-| **Primary Language** | TypeScript (used everywhere — frontend and backend) |
-| **Core Problem** | Help users know what is happening in their area or an area they care about |
+1. [ภาพรวมของ AI ในระบบ (AI Responsibilities)](#1-ภาพรวมของ-ai-ในระบบ-ai-responsibilities)
+2. [โมดูล AI ที่ใช้ในระบบ (AI Modules)](#2-โมดูล-ai-ที่ใช้ในระบบ-ai-modules)
+3. [กฎข้อบังคับด้านความปลอดภัยสำหรับ AI (AI Safety Rules)](#3-กฎข้อบังคับด้านความปลอดภัยสำหรับ-ai-ai-safety-rules)
+4. [กระบวนการทำงานของ AI (AI Workflow)](#4-กระบวนการทำงานของ-ai-ai-workflow)
 
 ---
 
-## 2. Technology Decisions — Non-Negotiable
+## 1. ภาพรวมของ AI ในระบบ (AI Responsibilities)
 
-These technology choices are final. Do not suggest replacing or removing them.
-
-| Layer | Technology |
-|-------|------------|
-| Frontend Framework | Nuxt 4 + Vue 3 |
-| Frontend Language | TypeScript |
-| Frontend Styling | Tailwind CSS |
-| Map | Mapbox |
-| Backend Framework | Express.js |
-| Backend Language | TypeScript |
-| Database | PostgreSQL + PostGIS |
-| ORM | Prisma |
-| Authentication | JWT |
-| Image Storage | Cloudinary |
-| Frontend Deploy | Vercel |
-| Backend Deploy | Render |
-| Database Host | Supabase PostgreSQL or Neon PostgreSQL |
+ในระบบ GeoSpread **AI ควรทำหน้าที่เป็นเพียง "ผู้ช่วย (Assistant)"** ของระบบและทีมงาน (Admin) เท่านั้น AI ไม่ควรมีอำนาจในการเป็น "ผู้ตัดสินใจชี้ขาด" สำหรับเหตุฉุกเฉินเพียงลำพัง หน้าที่หลักคือการจัดกลุ่ม, จัดลำดับ, ให้คำแนะนำ, และคัดกรองข้อมูลเบื้องต้น เพื่อลดภาระงานของมนุษย์
 
 ---
 
-## 3. Hard Rules (Prohibited Actions)
+## 2. โมดูล AI ที่ใช้ในระบบ (AI Modules)
 
-The following actions are **strictly prohibited** without explicit approval from the project owner:
+ระบบถูกออกแบบให้แบ่งการทำงานของ AI ออกเป็นโมดูลย่อยๆ ดังนี้:
 
-| ❌ Prohibited Action | Why |
-|---------------------|-----|
-| Modifying the Prisma Schema or Database Schema without documented reason | Schema changes have cascading effects on data integrity and migrations |
-| Deleting important files without prior notification | Irreversible and potentially destructive |
-| Large-scale project structure refactoring without a written proposal | High risk, high impact, requires human review |
-| Proceeding when uncertain | Incorrect assumptions compound technical debt |
-| Storing secrets, API keys, or credentials in source code | Critical security violation |
-
----
-
-## 4. Required Actions
-
-| ✅ Required Action | When |
-|------------------|------|
-| Ask before making changes when uncertain | Always |
-| Explain the rationale and impact before changing the architecture | Any architectural change |
-| Propose a plan before large refactors | Any structural refactoring |
-| Update API documentation after endpoint changes | After any API change |
-| Update Database documentation after schema changes | After any schema change |
-| Update README after adding a new feature | After any feature addition |
-| Add an entry to CHANGELOG | After any significant change or release |
+| รหัสโมดูล | หน้าที่การทำงาน | ข้อมูลนำเข้า (Input) | ผลลัพธ์ (Output) | ความสำคัญ |
+|---|---|---|---|---|
+| **AI-01 Event Classification** | จำแนกประเภทของ Incident (รายงานเหตุการณ์) | ชื่อ (title), คำอธิบาย (description), รูปภาพ (image) | หมวดหมู่เหตุการณ์ (category) + ค่าความเชื่อมั่น (confidence) | สูง |
+| **AI-02 Severity Assistant** | ประเมินความรุนแรงของเหตุการณ์ในเบื้องต้น | ข้อมูลของ Incident ทั้งหมด | คำแนะนำระดับความรุนแรง (severity suggestion) + confidence | สูง |
+| **AI-03 Duplicate Detection** | ตรวจจับว่า Incident ใหม่เป็นเหตุการณ์เดียวกับที่มีอยู่แล้วหรือไม่ | สถานที่ (location) + เวลา (time) + ข้อความ (text) | เหตุการณ์ที่น่าจะซ้ำซ้อน (possible matches) | สูง |
+| **AI-04 Event Clustering** | จัดกลุ่ม Incident หลายๆ อันที่เกี่ยวข้องกันให้เป็น 1 Event | Incident + location + time | เสนอโครงร่าง Event ใหม่ (event candidate) | สูง |
+| **AI-05 Priority Ranking** | ช่วยจัดลำดับความสำคัญของเหตุการณ์เพื่อแสดงในฟีด | ความรุนแรง (severity) + ระยะทาง (distance) + จำนวนรายงาน + การยืนยัน + ความเคลื่อนไหว | คะแนนความสำคัญ (priority score) | สูง |
+| **AI-06 Spam/Fake Assistance** | ตรวจจับเนื้อหาที่น่าสงสัยว่าเป็นสแปมหรือข้อมูลเท็จ | เนื้อหา (content) + พฤติกรรมผู้ใช้ (behavior) | คะแนนความเสี่ยง (risk score) + เหตุผล (reason) | ปานกลาง |
+| **AI-07 Summarization** | สรุปไทม์ไลน์ (Timeline) ของเหตุการณ์ | ข้อมูลอัปเดตต่างๆ ภายใน Event (event updates) | ข้อความสรุปแบบสั้น (short summary) | ปานกลาง |
+| **AI-08 Notification Assistant**| แนะนำเหตุการณ์ที่ควรส่งแจ้งเตือน (Notification) | ตำแหน่ง (location) + สถานที่ที่บันทึก (saved locations) + พื้นที่ติดตาม (follow) | คำแนะนำการแจ้งเตือน (notification recommendation) | ปานกลาง |
+| **AI-09 Help Categorization** | จำแนกประเภทของคำขอความช่วยเหลือ | ข้อความคำขอความช่วยเหลือ | ประเภทความช่วยเหลือ + คำแนะนำความเร่งด่วน | ปานกลาง |
+| **AI-10 Moderation Assistant** | ช่วย Admin คัดกรองและกลั่นกรองเนื้อหา | เนื้อหา (content) + ยอดการกดรีพอร์ต | คำแนะนำการดำเนินการ (moderation suggestion) | ปานกลาง |
 
 ---
 
-## 5. Architecture Reference
+## 3. กฎข้อบังคับด้านความปลอดภัยสำหรับ AI (AI Safety Rules)
 
-All layers are clearly separated. Do not mix responsibilities across layers.
+> [!WARNING]
+> การตัดสินใจที่อาจส่งผลกระทบโดยตรงต่อความปลอดภัยในชีวิตและทรัพย์สิน **จะต้องมีมนุษย์ (Human / Admin oversight) เข้ามากำกับดูแลเสมอ**
 
-### Frontend Layers
-
-| Layer | File Location | Responsibility |
-|-------|--------------|---------------|
-| Pages | `pages/` | Route-level views only |
-| Components | `components/` | Pure presentation components |
-| Composables | `composables/` | Reusable stateful logic |
-| Services | `services/` | API call wrappers and data transformation |
-
-> Vue components must **not** contain business logic. Extract logic to composables or backend services.
-
-### Backend Layers
-
-| Layer | File Convention | Responsibility |
-|-------|----------------|---------------|
-| Controller | `*.controller.ts` | Parse request → validate → call service → return response |
-| Service | `*.service.ts` | Business logic, orchestration |
-| Repository | `*.repository.ts` | Prisma query abstraction (when needed) |
-
-### Database Rules
-
-- All schema changes go through **Prisma Migrations only**.
-- All location data uses **PostGIS** types.
-- Never modify the database directly with raw SQL if Prisma supports the operation.
+- AI ที่เกี่ยวข้องกับระบบความปลอดภัย ทำหน้าที่เพียง **"แนะนำ"** จัดลำดับ และช่วยคัดกรอง เท่านั้น
+- การยืนยันความถูกต้อง (Verify) ของเหตุการณ์สำคัญ การปิดรับเรื่อง (Close event) และการตัดสินใจแบนหรือลบข้อมูล จะต้องไม่เกิดขึ้นโดยอัตโนมัติ 100% ต้องส่งต่อให้ Admin เป็นผู้อนุมัติขั้นสุดท้าย
 
 ---
 
-## 6. Code Quality Checklist
+## 4. กระบวนการทำงานของ AI (AI Workflow)
 
-Before submitting any code, verify all of the following:
+วัฏจักรการทำงานร่วมกันระหว่างผู้ใช้, AI, และระบบ มีขั้นตอนดังนี้:
 
-- [ ] Zero TypeScript errors (`tsc --noEmit` passes)
-- [ ] Zero ESLint errors or warnings
-- [ ] No unused imports
-- [ ] No use of `any` type unless unavoidable and documented
-- [ ] All variables, functions, and files are descriptively named
-- [ ] All API responses follow the standard `{ success, message, data }` format
-- [ ] No secrets or API keys in source code — use `.env`
-- [ ] Commit message follows Conventional Commits format
-
----
-
-## 7. Where to Find Information
-
-Use these documents before making assumptions:
-
-| Question | Document |
-|----------|---------|
-| What is this project? | [01_Project_Vision.md](./01_Project_Vision.md) |
-| What features are required? | [02_Product_Requirements.md](./02_Product_Requirements.md) |
-| What is the tech stack and system design? | [03_System_Architecture.md](./03_System_Architecture.md) |
-| What are the coding standards? | [04_Development_Guidelines.md](./04_Development_Guidelines.md) |
-| How should I design the database? | [05_Database_Design.md](./05_Database_Design.md) |
-| How should I design an API endpoint? | [06_API_Design.md](./06_API_Design.md) |
-| How should a screen look and behave? | [07_UI_UX.md](./07_UI_UX.md) |
-| What is in scope for MVP? | [08_Roadmap.md](./08_Roadmap.md) |
-| How does Open Data ingestion work? | [09_Open_Data_Integration.md](./09_Open_Data_Integration.md) |
+1. ระบบได้รับข้อมูลการแจ้งเหตุ (Incident) จากผู้ใช้งาน
+2. AI เริ่มวิเคราะห์: Category, Severity, ตรวจจับ Duplicate และตรวจสอบ Spam
+3. ระบบนำผลการวิเคราะห์ไปคำนวณ Priority Score และค้นหาว่าเกี่ยวโยงกับเหตุการณ์อื่นในพื้นที่เดียวกันหรือไม่
+4. AI นำเสนอการสร้าง Event ใหม่ หรือจับคู่เข้ากับ Event ที่มีอยู่แล้ว (Clustering)
+5. Admin หรือผู้คัดกรองทำการตรวจสอบข้อมูลในส่วนที่สำคัญ
+6. เผยแพร่ Incident/Event เข้าสู่ฟีดพร้อมแสดงสถานะการยืนยัน (Verification Status)
+7. AI ช่วยเขียนสรุป Timeline และประเมินเพื่อแนะนำการยิงแจ้งเตือน (Notification) หาผู้ใช้ที่เกี่ยวข้อง
+8. เมื่อมีการแจ้งลบ (Report content) จากชุมชน → AI ช่วยจัดกลุ่มและคัดกรอง → เพื่อให้ Admin ตัดสินใจขั้นสุดท้าย

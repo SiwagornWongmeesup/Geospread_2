@@ -1,156 +1,76 @@
-# 02 — Product Requirements
+# 02 — ข้อกำหนดของผลิตภัณฑ์ (Product Requirements)
 
-> **Document Purpose:** Defines all functional and non-functional requirements for GeoSpread, including feature specifications, event categories, feed ranking logic, and notification rules.
-
----
-
-## Table of Contents
-
-1. [Core Features](#1-core-features)
-2. [Event Categories](#2-event-categories)
-3. [Event Feed Ranking](#3-event-feed-ranking)
-4. [Notification Rules](#4-notification-rules)
-5. [Help Request Flow](#5-help-request-flow)
-6. [Non-Functional Requirements](#6-non-functional-requirements)
+> **วัตถุประสงค์ของเอกสาร:** กำหนดข้อกำหนดด้านฟังก์ชันการทำงานและไม่ใช่ฟังก์ชันการทำงานทั้งหมดสำหรับ GeoSpread รวมถึงข้อกำหนดเฉพาะของฟีเจอร์ หมวดหมู่เหตุการณ์ ตรรกะการจัดอันดับฟีด และกฎการแจ้งเตือน
 
 ---
 
-## 1. Core Features
+## สารบัญ
 
-The following features define the MVP scope:
+1. [ฟีเจอร์หลัก (Core Features)](#1-ฟีเจอร์หลัก-core-features)
+2. [หมวดหมู่เหตุการณ์ (Event Categories)](#2-หมวดหมู่เหตุการณ์-event-categories)
+3. [การจัดอันดับฟีดเหตุการณ์ (Event Feed Ranking)](#3-การจัดอันดับฟีดเหตุการณ์-event-feed-ranking)
+4. [กฎการแจ้งเตือน (Notification Rules)](#4-กฎการแจ้งเตือน-notification-rules)
+5. [ขั้นตอนการขอความช่วยเหลือ (Help Request Flow)](#5-ขั้นตอนการขอความช่วยเหลือ-help-request-flow)
+6. [ข้อกำหนดที่ไม่ใช่ฟังก์ชันการทำงาน (Non-Functional Requirements)](#6-ข้อกำหนดที่ไม่ใช่ฟังก์ชันการทำงาน-non-functional-requirements)
 
-| # | Feature | Description |
+---
+
+## 1. ฟีเจอร์หลัก (Core Features)
+
+ฟีเจอร์ต่อไปนี้กำหนดขอบเขตของระบบ:
+
+| ลำดับ | ฟีเจอร์ | คำอธิบาย |
 |---|---------|-------------|
-| 1 | **Live Map** | Real-time map displaying geolocated events from Open Data and community reports |
-| 2 | **Event Feed** | Ranked list of events based on priority, distance, recency, and activity |
-| 3 | **Report Event** | Form for users to submit community incident reports with location and media |
-| 4 | **Help Request** | Form for users to request assistance; other users can accept and navigate to the site |
-| 5 | **Search Area** | Search for events in a specific geographic area |
-| 6 | **Follow Area** | Subscribe to a geographic area to receive relevant notifications |
-| 7 | **Notifications** | Push/in-app alerts triggered by proximity, severity, or followed areas |
-| 8 | **User Profile** | User account management, preferences, and notification settings |
-| 9 | **Admin Dashboard** | Back-office tools for moderating reports and managing system data |
+| 1 | **แผนที่แบบเรียลไทม์ (Live Map)** | แผนที่แสดงเหตุการณ์ที่ระบุตำแหน่งทางภูมิศาสตร์จากข้อมูลเปิดและรายงานของชุมชนแบบเรียลไทม์ |
+| 2 | **ฟีดเหตุการณ์ (Event Feed)** | รายการเหตุการณ์ที่จัดอันดับตามลำดับความสำคัญ ระยะทาง ความใหม่ และกิจกรรมความเคลื่อนไหว |
+| 3 | **รายงานย่อย (Incident Report)** | แบบฟอร์มสำหรับผู้ใช้ในการส่งรายงานเหตุการณ์ย่อยที่เกิดขึ้นในชุมชน พร้อมตำแหน่งและสื่อประกอบ |
+| 4 | **ห้องเหตุการณ์เฉพาะกิจ (Event Room)** | ศูนย์รวมเหตุการณ์ใหญ่ที่รวบรวม Incident ย่อยๆ เข้าด้วยกัน มี Timeline และ Chat ให้ผู้ใช้ติดตามสถานการณ์ |
+| 5 | **คำขอความช่วยเหลือ (Help Request)** | แบบฟอร์มสำหรับผู้ใช้เพื่อขอความช่วยเหลือ; ผู้ใช้รายอื่นสามารถกด **Offer Help** และนำทางไปยังจุดเกิดเหตุได้ |
+| 6 | **ค้นหาและติดตามพื้นที่ (Search & Follow Area)** | ค้นหาเหตุการณ์ในพื้นที่อื่น และกดติดตามเพื่อรับแจ้งเตือนหากเกิดเหตุสำคัญในพื้นที่นั้น |
+| 7 | **การแจ้งเตือน (Notifications)** | การแจ้งเตือนแบบ Push/ในแอป ที่ทำงานตามความใกล้ชิด ความรุนแรง หรือพื้นที่ที่ติดตาม |
+| 8 | **แดชบอร์ดผู้ดูแลระบบ (Admin Dashboard)** | เครื่องมือระบบหลังบ้านสำหรับการกลั่นกรองเนื้อหา จัดการ Event และตรวจสอบข้อมูล |
 
 ---
 
-## 2. Event Categories
+## 2. หมวดหมู่เหตุการณ์ (Event Categories)
 
-### 2.1 Open Data Events
+### 2.1 เหตุการณ์จากชุมชน (Community Report)
+รายงานจากผู้ใช้ เช่น ไฟไหม้, อุบัติเหตุจราจรรุนแรง, ต้นไม้ล้ม, ถนนปิด, ไฟดับ, สารเคมีรั่วไหล, น้ำท่วม, ดินถล่ม เป็นต้น
 
-These events are ingested automatically from official sources and do not require user submission.
-
-| Event Type | Source Category | Notes |
-|------------|----------------|-------|
-| Earthquake | Seismic agencies | — |
-| Heavy Rain | Meteorological agencies | — |
-| Flood | Hydrology / meteorological agencies | — |
-| Storm | Meteorological agencies | — |
-| Landslide | Geological agencies | — |
-| Sinkhole | Geological agencies | Only if data is available |
-| Wildfire / Hotspot | Satellite / forestry agencies | Only if data is available |
-
-> For the full list of data sources and integration details, see [09_Open_Data_Integration.md](./09_Open_Data_Integration.md).
+### 2.2 สิ่งที่อยู่นอกขอบเขตถาวร (Out of Scope)
+- ของหาย / โทรศัพท์หาย / สัตว์เลี้ยงหาย (ไม่เกี่ยวกับความปลอดภัยหลักของแอป)
+- ตลาดซื้อขาย (Marketplace)
 
 ---
 
-### 2.2 Community Report Events
+## 3. การจัดอันดับฟีดเหตุการณ์ (Event Feed Ranking)
 
-These events are submitted by registered users and are subject to moderation.
-
-| Event Type | Notes |
-|------------|-------|
-| Fire | — |
-| Severe Traffic Accident | — |
-| Fallen Tree | — |
-| Road Closure | — |
-| Area-wide Power Outage | — |
-| Chemical Leak | — |
-| Flood | Only when no authoritative Open Data feed is available |
-
-> TODO: Define the moderation workflow — who can approve, reject, or flag a community report, and what the review time SLA should be.
+ฟีดเหตุการณ์จัดเรียงโดยอัลกอริธึม **ไม่ใช่ตามความนิยม (ไลก์/แชร์)** แต่เรียงตาม:
+1. **ลำดับความสำคัญ (Priority):** วิกฤต > สูง > ปานกลาง > ต่ำ
+2. **ระยะทาง (Distance):** ยิ่งใกล้ตำแหน่งผู้ใช้ยิ่งแสดงอันดับดีขึ้น
+3. **การอัปเดตล่าสุด (Latest Update / Activity):** เหตุการณ์ที่มีการเคลื่อนไหวใหม่
 
 ---
 
-### 2.3 Explicitly Excluded Event Types
+## 4. กฎการแจ้งเตือน (Notification Rules)
 
-The following event types are **permanently out of scope** and will not be supported at any phase:
-
-| Event Type | Reason |
-|------------|--------|
-| Lost Items | Outside the platform's safety focus |
-| Lost Phone | Outside the platform's safety focus |
-| Lost Pets | Outside the platform's safety focus |
-| Marketplace listings | Commercially unrelated to the core mission |
+แจ้งเตือนเมื่อเกิดกรณีใดกรณีหนึ่ง:
+- **Proximity:** เกิดเหตุภายในรัศมีที่ผู้ใช้กำหนด
+- **Severity:** เหตุการณ์ถูกประเมินระดับเป็น `High` หรือ `Critical` ในบริเวณใกล้เคียง
+- **Followed Area:** เกิดเหตุในสถานที่หรือ Event ที่ผู้ใช้กดติดตามไว้
 
 ---
 
-### 2.4 Help Request Types
+## 5. ขั้นตอนการขอความช่วยเหลือ (Help Request Flow)
 
-Help requests are a distinct category from event reports. They represent active calls for assistance.
-
-| Type | Description |
-|------|-------------|
-| **Request Help** | General request for assistance in a specific location |
-| **Volunteer Request** | Request for volunteers to assist with a situation |
-| **Emergency Assistance** | Urgent call for immediate help |
+1. ผู้ใช้ส่งคำขอ (Request Help) พร้อมระบุประเภท คำอธิบาย พิกัด
+2. ผู้ใช้ในพื้นที่หรือใน Event Room ได้รับแจ้ง
+3. อาสาสมัครกด **Offer Help (เสนอตัวช่วยเหลือ)** ระบบจะเชื่อมโยงกัน
+4. อัปเดตสถานะเป็น `In Progress` และเมื่อเสร็จสิ้นปรับเป็น `Resolved`
 
 ---
 
-## 3. Event Feed Ranking
+## 6. ข้อกำหนดที่ไม่ใช่ฟังก์ชัน (Non-Functional Requirements)
 
-The Event Feed is sorted using a **multi-factor ranking algorithm** — not by popularity alone.
-
-### Ranking Factors (in order of weight)
-
-| Factor | Description |
-|--------|-------------|
-| **Priority** | Severity level of the event (e.g., Critical > High > Medium > Low) |
-| **Distance** | Proximity of the event to the user's current location |
-| **Latest Update** | Recency of the last update or confirmation of the event |
-| **Activity** | Level of engagement (e.g., number of confirmations, comments, or updates) |
-
-> **Note:** Popularity alone (e.g., total views or likes) is explicitly NOT a ranking criterion. Events must be surfaced based on relevance and urgency, not social engagement.
-
----
-
-## 4. Notification Rules
-
-A notification is sent to a user when **at least one** of the following conditions is met:
-
-| Condition | Description |
-|-----------|-------------|
-| **Proximity** | The event occurs within a radius defined by the user |
-| **Severity** | The event is rated `High` or `Critical` |
-| **Followed Area** | The event occurs within an area the user is actively following |
-
-### Severity Levels
-
-> TODO: Define the full severity scale (e.g., Low / Medium / High / Critical) with criteria for each level and the rules for who assigns severity — Open Data ingestion pipeline, user report submitter, or admin.
-
----
-
-## 5. Help Request Flow
-
-1. A user submits a Help Request with a type, description, and pinned location.
-2. Nearby users receive a notification (subject to notification rules).
-3. Another user can **accept** the request, which:
-   - Notifies the requester that help is on the way.
-   - Provides the accepting user with navigation to the pinned location.
-4. The request is marked as **resolved** when confirmed by either party.
-
-> TODO: Define the full state machine for help requests (e.g., `open` → `accepted` → `in_progress` → `resolved` / `cancelled`).
-
-> TODO: Define rules for what happens if no one accepts a request, or if the accepting user cancels after accepting.
-
----
-
-## 6. Non-Functional Requirements
-
-| Category | Requirement |
-|----------|-------------|
-| **Performance** | TODO: Define target response times (e.g., API p95 latency) |
-| **Availability** | TODO: Define uptime SLA |
-| **Scalability** | TODO: Define expected user volume and geographic coverage |
-| **Security** | No secrets in source code; all sensitive values via environment variables — see [04_Development_Guidelines.md](./04_Development_Guidelines.md) |
-| **Localization** | TODO: Define language support requirements |
-| **Accessibility** | TODO: Define accessibility standards (e.g., WCAG 2.1 AA) |
+- **ความปลอดภัย (Security):** ห้ามเก็บความลับ (Secrets) ลงในซอร์สโค้ด ให้ใช้ Environment Variables เสมอ
+- **สถาปัตยกรรม:** แยก Backend / Frontend ให้ชัดเจน (ดู `03_System_Architecture.md`)

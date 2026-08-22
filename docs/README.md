@@ -1,64 +1,64 @@
 # GeoSpread
 
-> **Location-based Community Safety Platform**
+> **แพลตฟอร์มแจ้งเตือนความปลอดภัยชุมชนที่อิงตามตำแหน่งที่ตั้ง (Location-based Community Safety Platform)**
 
-GeoSpread helps users stay informed about significant events in their area — sourced from trusted Open Data providers and community-submitted reports — while enabling them to request help, report incidents, and monitor situations in places they care about.
+GeoSpread ช่วยให้ผู้ใช้ทราบถึงเหตุการณ์สำคัญต่างๆ ที่เกิดขึ้นในพื้นที่ของตน จากรายงานเหตุการณ์จากชุมชน (Community Reports) นอกจากนี้ยังมีฟีเจอร์สำหรับการขอความช่วยเหลือ การพูดคุยแชทในห้องเหตุการณ์เฉพาะกิจ (Event Room) และการติดตามพื้นที่ต่างๆ ที่สำคัญกับคุณ
 
 ---
 
-## Documentation Index
+## ดัชนีเอกสาร (Documentation Index)
 
-| File | Purpose |
+| ไฟล์ | จุดประสงค์ |
 |------|---------|
-| [01_Project_Vision.md](./01_Project_Vision.md) | Product vision, goals, and data source strategy |
-
-| [02_Product_Requirements.md](./02_Product_Requirements.md) | Feature requirements, event categories, and notification rules |
-| [03_System_Architecture.md](./03_System_Architecture.md) | Tech stack, system design, and deployment topology |
-| [04_Development_Guidelines.md](./04_Development_Guidelines.md) | Coding standards, Git workflow, security, and documentation rules |
-| [05_Database_Design.md](./05_Database_Design.md) | Database design decisions, ORM rules, and spatial data strategy |
-| [06_API_Design.md](./06_API_Design.md) | API conventions, response format, and endpoint structure |
-| [07_UI_UX.md](./07_UI_UX.md) | UI/UX principles, core screens, and interaction design |
-| [08_Roadmap.md](./08_Roadmap.md) | MVP scope, excluded features, and future phases |
-| [09_Open_Data_Integration.md](./09_Open_Data_Integration.md) | Open data sources, integration strategy, and ingestion rules |
-| [10_AI_CONTEXT.md](./10_AI_CONTEXT.md) | AI developer context, project boundaries, and constraints |
-| [CHANGELOG.md](./CHANGELOG.md) | Version history and release notes |
+| [01_Project_Vision.md](./01_Project_Vision.md) | วิสัยทัศน์ เป้าหมาย และกลยุทธ์ของโปรเจกต์ |
+| [02_Product_Requirements.md](./02_Product_Requirements.md) | ข้อกำหนดฟีเจอร์ หมวดหมู่เหตุการณ์ และกฎการแจ้งเตือน |
+| [03_System_Architecture.md](./03_System_Architecture.md) | เทคโนโลยีที่เลือกใช้ สถาปัตยกรรม และรูปแบบการติดตั้ง |
+| [04_Development_Guidelines.md](./04_Development_Guidelines.md) | มาตรฐานการโค้ด กฎการใช้ Git ความปลอดภัย |
+| [05_Database_Design.md](./05_Database_Design.md) | โครงสร้าง Database และการจัดการข้อมูลเชิงพื้นที่ |
+| [06_API_Design.md](./06_API_Design.md) | การออกแบบ API และรูปแบบ Response |
+| [07_UI_UX.md](./07_UI_UX.md) | หลักการทาง UI/UX และการออกแบบหน้าจอ |
+| [08_Roadmap.md](./08_Roadmap.md) | แผนการพัฒนา (Roadmap) ของโปรเจกต์ |
+| [10_AI_CONTEXT.md](./10_AI_CONTEXT.md) | ข้อมูลบริบท ขอบเขต และหน้าที่สำหรับ AI Developer |
+| [CHANGELOG.md](./CHANGELOG.md) | บันทึกการเปลี่ยนแปลง (Version History) |
 
 ---
 
-## Quick Overview
+## ภาพรวมแบบเร็ว (Quick Overview)
 
-| Property | Detail |
+| คุณสมบัติ | รายละเอียด |
 |----------|--------|
-| **Product Type** | Location-based Community Safety Platform |
-| **Frontend** | Nuxt 4, Vue 3, TypeScript, Tailwind CSS |
-| **Backend** | Express.js, TypeScript |
-| **Database** | PostgreSQL + PostGIS |
-| **ORM** | Prisma |
-| **Map** | Mapbox |
-| **Auth** | JWT |
-| **Image Storage** | Cloudinary |
-| **Frontend Deploy** | Vercel |
-| **Backend Deploy** | Render |
-| **Database Host** | Supabase PostgreSQL or Neon PostgreSQL |
+| **ประเภทของระบบ** | แพลตฟอร์มแจ้งเตือนความปลอดภัยอิงตามตำแหน่งที่ตั้ง |
+| **ฟรอนต์เอนด์ (Frontend)** | Nuxt 4, Vue 3, TypeScript, Tailwind CSS |
+| **แบ็กเอนด์ (Backend)** | Express.js, JavaScript |
+| **ระบบเรียลไทม์ (Real-time)** | WebSocket / Socket.io |
+| **ฐานข้อมูล** | PostgreSQL + PostGIS |
+| **Database Driver** | Raw SQL (pg) |
+| **Realtime** | Socket.io / WebSocket |
+| **การยืนยันตัวตน (Auth)** | JWT |
+| **การเก็บรูปภาพ** | Cloudinary |
+| **พื้นที่ติดตั้งฟรอนต์เอนด์** | Vercel |
+| **พื้นที่ติดตั้งแบ็กเอนด์** | Render |
+| **ผู้ให้บริการฐานข้อมูล** | Supabase PostgreSQL หรือ Neon PostgreSQL |
 
 ---
 
-## Getting Started
+## การเริ่มต้นระบบ (Getting Started)
 
-> TODO: Add local development setup instructions once the project scaffold is established.
-
----
-
-## Contributing
-
-Before contributing, read:
-
-1. [Development Guidelines](./04_Development_Guidelines.md) — coding standards and project boundaries
-2. [API Design](./06_API_Design.md) — API conventions and response formats
-3. [Database Design](./05_Database_Design.md) — schema change rules
+> (รอระบุ) ขั้นตอนการตั้งค่าโปรเจกต์บนเครื่อง Local
 
 ---
 
-## License
+## การส่งคำขอแก้ไขโค้ด (Contributing)
 
-> TODO: Define the project license.
+ก่อนที่คุณจะเข้ามาร่วมเขียนโค้ด กรุณาอ่านเอกสารต่อไปนี้:
+
+1. [Development Guidelines](./04_Development_Guidelines.md) — มาตรฐานการทำงาน
+2. [API Design](./06_API_Design.md) — รูปแบบมาตรฐานของ API
+3. [Database Design](./05_Database_Design.md) — โครงสร้างและกฎของการแก้ไข Database
+4. [AI Context](./10_AI_CONTEXT.md) — ถ้าคุณคือ AI กรุณาอ่านและปฏิบัติตามอย่างเคร่งครัด
+
+---
+
+## สิทธิ์การใช้งาน (License)
+
+> (รอระบุ)

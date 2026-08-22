@@ -1,140 +1,51 @@
-# 01 — Project Vision
+# 01 — วิสัยทัศน์ของโปรเจกต์ (Project Vision)
 
-> **Document Purpose:** Defines what GeoSpread is, why it exists, who it serves, and the principles that guide every product decision.
-
----
-
-## Table of Contents
-
-1. [Product Summary](#1-product-summary)
-2. [Problem Statement](#2-problem-statement)
-3. [Product Goals](#3-product-goals)
-4. [Target Users](#4-target-users)
-5. [Data Source Strategy](#5-data-source-strategy)
-6. [Core Value Proposition](#6-core-value-proposition)
-7. [Out of Scope](#7-out-of-scope)
+> **วัตถุประสงค์ของเอกสาร:** กำหนดว่า GeoSpread คืออะไร ทำไมถึงต้องมี แพลตฟอร์มนี้ให้บริการใคร และหลักการที่เป็นแนวทางในการตัดสินใจเกี่ยวกับผลิตภัณฑ์ทั้งหมด
 
 ---
 
-## 1. Product Summary
+## สารบัญ
 
-**GeoSpread** is a Location-based Community Safety Platform that enables users to:
-
-- **Receive** real-time alerts about significant events near them or in areas they follow.
-- **Report** community-impacting incidents directly from the field.
-- **Request and offer** help during emergencies.
-- **Monitor** developing situations across any area of interest.
-
-Data is drawn from two complementary sources: authoritative **Open Data** feeds from government and official agencies, and verified **Community Reports** submitted by users.
+1. [ภาพรวมของโปรเจกต์ (Project Overview)](#1-ภาพรวมของโปรเจกต์-project-overview)
+2. [วิสัยทัศน์ผลิตภัณฑ์ (Product Vision)](#2-วิสัยทัศน์ผลิตภัณฑ์-product-vision)
+3. [โมดูลหลักของผลิตภัณฑ์ (Core Product Modules)](#3-โมดูลหลักของผลิตภัณฑ์-core-product-modules)
+4. [เป้าหมายสูงสุด (Product North Star)](#4-เป้าหมายสูงสุด-product-north-star)
 
 ---
 
-## 2. Problem Statement
+## 1. ภาพรวมของโปรเจกต์ (Project Overview)
 
-When emergencies or safety-relevant incidents occur, information is often:
-
-- **Scattered** across multiple government portals, social media, and news outlets.
-- **Delayed** by the time it reaches the people most affected.
-- **Not location-aware** — alerts are broadcast nationally rather than being targeted to those actually in the affected area.
-
-GeoSpread solves this by aggregating authoritative data and community intelligence into a single, map-first, location-aware platform.
+**GeoSpread** คือแพลตฟอร์มชุมชนสำหรับติดตามเหตุการณ์ฉุกเฉินและภัยพิบัติตามพื้นที่ โดยรวมการแจ้งเหตุ การแจ้งเตือน การติดตามเหตุการณ์ การขอ/ให้ความช่วยเหลือ และการสื่อสารของคนในพื้นที่ไว้ในระบบเดียว ผู้ใช้สามารถดูเหตุการณ์ใกล้ตำแหน่งปัจจุบัน เลือกพื้นที่เอง และบันทึกสถานที่สำคัญเพื่อรับการแจ้งเตือน
 
 ---
 
-## 3. Product Goals
+## 2. วิสัยทัศน์ผลิตภัณฑ์ (Product Vision)
 
-GeoSpread is designed to answer one central question for every user:
+ทำให้ผู้ใช้รู้ว่า **“เกิดอะไรขึ้นใกล้ตัว”** และสามารถ **“สื่อสาร ขอความช่วยเหลือ หรือช่วยเหลือผู้อื่น”** ได้อย่างรวดเร็ว โดยยึด 4 แกนหลัก ดังนี้:
 
-> **"What is happening right now in the area where I am, or in the area I care about?"**
-
-Secondary goals:
-
-- Enable rapid community-driven incident reporting with minimal friction.
-- Provide actionable help-request routing so that nearby volunteers or responders can navigate to those in need.
-- Offer smart, relevance-based notifications that minimize noise while ensuring critical alerts always reach the right people.
-
----
-
-## 4. Target Users
-
-> TODO: Define primary user personas with demographics, technical literacy, and use-case descriptions.
-
-Suggested personas to define:
-
-- **Commuter** — needs traffic, road, and weather alerts along their daily route.
-- **Local Resident** — wants to be aware of community-level events in their neighborhood.
-- **Emergency Volunteer** — actively monitors and responds to help requests.
-- **Administrator / Moderator** — reviews community reports and manages data quality.
+| Core Principle (แกนหลัก) | ความหมาย |
+|--------------------------|----------|
+| **Location** | ข้อมูลและเหตุการณ์สัมพันธ์กับพื้นที่ของผู้ใช้ |
+| **Urgency** | เหตุการณ์สำคัญและเร่งด่วนถูกจัดลำดับให้เห็นก่อน |
+| **Verification** | แยกข้อมูลที่ยืนยันแล้ว กำลังตรวจสอบ และยังไม่ยืนยันอย่างชัดเจน |
+| **Community** | คนในพื้นที่สามารถรายงาน พูดคุย ขอความช่วยเหลือ และช่วยเหลือกันได้ |
 
 ---
 
-## 5. Data Source Strategy
+## 3. โมดูลหลักของผลิตภัณฑ์ (Core Product Modules)
 
-GeoSpread aggregates data from three pillars:
+ระบบของ GeoSpread แบ่งการทำงานออกเป็น 4 โมดูลหลัก:
 
-### 5.1 Open Data (Official Sources)
-
-Real-time and near-real-time feeds from trusted government and scientific agencies.
-
-See [09_Open_Data_Integration.md](./09_Open_Data_Integration.md) for the full source list, ingestion strategy, and data categories.
-
-**Covered event types:**
-
-- Earthquake
-- Heavy Rain
-- Flood
-- Storm
-- Landslide
-- Sinkhole *(if data available)*
-- Wildfire / Hotspot *(if data available)*
-
-### 5.2 Community Reports
-
-User-submitted reports about events that affect the public.
-
-**Supported event types:**
-
-- Fire
-- Severe Traffic Accident
-- Fallen Tree
-- Road Closure
-- Area-wide Power Outage
-- Chemical Leak
-- Flood *(as a fallback when no Open Data feed is available)*
-
-**Not supported in MVP:** Lost Items, Lost Phone, Lost Pets, Marketplace — see [08_Roadmap.md](./08_Roadmap.md).
-
-### 5.3 Help Requests
-
-Users may submit requests for assistance. Other users can accept requests and navigate to the location.
-
-**Request types:**
-
-- General Help Request
-- Volunteer Request
-- Emergency Assistance
+1. **Discover** — ดูเหตุการณ์ใกล้ตัวและค้นหาเหตุการณ์ตามพื้นที่ที่สนใจ
+2. **Alert** — แจ้งเตือนเหตุการณ์สำคัญตามตำแหน่งที่ตั้งปัจจุบันและความสนใจของผู้ใช้
+3. **Community** — ประกอบด้วย Event Room (ห้องเหตุการณ์), Timeline, Chat และระบบ Follow (ติดตาม)
+4. **Help Center** — ระบบร้องขอความช่วยเหลือ (Request Help), เสนอความช่วยเหลือ (Offer Help) และความช่วยเหลือใกล้เคียง (Nearby Help)
 
 ---
 
-## 6. Core Value Proposition
+## 4. เป้าหมายสูงสุด (Product North Star)
 
-| Pillar | Description |
-|--------|-------------|
-| **Awareness** | Single source of truth for what is happening nearby |
-| **Timeliness** | Open Data ingested in real time; community reports submitted instantly |
-| **Locality** | All data is geo-tagged and surfaced based on the user's location or followed areas |
-| **Community** | Bridges the gap between official data and on-the-ground reality |
-| **Action** | Not just informational — users can request and offer help |
+GeoSpread ไม่ควรเป็นเพียงแอปพลิเคชันข่าวภัยพิบัติ แต่ต้องเป็น **“ชั้นกลางของข้อมูลเหตุการณ์ในพื้นที่”** ที่สามารถเชื่อมคน เหตุการณ์ ตำแหน่ง และความช่วยเหลือเข้าด้วยกันได้อย่างมีประสิทธิภาพ
 
----
-
-## 7. Out of Scope
-
-The following are explicitly excluded from GeoSpread's product direction (not only MVP):
-
-| Feature | Reason |
-|---------|--------|
-| Lost Items / Phone / Pets | Outside the safety and emergency focus of the platform |
-| Marketplace | Commercially unrelated to the core mission |
-
-> See [08_Roadmap.md](./08_Roadmap.md) for features that are excluded from MVP but may be considered in future phases.
+> **"Know what is happening. Connect with people nearby. Help when it matters."**
+> *(รู้ว่าเกิดอะไรขึ้น เชื่อมต่อกับคนใกล้ตัว ช่วยเหลือเมื่อถึงเวลาที่สำคัญ)*

@@ -1,57 +1,68 @@
-# Changelog
+# บันทึกการเปลี่ยนแปลง (Changelog)
 
-All notable changes to GeoSpread will be documented in this file.
+การเปลี่ยนแปลงที่สำคัญทั้งหมดของ GeoSpread จะถูกบันทึกไว้ในไฟล์นี้
 
-This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) conventions.  
-Commit messages follow the [Conventional Commits](https://www.conventionalcommits.org/) specification.
+โปรเจกต์นี้อ้างอิงตามรูปแบบ [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
+และข้อความ Commit ต้องเป็นไปตามมาตรฐาน [Conventional Commits](https://www.conventionalcommits.org/)
 
 ---
 
-## Format
+## รูปแบบ (Format)
 
-Each entry uses the following structure:
+แต่ละการบันทึกจะใช้โครงสร้างดังต่อไปนี้:
 
 ```
 ## [Version] — YYYY-MM-DD
 
-### Added
-- New features or capabilities
+### เพิ่มเติม (Added)
+- ฟีเจอร์ใหม่ หรือความสามารถใหม่
 
-### Changed
-- Changes to existing functionality
+### เปลี่ยนแปลง (Changed)
+- การเปลี่ยนแปลงในระบบเดิม
 
-### Fixed
-- Bug fixes
+### แก้ไข (Fixed)
+- แก้ไขบั๊ก
 
-### Removed
-- Removed features or deprecated code
+### ลบออก (Removed)
+- ฟีเจอร์ที่ถูกลบออก หรือโค้ดที่เลิกใช้งานแล้ว
 
-### Security
-- Security-related changes
+### ความปลอดภัย (Security)
+- การอัปเดตด้านความปลอดภัย
 
-### Documentation
-- Documentation-only changes
+### เอกสารประกอบ (Documentation)
+- การเปลี่ยนแปลงเฉพาะไฟล์เอกสาร
 ```
 
 ---
 
-## [Unreleased]
+## [ยังไม่ปล่อย (Unreleased)]
 
-### Documentation
-- Initial project documentation created under `docs/`:
-  - `README.md` — Documentation index and project overview
-  - `01_Project_Vision.md` — Product vision, goals, and data source strategy
-  - `02_Product_Requirements.md` — Feature requirements and notification rules
-  - `03_System_Architecture.md` — Tech stack and system design
-  - `04_Development_Guidelines.md` — Coding standards, Git workflow, and security rules
-  - `05_Database_Design.md` — Database design and ORM conventions
-  - `06_API_Design.md` — API conventions and response format
-  - `07_UI_UX.md` — UI/UX principles and screen specifications
-  - `08_Roadmap.md` — MVP scope and future phases
-  - `09_Open_Data_Integration.md` — Open Data sources and ingestion strategy
-  - `10_AI_CONTEXT.md` — AI developer context and project boundaries
-  - `CHANGELOG.md` — This file
+### เพิ่มเติม (Added)
+- สร้าง `backend/db/schema.sql` เพื่อกำหนดตารางข้อมูลที่รองรับ PostGIS และ GIST spatial indexing
+- เพิ่ม Utility จัดการ Connection Pool `backend/db/index.js` โดยใช้ `pg` (node-postgres)
+- เพิ่มสคริปต์ `backend/db/init-db.js` เพื่อจำลองระบบฐานข้อมูล
+- เพิ่มเทมเพลตไฟล์ Environment (`.env` และ `.env.example`)
+
+### เปลี่ยนแปลง (Changed)
+- ย้ายไฟล์คอนฟิกมาที่รากของโปรเจกต์
+- เปลี่ยนมาใช้ Raw SQL ผ่าน node-postgres (`pg`) เป็นหลักแทนการใช้ ORM
+
+### เอกสารประกอบ (Documentation)
+- แปลและอัปเดตโครงสร้างเอกสาร `docs/` ทั้งหมดเป็นภาษาไทยและรองรับแนวคิดใหม่ (Event Room, AI Workflow)
+- ไฟล์เอกสารเริ่มต้น:
+  - `README.md` — ดัชนีเอกสารและภาพรวม
+  - `01_Project_Vision.md` — วิสัยทัศน์ผลิตภัณฑ์และเป้าหมาย
+  - `02_Product_Requirements.md` — ข้อกำหนดผลิตภัณฑ์และฟีเจอร์
+  - `03_System_Architecture.md` — สถาปัตยกรรมระบบ
+  - `04_Development_Guidelines.md` — มาตรฐานการเขียนโค้ดและ Git
+  - `05_Database_Design.md` — โครงสร้างฐานข้อมูล
+  - `06_API_Design.md` — การออกแบบ API
+  - `07_UI_UX.md` — การออกแบบ UI/UX
+  - `08_Roadmap.md` — แผนงานการพัฒนา (MVP)
+  - `09_Open_Data_Integration.md` — การนำเข้า Open Data
+  - `10_AI_CONTEXT.md` — บริบทและกฎสำหรับ AI
+  - `CHANGELOG.md` — บันทึกการเปลี่ยนแปลง (ไฟล์นี้)
 
 ---
 
-<!-- Add new releases above this line in descending order -->
+<!-- เพิ่มบันทึกเวอร์ชันใหม่ๆ เหนือบรรทัดนี้ -->

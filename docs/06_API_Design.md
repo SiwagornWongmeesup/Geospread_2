@@ -1,55 +1,55 @@
-# 06 — API Design
+# 06 — การออกแบบ API (API Design)
 
-> **Document Purpose:** Defines the API conventions, standard response format, authentication strategy, and architectural patterns for the GeoSpread backend. Specific endpoints will be documented here as they are designed and implemented.
-
----
-
-## Table of Contents
-
-1. [API Overview](#1-api-overview)
-2. [Authentication](#2-authentication)
-3. [Standard Response Format](#3-standard-response-format)
-4. [Error Handling](#4-error-handling)
-5. [Request Validation](#5-request-validation)
-6. [Code Architecture](#6-code-architecture)
-7. [Endpoint Reference](#7-endpoint-reference)
-8. [Open Questions / TODO](#8-open-questions--todo)
+> **วัตถุประสงค์ของเอกสาร:** กำหนดรูปแบบของ API (API conventions), รูปแบบการตอบสนองที่เป็นมาตรฐาน (standard response format), กลยุทธ์การยืนยันตัวตน (authentication strategy), และรูปแบบสถาปัตยกรรมสำหรับแบ็กเอนด์ของ GeoSpread ส่วน Endpoint ย่อยต่างๆ จะถูกจัดทำเอกสารไว้ที่นี่เมื่อมีการออกแบบและพัฒนาแล้ว
 
 ---
 
-## 1. API Overview
+## สารบัญ
 
-| Property | Value |
+1. [ภาพรวม API (API Overview)](#1-ภาพรวม-api-api-overview)
+2. [การยืนยันตัวตน (Authentication)](#2-การยืนยันตัวตน-authentication)
+3. [รูปแบบการตอบสนองมาตรฐาน (Standard Response Format)](#3-รูปแบบการตอบสนองมาตรฐาน-standard-response-format)
+4. [การจัดการข้อผิดพลาด (Error Handling)](#4-การจัดการข้อผิดพลาด-error-handling)
+5. [การตรวจสอบข้อมูลคำขอ (Request Validation)](#5-การตรวจสอบข้อมูลคำขอ-request-validation)
+6. [สถาปัตยกรรมโค้ด (Code Architecture)](#6-สถาปัตยกรรมโค้ด-code-architecture)
+7. [อ้างอิง Endpoint (Endpoint Reference)](#7-อ้างอิง-endpoint-endpoint-reference)
+8. [คำถามที่เปิดกว้าง / งานที่ต้องทำ (Open Questions / TODO)](#8-คำถามที่เปิดกว้าง--งานที่ต้องทำ-open-questions--todo)
+
+---
+
+## 1. ภาพรวม API (API Overview)
+
+| คุณสมบัติ | ค่าที่ตั้งไว้ |
 |----------|-------|
-| **Protocol** | REST over HTTPS |
-| **Data Format** | JSON |
-| **Authentication** | JWT (Bearer token) |
-| **Base URL (Production)** | TODO: Define after deployment |
-| **Base URL (Development)** | TODO: Define (e.g., `http://localhost:3001/api/v1`) |
-| **Versioning** | TODO: Define versioning strategy (e.g., URL path versioning `/api/v1/`) |
+| **โปรโตคอล** | REST over HTTPS (พร้อมรองรับ WebSocket สำหรับฟีเจอร์ Chat/Event Room) |
+| **รูปแบบข้อมูล** | JSON |
+| **การยืนยันตัวตน** | JWT (Bearer token) |
+| **Base URL (Production)** | TODO: กำหนดหลังจากการ deploy |
+| **Base URL (Development)** | TODO: กำหนด (เช่น `http://localhost:3001/api/v1`) |
+| **การจัดเวอร์ชัน (Versioning)** | TODO: กำหนดกลยุทธ์ (เช่น การใช้พาธ `/api/v1/`) |
 
 ---
 
-## 2. Authentication
+## 2. การยืนยันตัวตน (Authentication)
 
-GeoSpread uses **JSON Web Tokens (JWT)** for stateless authentication.
+GeoSpread ใช้ **JSON Web Tokens (JWT)** สำหรับการยืนยันตัวตนแบบไร้สถานะ (stateless authentication)
 
-| Property | Detail |
+| คุณสมบัติ | รายละเอียด |
 |----------|--------|
-| **Token type** | Bearer token |
-| **Token location** | `Authorization: Bearer <token>` request header |
-| **Token expiry** | TODO: Define access token TTL and refresh token strategy |
-| **Refresh tokens** | TODO: Define whether refresh tokens are used |
+| **ประเภท Token** | Bearer token |
+| **ตำแหน่ง Token** | `Authorization: Bearer <token>` ใน request header |
+| **วันหมดอายุ Token** | TODO: กำหนดอายุของ access token และกลยุทธ์ refresh token |
+| **Refresh tokens** | TODO: กำหนดว่าจะใช้งาน refresh tokens หรือไม่ |
 
-### Protected vs. Public Endpoints
+### Endpoints ที่มีการป้องกัน vs. สาธารณะ
 
-> TODO: Define which endpoints are public (no auth required) and which require a valid JWT.
+> TODO: กำหนดว่า endpoints ใดที่เปิดสาธารณะ (ไม่ต้องใช้ auth) และใดที่ต้องการ JWT ที่ถูกต้อง
 
 ---
 
-## 3. Standard Response Format
+## 3. รูปแบบการตอบสนองมาตรฐาน (Standard Response Format)
 
-**All** API responses — success and error — must conform to this structure:
+**ทุก** การตอบสนองของ API — ทั้งสำเร็จและผิดพลาด — จะต้องใช้โครงสร้างนี้:
 
 ```json
 {
@@ -59,13 +59,13 @@ GeoSpread uses **JSON Web Tokens (JWT)** for stateless authentication.
 }
 ```
 
-| Field | Type | Description |
+| ฟิลด์ | ประเภท | คำอธิบาย |
 |-------|------|-------------|
-| `success` | `boolean` | `true` for successful operations, `false` for errors |
-| `message` | `string` | Human-readable status or error description |
-| `data` | `object \| array \| null` | Response payload; `null` or omitted on error or empty responses |
+| `success` | `boolean` | `true` สำหรับการทำงานที่สำเร็จ, `false` สำหรับกรณีเกิดข้อผิดพลาด |
+| `message` | `string` | สถานะหรือคำอธิบายข้อผิดพลาดที่อ่านเข้าใจง่าย |
+| `data` | `object \| array \| null` | ข้อมูล (Payload); ใช้ `null` หรือละเว้นฟิลด์นี้หากเกิดข้อผิดพลาดหรือไม่มีข้อมูลตอบกลับ |
 
-### Success Example
+### ตัวอย่างเมื่อสำเร็จ (Success Example)
 
 ```json
 {
@@ -81,7 +81,7 @@ GeoSpread uses **JSON Web Tokens (JWT)** for stateless authentication.
 }
 ```
 
-### Error Example
+### ตัวอย่างเมื่อผิดพลาด (Error Example)
 
 ```json
 {
@@ -93,154 +93,163 @@ GeoSpread uses **JSON Web Tokens (JWT)** for stateless authentication.
 
 ---
 
-## 4. Error Handling
+## 4. การจัดการข้อผิดพลาด (Error Handling)
 
-| HTTP Status | Meaning | When to Use |
+| HTTP Status | ความหมาย | เมื่อใดที่ควรใช้ |
 |-------------|---------|-------------|
-| `200 OK` | Success | Successful GET, PUT, PATCH |
-| `201 Created` | Resource created | Successful POST creating a new resource |
-| `400 Bad Request` | Validation error | Missing or invalid request parameters |
-| `401 Unauthorized` | Not authenticated | Missing or invalid JWT |
-| `403 Forbidden` | Not authorized | Authenticated but insufficient permissions |
-| `404 Not Found` | Resource not found | Requested entity does not exist |
-| `409 Conflict` | Conflict | Duplicate resource or state conflict |
-| `422 Unprocessable Entity` | Business logic error | Valid syntax but failing business rules |
-| `500 Internal Server Error` | Server error | Unexpected server-side failure |
+| `200 OK` | สำเร็จ | ทำ GET, PUT, PATCH สำเร็จ |
+| `201 Created` | สร้างทรัพยากรสำเร็จ | ทำ POST เพื่อสร้างรายการใหม่สำเร็จ |
+| `400 Bad Request` | ตรวจสอบข้อมูลไม่ผ่าน | พารามิเตอร์ของคำขอสูญหายหรือไม่ถูกต้อง |
+| `401 Unauthorized` | ไม่ได้ยืนยันตัวตน | JWT สูญหายหรือไม่ถูกต้อง |
+| `403 Forbidden` | ไม่มีสิทธิ์เข้าถึง | ยืนยันตัวตนแล้วแต่มีสิทธิ์ (Permission) ไม่เพียงพอ |
+| `404 Not Found` | ไม่พบทรัพยากร | สิ่งที่ร้องขอไม่มีอยู่ |
+| `409 Conflict` | ความขัดแย้ง | ทรัพยากรซ้ำซ้อนหรือสถานะขัดแย้งกัน |
+| `422 Unprocessable Entity` | ข้อผิดพลาดเชิงตรรกะธุรกิจ | โครงสร้างคำขอถูกต้องแต่ไม่ผ่านกฎทางธุรกิจ |
+| `500 Internal Server Error` | ข้อผิดพลาดจากเซิร์ฟเวอร์ | เกิดข้อผิดพลาดฝั่งเซิร์ฟเวอร์ที่ไม่คาดคิด |
 
-> All error responses must use the [standard response format](#3-standard-response-format) with `"success": false`.
+> การตอบสนองที่เป็นข้อผิดพลาดทั้งหมดต้องใช้ [รูปแบบการตอบสนองมาตรฐาน](#3-รูปแบบการตอบสนองมาตรฐาน-standard-response-format) โดยกำหนดให้ `"success": false`
 
 ---
 
-## 5. Request Validation
+## 5. การตรวจสอบข้อมูลคำขอ (Request Validation)
 
-Every incoming request must be validated **before** reaching the Service layer.
+ทุกคำขอที่เข้ามาจะต้องได้รับการตรวจสอบความถูกต้อง (validated) **ก่อน** ไปถึงเลเยอร์ Service
 
-| Rule | Detail |
+| กฎ | รายละเอียด |
 |------|--------|
-| **Validate all inputs** | Query parameters, path parameters, and request bodies must all be validated |
-| **Fail fast** | Return `400 Bad Request` with a descriptive message immediately on validation failure |
-| **Validation library** | TODO: Define the validation library to use (e.g., Zod, Joi, express-validator) |
+| **ตรวจสอบอินพุตทั้งหมด** | Query parameters, path parameters และ request bodies จะต้องถูกตรวจสอบทั้งหมด |
+| **Fail fast** | ตอบกลับ `400 Bad Request` พร้อมข้อความแจ้งข้อผิดพลาดที่ชัดเจนทันทีเมื่อการตรวจสอบล้มเหลว |
+| **ไลบรารีการตรวจสอบ** | TODO: กำหนดไลบรารีที่จะใช้ (เช่น Zod, Joi, express-validator) |
 
 ---
 
-## 6. Code Architecture
+## 6. สถาปัตยกรรมโค้ด (Code Architecture)
 
-The backend follows a strict **three-layer architecture**:
+แบ็กเอนด์ใช้ **สถาปัตยกรรมแบบสามชั้น (Three-layer architecture)** ที่เคร่งครัด:
 
 ```
 HTTP Request
     ↓
-Controller   — Parse request, validate input, call service, return response
+Controller   — รับคำขอ, ตรวจสอบข้อมูลอินพุต, ส่งต่อไปยัง service, ส่งคืนการตอบสนอง
     ↓
-Service      — Business logic, orchestration, calls repository or external services
+Service      — ตรรกะของระบบ การตรวจสอบเงื่อนไข
     ↓
-Repository   — Database query abstraction via Prisma (used when needed)
+Repository   — ส่วนครอบการคิวรีฐานข้อมูลด้วย Raw SQL
     ↓
 Database (PostgreSQL + PostGIS)
 ```
 
-### Layer Responsibilities
+### ความรับผิดชอบของแต่ละชั้น (Layer Responsibilities)
 
-| Layer | File Convention | Responsibility |
+| เลเยอร์ | รูปแบบไฟล์ | ความรับผิดชอบ |
 |-------|----------------|---------------|
-| **Controller** | `*.controller.ts` | Validate input, delegate to service, format response |
-| **Service** | `*.service.ts` | Business logic, rule enforcement, data orchestration |
-| **Repository** | `*.repository.ts` | Encapsulate Prisma queries (only when service complexity warrants it) |
+| **Controller** | `*.controller.ts` | ตรวจสอบอินพุต, ส่งต่องานไปยัง service, จัดรูปแบบการตอบสนอง |
+| **Service** | `*.service.ts` | ฟังก์ชันที่มีตรรกะทางธุรกิจ (เรียกใช้จาก Controller) |
+| **Repository** | `*.repository.ts` | ห่อหุ้มคำสั่ง SQL (Database Queries) |
 
 ---
 
-## 7. Endpoint Reference
+## 7. อ้างอิง Endpoint (Endpoint Reference)
 
-> **Note:** The API endpoint specification has not yet been defined. Endpoints must be designed based on product requirements and documented here before implementation.
+> **หมายเหตุ:** ข้อกำหนดของ Endpoint ของ API ยังไม่ถูกกำหนดอย่างสมบูรณ์ Endpoints ต้องได้รับการออกแบบตามข้อกำหนดของผลิตภัณฑ์และจัดทำเอกสารไว้ที่นี่ก่อนทำการโค้ดดิ้ง
 
-> TODO: Define all endpoints for the following feature areas:
+> TODO: กำหนด Endpoints ทั้งหมดสำหรับส่วนต่างๆ ดังนี้:
 
-### Authentication
+### การยืนยันตัวตน (Authentication)
 
-| Method | Path | Description | Auth Required |
+| Method | Path | คำอธิบาย | จำเป็นต้องยืนยันตัวตน |
 |--------|------|-------------|---------------|
-| TODO | `/auth/register` | Register a new user | No |
-| TODO | `/auth/login` | Log in and receive JWT | No |
-| TODO | `/auth/logout` | Invalidate session | Yes |
-| TODO | `/auth/refresh` | Refresh access token | — |
+| POST | `/auth/register` | สมัครผู้ใช้งานใหม่ | ไม่ |
+| POST | `/auth/login` | เข้าสู่ระบบและรับ JWT | ไม่ |
+| POST | `/auth/logout` | ยกเลิกเซสชัน | ใช่ |
+| POST | `/auth/refresh` | รีเฟรช access token | — |
 
 ---
 
-### Events
+### เหตุการณ์ย่อย และเหตุการณ์หลัก (Incidents & Events)
 
-| Method | Path | Description | Auth Required |
+> หมายเหตุ: อิงตามแนวคิดใหม่ Incident คือรายงานเดี่ยวๆ ส่วน Event คือศูนย์รวมเหตุการณ์หลัก
+
+| Method | Path | คำอธิบาย | จำเป็นต้องยืนยันตัวตน |
 |--------|------|-------------|---------------|
-| TODO | `/events` | List/search events by area or radius | — |
-| TODO | `/events/:id` | Get a single event by ID | — |
+| GET | `/incidents` | ดึงรายการ Incident ตามพื้นที่หรือรัศมีระยะทาง | — |
+| POST | `/incidents` | สร้างรายงาน Incident (การรายงานจากชุมชน) | ใช่ |
+| GET | `/events` | ดึงรายการ Event ศูนย์กลางเหตุการณ์สำคัญ | — |
+| GET | `/events/:id` | ดึงรายละเอียด Event เดียว (Overview, Timeline) | — |
+| POST | `/admin/events` | (Admin) สร้าง Event ใหม่ หรือรวม Incidents เป็น Event | ใช่ (Admin) |
 
 ---
 
-### Community Reports
+### ห้องเหตุการณ์เฉพาะกิจ และแชท (Event Rooms & Chat)
 
-| Method | Path | Description | Auth Required |
+> หมายเหตุ: ในส่วนนี้ API อาจจะใช้ร่วมกับการเชื่อมต่อ WebSocket (เช่น `/ws/events/:id/chat`) เพื่อความเรียลไทม์
+
+| Method | Path | คำอธิบาย | จำเป็นต้องยืนยันตัวตน |
 |--------|------|-------------|---------------|
-| TODO | `/reports` | Submit a community report | Yes |
-| TODO | `/reports/:id` | Get a community report | — |
+| POST | `/events/:id/chat` | ส่งข้อความแชทเข้าไปใน Event Room | ใช่ |
+| GET | `/events/:id/chat` | ดึงประวัติการแชทใน Event Room | ใช่ |
+| POST | `/events/:id/follow` | กดติดตาม (Follow) เพื่อเข้าร่วมและรับการแจ้งเตือนจาก Event | ใช่ |
 
 ---
 
-### Help Requests
+### การขอความช่วยเหลือ (Help Requests)
 
-| Method | Path | Description | Auth Required |
+| Method | Path | คำอธิบาย | จำเป็นต้องยืนยันตัวตน |
 |--------|------|-------------|---------------|
-| TODO | `/help-requests` | Submit a help request | Yes |
-| TODO | `/help-requests/:id` | Get a help request | — |
-| TODO | `/help-requests/:id/accept` | Accept a help request | Yes |
+| POST | `/help-requests` | ส่งคำขอความช่วยเหลือ (อาจแนบเข้ากับ Event/Incident) | ใช่ |
+| GET | `/help-requests` | ดึงรายการขอความช่วยเหลือในบริเวณใกล้เคียง | — |
+| PATCH | `/help-requests/:id/accept` | ผู้ใช้ตอบรับการช่วยเหลือ (Offer Help) | ใช่ |
+| PATCH | `/help-requests/:id/status` | อัปเดตสถานะ (In Progress / Resolved) | ใช่ |
 
 ---
 
-### Followed Areas
+### พื้นที่ที่ติดตาม (Saved Locations / Followed Areas)
 
-| Method | Path | Description | Auth Required |
+| Method | Path | คำอธิบาย | จำเป็นต้องยืนยันตัวตน |
 |--------|------|-------------|---------------|
-| TODO | `/areas` | List user's followed areas | Yes |
-| TODO | `/areas` | Follow a new area | Yes |
-| TODO | `/areas/:id` | Unfollow an area | Yes |
+| GET | `/locations` | ดึงรายการสถานที่ (บ้าน, ที่ทำงาน) ที่ผู้ใช้บันทึกไว้ติดตาม | ใช่ |
+| POST | `/locations` | บันทึกพื้นที่/สถานที่ใหม่ | ใช่ |
+| DELETE | `/locations/:id` | ลบพื้นที่ที่ติดตาม | ใช่ |
 
 ---
 
-### User Profile
+### โปรไฟล์ผู้ใช้ (User Profile)
 
-| Method | Path | Description | Auth Required |
+| Method | Path | คำอธิบาย | จำเป็นต้องยืนยันตัวตน |
 |--------|------|-------------|---------------|
-| TODO | `/users/me` | Get current user profile | Yes |
-| TODO | `/users/me` | Update profile | Yes |
+| GET | `/users/me` | ดึงข้อมูลโปรไฟล์ผู้ใช้ปัจจุบัน | ใช่ |
+| PATCH | `/users/me` | อัปเดตข้อมูลโปรไฟล์ | ใช่ |
 
 ---
 
-### Notifications
+### การแจ้งเตือน (Notifications)
 
-| Method | Path | Description | Auth Required |
+| Method | Path | คำอธิบาย | จำเป็นต้องยืนยันตัวตน |
 |--------|------|-------------|---------------|
-| TODO | `/notifications` | List user's notifications | Yes |
-| TODO | `/notifications/:id/read` | Mark a notification as read | Yes |
+| GET | `/notifications` | ดึงรายการแจ้งเตือนของผู้ใช้ | ใช่ |
+| PATCH | `/notifications/:id/read` | ทำเครื่องหมายว่าอ่านแล้ว | ใช่ |
 
 ---
 
-### Admin
+### แอดมินและผู้ดูแล (Admin & Moderation)
 
-| Method | Path | Description | Auth Required |
+| Method | Path | คำอธิบาย | จำเป็นต้องยืนยันตัวตน |
 |--------|------|-------------|---------------|
-| TODO | `/admin/reports` | List pending community reports | Admin |
-| TODO | `/admin/reports/:id/approve` | Approve a report | Admin |
-| TODO | `/admin/reports/:id/reject` | Reject a report | Admin |
+| GET | `/admin/reports` | ดึงรายการรายงานของชุมชนที่รอการตรวจสอบ (Verify) | ใช่ (Admin) |
+| PATCH | `/admin/incidents/:id/verify`| อัปเดตสถานะการตรวจสอบความถูกต้องของ Incident | ใช่ (Admin) |
+| PATCH | `/admin/incidents/:id/reject`| ปฏิเสธรายงานที่เป็นสแปมหรือเท็จ | ใช่ (Admin) |
 
 ---
 
-## 8. Open Questions / TODO
+## 8. คำถามที่เปิดกว้าง / งานที่ต้องทำ (Open Questions / TODO)
 
-| # | Question |
+| ลำดับ | คำถาม |
 |---|----------|
-| 1 | What is the API base URL and versioning strategy? |
-| 2 | What is the JWT access token TTL? Are refresh tokens used? |
-| 3 | Which validation library will be used (Zod, Joi, express-validator)? |
-| 4 | Will pagination be used on list endpoints? If so, what strategy (cursor or offset)? |
-| 5 | How will real-time map updates be delivered — WebSocket, SSE, or polling? |
-| 6 | What are the rate limits for report submission and help request endpoints? |
-| 7 | How does image upload work — does the client upload directly to Cloudinary, or via the backend? |
-| 8 | What is the admin authentication mechanism — same JWT with a role claim, or separate admin credentials? |
+| 1 | URL ฐานของ API (Base URL) และกลยุทธ์การแบ่งเวอร์ชันจะเป็นอย่างไร? |
+| 2 | อายุของ access token (TTL) คือเท่าไร? และจะมีการใช้ refresh tokens หรือไม่? |
+| 3 | ไลบรารีใดจะถูกนำมาใช้ตรวจสอบอินพุต (Zod, Joi, express-validator)? |
+| 4 | Endpoint แบบลิสต์จะใช้ Pagination หรือไม่? ถ้าใช้ จะใช้แบบใด (cursor หรือ offset)? |
+| 5 | การเชื่อมต่อสำหรับ Event Chat และ Real-time Map Updates จะใช้ WebSocket หรือ SSE หรือ Polling? |
+| 6 | Rate limits ของการสร้างรายงานและส่งคำขอความช่วยเหลือจะตั้งไว้ที่ระดับใด? |
+| 7 | อัปโหลดรูปภาพจะทำอย่างไร — ไคลเอนต์อัปโหลดไป Cloudinary โดยตรง หรือผ่านแบ็กเอนด์? |
+| 8 | การยืนยันตัวตนของแอดมินใช้โครงสร้างแบบไหน — ใช้ JWT ตัวเดิมแต่เพิ่ม Role claim เข้าไป หรือใช้ระบบล็อกอินแอดมินแยกต่างหาก? |
