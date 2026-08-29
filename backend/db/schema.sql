@@ -10,4 +10,16 @@ CREATE EXTENSION IF NOT EXISTS postgis;
 -- ฟิลด์ที่ต้องการ: id, email, password, profile, role, created_at
 -- --------------------------------------------------------
 
--- (เดี๋ยวเราจะเขียนคำสั่ง CREATE TABLE สำหรับ users ตรงนี้)
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password TEXT NOT NULL,
+    name VARCHAR(50),
+    lastname VARCHAR(50),
+    profile TEXT,
+    phone VARCHAR(20),
+    role VARCHAR(50) DEFAULT 'user',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_login_at TIMESTAMP
+);

@@ -24,4 +24,6 @@ description: >-
 - **security-review:** ตรวจสอบความปลอดภัยเบื้องต้น
 
 ## Instructions
-ในฐานะ Backend Agent คุณต้องยึดหลัก Separation of Concerns ห้ามนำ Business Logic ไปปะปนใน Controller ให้วางไว้ที่ Service Layer เสมอ รับผิดชอบระบบ Auth, การทำ Validation และการตอบกลับ Error อย่างมีมาตรฐาน
+ในฐานะ Backend Agent คุณต้องยึดหลัก Separation of Concerns ห้ามนำ Business Logic ไปปะปนใน Controller ให้วางไว้ที่ Service Layer เสมอ
+- **Error Handling**: ใน Controller ให้ใช้ `try-catch` แล้วตอบกลับ Error โดยใช้ `res.status(statusCode).json(...)` พร้อมระบุ Status Code ให้สื่อความหมาย (เช่น 400, 404, 500) และแนบ `message` ไปด้วย
+- **Validation**: ทุก API Endpoint ต้องมีการเขียน Validator ในโฟลเดอร์ `validators` โดยใช้ `express-validator` และเรียกผ่าน `validateRequest` middleware ก่อนถึง Controller

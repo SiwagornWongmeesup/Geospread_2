@@ -19,6 +19,8 @@ GeoSpread ช่วยให้ผู้ใช้ทราบถึงเหต�
 | [07_UI_UX.md](./07_UI_UX.md) | หลักการทาง UI/UX และการออกแบบหน้าจอ |
 | [08_Roadmap.md](./08_Roadmap.md) | แผนการพัฒนา (Roadmap) ของโปรเจกต์ |
 | [10_AI_CONTEXT.md](./10_AI_CONTEXT.md) | ข้อมูลบริบท ขอบเขต และหน้าที่สำหรับ AI Developer |
+| [11_Backend_Folder_Structure.md](./11_Backend_Folder_Structure.md) | โครงสร้างโฟลเดอร์ Backend (3-Tier Architecture) |
+| [12_Frontend_Folder_Structure.md](./12_Frontend_Folder_Structure.md) | โครงสร้างโฟลเดอร์ Frontend และการแยก Desktop/Mobile Component |
 | [CHANGELOG.md](./CHANGELOG.md) | บันทึกการเปลี่ยนแปลง (Version History) |
 
 ---

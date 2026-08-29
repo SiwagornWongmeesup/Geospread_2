@@ -37,7 +37,7 @@
 
 | เอนทิตี (Entity) | คำอธิบาย |
 |--------|-------------|
-| **User** | ผู้ใช้งานระบบ (id, email, password, profile, role) |
+| **User** | ผู้ใช้งานระบบ (id, email, password, name, lastname, phone, profile, role) |
 | **Incident** | รายงานเหตุการณ์ย่อยๆ 1 จุด (id, title, desc, severity, location, status) |
 | **Event** | ศูนย์กลางเหตุการณ์ใหญ่ (รวบรวมหลาย Incident) (id, category, severity, status) |
 | **EventIncident** | ตารางเชื่อม (Join table) ผูก Incident ย่อยเข้ากับ Event ใหญ่ |

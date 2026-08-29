@@ -19,7 +19,10 @@
 - **Frontend:** ใช้ TypeScript เป็นหลัก (Nuxt 4 / Vue)
 - **Backend:** ใช้ JavaScript (Express.js)
 - **Layer Separation:** 
-  - Frontend: Component ห้ามมีตรรกะทางธุรกิจซับซ้อน ให้เรียกใช้ผ่าน Composables / Services
+  - Frontend: ใช้แนวคิด Container-Presentational Pattern (ดูรายละเอียดใน `12_Frontend_Folder_Structure.md`)
+    - **Pages (`pages/`):** Smart Containers รับผิดชอบเรื่อง Data Fetching / เรียก API / จัดการ State กลาง
+    - **Views (`components/desktop/` & `components/mobile/`):** Presentational Components รับ Props ไปเรนเดอร์ UI ตามขนาดหน้าจอ ห้ามยิง API ซ้ำซ้อน
+    - **Logic Reusability:** ใช้ Composables (`composables/`) จัดการ Shared Logic
   - Backend: ต้องแยกการทำงานเป็น Controller → Service → Repository เสมอ
     - **Controller**: มีหน้าที่รับ Request, ตรวจสอบ (Validate) ข้อมูลเบื้องต้น และส่ง Response กลับเท่านั้น **ห้ามเขียน Business Logic ใน Controller โดยเด็ดขาด**
     - **Service (Business Layer)**: เป็นที่อยู่ของ **Business Logic** หรือตรรกะทางธุรกิจทั้งหมด การทำงานที่ซับซ้อนต้องอยู่ในชั้นนี้

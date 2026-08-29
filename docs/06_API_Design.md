@@ -86,8 +86,13 @@ GeoSpread ใช้ **JSON Web Tokens (JWT)** สำหรับการยื�
 ```json
 {
   "success": false,
-  "message": "Validation failed: 'location' is required",
-  "data": null
+  "message": "Validation failed",
+  "errors": [
+    {
+      "field": "id",
+      "message": "User ID must be a valid positive integer"
+    }
+  ]
 }
 ```
 
@@ -119,7 +124,7 @@ GeoSpread ใช้ **JSON Web Tokens (JWT)** สำหรับการยื�
 |------|--------|
 | **ตรวจสอบอินพุตทั้งหมด** | Query parameters, path parameters และ request bodies จะต้องถูกตรวจสอบทั้งหมด |
 | **Fail fast** | ตอบกลับ `400 Bad Request` พร้อมข้อความแจ้งข้อผิดพลาดที่ชัดเจนทันทีเมื่อการตรวจสอบล้มเหลว |
-| **ไลบรารีการตรวจสอบ** | TODO: กำหนดไลบรารีที่จะใช้ (เช่น Zod, Joi, express-validator) |
+| **ไลบรารีการตรวจสอบ** | ใช้ `express-validator` ร่วมกับ custom middleware `validateRequest` |
 
 ---
 

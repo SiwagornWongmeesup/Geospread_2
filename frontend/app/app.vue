@@ -1,13 +1,19 @@
 <script setup lang="ts">
-
+// จุดเริ่มต้นของ Nuxt App
 </script>
 
 <template>
   <div>
-    <h1>hh</h1>
+    <NuxtPage />
   </div>
 </template>
 
-<style lang="scss" scoped>
-
+<style>
+/* Reset style พื้นฐาน */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background-color: #f8fafc;
+}
 </style>
