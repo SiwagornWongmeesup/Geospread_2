@@ -10,6 +10,7 @@
 2. [แนวทางการออกแบบ (Design Principles)](#2-แนวทางการออกแบบ-design-principles)
 3. [ข้อมูลเชิงพื้นที่ (Geospatial Strategy)](#3-ข้อมูลเชิงพื้นที่-geospatial-strategy)
 4. [เอนทิตีหลัก (Core Entities)](#4-เอนทิตีหลัก-core-entities)
+5. [แนวทางการปรับแก้โครงสร้างฐานข้อมูล (Schema Modification & Migration)](#5-แนวทางการปรับแก้โครงสร้างฐานข้อมูล-schema-modification--migration)
 
 ---
 
@@ -45,3 +46,67 @@
 | **HelpRequest** | คำขอความช่วยเหลือที่ระบุพิกัด (id, event_id, user_id, desc, location, status) |
 | **FollowedArea** | พื้นที่ หรือ Event ที่ผู้ใช้กดติดตาม (id, user_id, event_id, geometry) |
 | **Notification** | แจ้งเตือนของผู้ใช้ (id, user_id, type, message, read_at) |
+
+---
+
+## 5. แนวทางการปรับแก้โครงสร้างฐานข้อมูล (Schema Modification & Migration)
+
+เมื่อต้องการเพิ่มคอลัมน์ (Column) หรือแก้ไขโครงสร้างตารางเดิมในระบบที่มีข้อมูลอยู่แล้ว **ห้ามลบตารางทิ้ง (`DROP TABLE`)** ให้ใช้แนวทางดังต่อไปนี้:
+
+### 5.1 การเขียนคำสั่ง SQL (`ALTER TABLE`)
+
+ใช้คำสั่ง `ALTER TABLE` พร้อมเงื่อนไข `IF NOT EXISTS` เพื่อป้องกันข้อผิดพลาด:
+
+```sql
+-- ตัวอย่าง: เพิ่มคอลัมน์ในตาราง users โดยไม่ลบตารางและไม่กระทบข้อมูลเดิม
+ALTER TABLE users 
+ADD COLUMN IF NOT EXISTS phone VARCHAR(20),
+ADD COLUMN IF NOT EXISTS profile TEXT;
+```
+
+### 5.2 การสร้างไฟล์ Script และวิธีรัน (Migration Runner)
+
+ในโปรเจกต์นี้ แนะนำให้สร้างไฟล์ Migration Script ด้วย Node.js (เชื่อมต่อผ่าน `pg` Pool ที่มีอยู่แล้ว):
+
+1. **สร้างไฟล์:** `backend/db/migrate.js`
+   ```javascript
+   require('dotenv').config();
+   const { pool } = require('./db');
+
+   async function runMigration() {
+       const client = await pool.connect();
+       try {
+           console.log('⏳ กำลังรัน Migration...');
+           
+           // ใส่คำสั่ง SQL ที่ต้องการปรับปรุงโครงสร้าง
+           const sql = `
+               ALTER TABLE users 
+               ADD COLUMN IF NOT EXISTS phone VARCHAR(20),
+               ADD COLUMN IF NOT EXISTS profile TEXT;
+           `;
+
+           await client.query(sql);
+           console.log('✅ ปรับปรุงโครงสร้างฐานข้อมูลสำเร็จ (Migration Succeeded)!');
+       } catch (err) {
+           console.error('❌ เกิดข้อผิดพลาด:', err.message);
+       } finally {
+           client.release();
+           await pool.end();
+       }
+   }
+
+   runMigration();
+   ```
+
+2. **คำสั่งสำหรับรัน:**
+   ```bash
+   cd backend
+   node db/migrate.js
+   ```
+
+### 5.3 ข้อตกลงที่ต้องทำควบคู่กัน (Checklist)
+
+* [ ] รันคำสั่ง `ALTER TABLE` เพื่ออัปเดต Database จริง
+* [ ] อัปเดตไฟล์ `backend/db/schema.sql` ให้มีฟิลด์ใหม่ (รักษา Source of Truth)
+* [ ] อัปเดตเอกสาร `docs/05_Database_Design.md` ในตาราง Core Entities ให้มีฟิลด์ใหม่ตรงกัน
+

@@ -60,6 +60,41 @@ frontend/
 
 ---
 
+## 🎨 กฎการเขียน CSS (CSS Convention)
+
+| ✅ ทำ | ❌ ห้ามทำ |
+|---|---|
+| ใช้ `<style scoped>` ใน Component ย่อย (Desktop/Mobile) | ❌ ห้ามใช้ Inline Style (`style="..."`) ใน Template |
+| ใช้ class-based styling (`class="..."`) | ❌ ห้ามใช้ `:style="{ ... }"` สำหรับ static CSS |
+| เขียน CSS แยกไว้ด้านล่างไฟล์ `.vue` | ❌ ห้ามเขียน CSS ใน `<script>` |
+| ใช้ Dynamic class binding (`:class`) สำหรับ state-based styling | ❌ ห้ามยัด Tailwind utilities ยาวๆ ใน template เกิน 5 classes |
+
+### ตัวอย่างการเขียน CSS ที่ถูกต้อง:
+```vue
+<template>
+  <!-- ✅ ถูกต้อง: ใช้ class name ที่มีความหมาย -->
+  <div class="user-card">
+    <h2 class="user-card__name">{{ name }}</h2>
+  </div>
+</template>
+
+<style scoped>
+/* CSS เขียนแยกด้านล่าง — สะอาด อ่านง่าย */
+.user-card {
+  padding: 16px;
+  background: #ffffff;
+  border-radius: 8px;
+}
+
+.user-card__name {
+  font-size: 18px;
+  color: #0f172a;
+}
+</style>
+```
+
+---
+
 ## 🔄 ตัวอย่างรูปแบบการทำงาน (Data Flow Example)
 
 ### 1. Page หลัก (`app/pages/index.vue`) — เป็น Smart Container
@@ -67,7 +102,6 @@ frontend/
 
 ```vue
 <script setup lang="ts">
-import { useWindowSize } from '@vueuse/core';
 import DesktopMapLayout from '~/components/desktop/DesktopMapLayout.vue';
 import MobileMapLayout from '~/components/mobile/MobileMapLayout.vue';
 
@@ -75,8 +109,11 @@ import MobileMapLayout from '~/components/mobile/MobileMapLayout.vue';
 const { data: incidents, pending, refresh } = await useFetch('http://localhost:5000/incidents');
 
 // 2. เช็คขนาดหน้าจอ (Desktop หรือ Mobile)
-const { width } = useWindowSize();
-const isMobile = computed(() => width.value < 768);
+const windowWidth = ref(1024);
+const updateWidth = () => { windowWidth.value = window.innerWidth; };
+onMounted(() => { updateWidth(); window.addEventListener('resize', updateWidth); });
+onUnmounted(() => { window.removeEventListener('resize', updateWidth); });
+const isMobile = computed(() => windowWidth.value < 768);
 
 // 3. ฟังก์ชันจัดการเมื่อผู้ใช้กดสร้างเหตุการณ์
 const handleReportIncident = async (newIncidentData: any) => {
@@ -89,28 +126,35 @@ const handleReportIncident = async (newIncidentData: any) => {
 </script>
 
 <template>
-  <div>
+  <div class="page-wrapper">
     <!-- Render สำหรับ Mobile -->
-    <MobileMapLayout 
-      v-if="isMobile" 
-      :incidents="incidents" 
+    <MobileMapLayout
+      v-if="isMobile"
+      :incidents="incidents"
       :loading="pending"
-      @report="handleReportIncident" 
+      @report="handleReportIncident"
     />
 
     <!-- Render สำหรับ Desktop -->
-    <DesktopMapLayout 
-      v-else 
-      :incidents="incidents" 
+    <DesktopMapLayout
+      v-else
+      :incidents="incidents"
       :loading="pending"
-      @report="handleReportIncident" 
+      @report="handleReportIncident"
     />
   </div>
 </template>
+
+<style scoped>
+.page-wrapper {
+  min-height: 100vh;
+  background-color: #f1f5f9;
+}
+</style>
 ```
 
 ### 2. Desktop Component (`app/components/desktop/DesktopMapLayout.vue`)
-แสดงผลแบบ Split Screen (แถบ Sidebar ซ้าย + แผนที่ขวา):
+แสดงผลแบบ Split Screen (แถบ Sidebar ซ้าย + แผนที่ขวา) — **CSS อยู่ใน `<style scoped>`**:
 ```vue
 <script setup lang="ts">
 defineProps<{
@@ -122,23 +166,48 @@ defineEmits(['report']);
 </script>
 
 <template>
-  <div class="flex h-screen w-screen">
-    <!-- แถบด้านข้างซ้ายสำหรับ Desktop -->
-    <aside class="w-96 border-r overflow-y-auto p-4">
-      <h2 class="text-xl font-bold mb-4">รายการเหตุการณ์</h2>
+  <div class="desktop-layout">
+    <aside class="desktop-sidebar">
+      <h2 class="sidebar-title">รายการเหตุการณ์</h2>
       <!-- ลิสต์รายการ -->
     </aside>
 
-    <!-- แผนที่ด้านขวา -->
-    <main class="flex-1">
-      <div id="desktop-map" class="w-full h-full"></div>
+    <main class="desktop-map">
+      <div id="desktop-map"></div>
     </main>
   </div>
 </template>
+
+<style scoped>
+.desktop-layout {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+}
+
+.desktop-sidebar {
+  width: 24rem;
+  border-right: 1px solid #e2e8f0;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.sidebar-title {
+  font-size: 1.25rem;
+  font-weight: bold;
+  margin-bottom: 16px;
+}
+
+.desktop-map {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+}
+</style>
 ```
 
 ### 3. Mobile Component (`app/components/mobile/MobileMapLayout.vue`)
-แสดงผลแบบ แผนที่เต็มจอ + แผ่นดึงด้านล่าง (Bottom Sheet) + ปุ่มแจ้งเหตุด่วน (FAB):
+แสดงผลแบบ แผนที่เต็มจอ + แผ่นดึงด้านล่าง (Bottom Sheet) + ปุ่มแจ้งเหตุด่วน (FAB) — **CSS อยู่ใน `<style scoped>`**:
 ```vue
 <script setup lang="ts">
 defineProps<{
@@ -150,22 +219,71 @@ defineEmits(['report']);
 </script>
 
 <template>
-  <div class="relative h-screen w-screen overflow-hidden">
-    <!-- แผนที่เต็มจอสำหรับมือถือ -->
-    <div id="mobile-map" class="w-full h-full"></div>
+  <div class="mobile-layout">
+    <div id="mobile-map" class="mobile-map"></div>
 
-    <!-- ปุ่มแจ้งเหตุฉุกเฉินลอยตัว (Floating Action Button) -->
-    <button class="fixed bottom-20 right-4 bg-red-600 text-white rounded-full p-4 shadow-lg">
+    <button class="fab-button">
       🚨 แจ้งเหตุด่วน
     </button>
 
-    <!-- Bottom Sheet เลื่อนดูเหตุการณ์ -->
-    <div class="fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl p-4 shadow-xl max-h-[50vh] overflow-y-auto">
-      <div class="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-3"></div>
-      <h3 class="font-bold">เหตุการณ์ใกล้ตัวคุณ</h3>
+    <div class="bottom-sheet">
+      <div class="bottom-sheet__handle"></div>
+      <h3 class="bottom-sheet__title">เหตุการณ์ใกล้ตัวคุณ</h3>
     </div>
   </div>
 </template>
+
+<style scoped>
+.mobile-layout {
+  position: relative;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+.mobile-map {
+  width: 100%;
+  height: 100%;
+}
+
+.fab-button {
+  position: fixed;
+  bottom: 5rem;
+  right: 1rem;
+  background-color: #dc2626;
+  color: #ffffff;
+  border: none;
+  border-radius: 50%;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+}
+
+.bottom-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border-radius: 16px 16px 0 0;
+  padding: 16px;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.bottom-sheet__handle {
+  width: 48px;
+  height: 6px;
+  background: #d1d5db;
+  border-radius: 9999px;
+  margin: 0 auto 12px;
+}
+
+.bottom-sheet__title {
+  font-weight: bold;
+}
+</style>
 ```
 
 ---
@@ -174,3 +292,4 @@ defineEmits(['report']);
 1. **Separation of Concerns:** แยก Logic การดึงข้อมูล (API) ออกจาก Layout ทำให้ไม่งง
 2. **ปรับแต่ง UX ได้อิสระ:** การใช้งานแผนที่บนมือถือ (เน้นสัมผัส/Bottom Sheet) ต่างจาก Desktop (เน้น Sidebar/เมาส์คลิก) สองส่วนนี้จะไม่ปนและไม่กระทบกัน
 3. **ลดการยิง API ซ้ำ:** ทั้ง Mobile และ Desktop ใช้ข้อมูลชุดเดียวกันจาก Page หลัก
+4. **CSS สะอาดและเป็นระเบียบ:** ใช้ `<style scoped>` ใน Component ย่อย ทำให้ Template อ่านง่าย CSS ไม่หลุดไปกระทบ Component อื่น

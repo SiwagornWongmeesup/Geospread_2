@@ -16,50 +16,28 @@ const activeTab = ref<'register' | 'users'>('register');
 </script>
 
 <template>
-  <div style="max-width: 480px; margin: 20px auto; padding: 16px; font-family: sans-serif; background: #ffffff; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.06);">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+  <div class="mobile-container">
+    <div class="mobile-header">
       <div>
-        <h2 style="margin: 0; color: #0f172a; font-size: 18px;">📱 Mobile View</h2>
-        <span style="font-size: 12px; color: #64748b;">หน้าจอขนาดกะทัดรัด (สมาร์ตโฟน)</span>
+        <h2 class="mobile-title">📱 Mobile View</h2>
+        <span class="mobile-subtitle">หน้าจอขนาดกะทัดรัด (สมาร์ตโฟน)</span>
       </div>
-      <span style="background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold;">
-        Mobile Mode
-      </span>
+      <span class="mobile-badge">Mobile Mode</span>
     </div>
 
     <!-- Mobile Tabs -->
-    <div style="display: flex; background: #f1f5f9; padding: 4px; border-radius: 8px; margin-bottom: 16px;">
-      <button 
-        type="button" 
+    <div class="tabs">
+      <button
+        type="button"
         @click="activeTab = 'register'"
-        :style="{
-          flex: 1,
-          padding: '8px',
-          border: 'none',
-          borderRadius: '6px',
-          cursor: 'pointer',
-          fontWeight: activeTab === 'register' ? 'bold' : 'normal',
-          background: activeTab === 'register' ? '#ffffff' : 'transparent',
-          color: activeTab === 'register' ? '#0f172a' : '#64748b',
-          boxShadow: activeTab === 'register' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
-        }"
+        :class="['tab', activeTab === 'register' && 'tab--active']"
       >
         📝 สมัครสมาชิก
       </button>
-      <button 
-        type="button" 
+      <button
+        type="button"
         @click="activeTab = 'users'"
-        :style="{
-          flex: 1,
-          padding: '8px',
-          border: 'none',
-          borderRadius: '6px',
-          cursor: 'pointer',
-          fontWeight: activeTab === 'users' ? 'bold' : 'normal',
-          background: activeTab === 'users' ? '#ffffff' : 'transparent',
-          color: activeTab === 'users' ? '#0f172a' : '#64748b',
-          boxShadow: activeTab === 'users' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
-        }"
+        :class="['tab', activeTab === 'users' && 'tab--active']"
       >
         👥 รายชื่อ ({{ users.length }})
       </button>
@@ -68,24 +46,24 @@ const activeTab = ref<'register' | 'users'>('register');
     <!-- Tab 1: ฟอร์มสมัคร -->
     <div v-if="activeTab === 'register'">
       <form @submit.prevent="emit('submitRegister')">
-        <div style="margin-bottom: 10px;">
-          <label style="font-size: 12px; color: #475569;">Email *</label>
-          <input v-model="form.email" type="email" required style="width: 100%; padding: 10px; margin-top: 4px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-size: 14px;" placeholder="user@example.com" />
+        <div class="form-group">
+          <label class="form-label">Email *</label>
+          <input v-model="form.email" type="email" required class="form-input" placeholder="user@example.com" />
         </div>
 
-        <div style="margin-bottom: 10px;">
-          <label style="font-size: 12px; color: #475569;">Password *</label>
-          <input v-model="form.password" type="password" required style="width: 100%; padding: 10px; margin-top: 4px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-size: 14px;" placeholder="รหัสผ่าน" />
+        <div class="form-group">
+          <label class="form-label">Password *</label>
+          <input v-model="form.password" type="password" required class="form-input" placeholder="รหัสผ่าน" />
         </div>
 
-        <div style="margin-bottom: 10px;">
-          <label style="font-size: 12px; color: #475569;">ชื่อ (Name)</label>
-          <input v-model="form.name" type="text" style="width: 100%; padding: 10px; margin-top: 4px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-size: 14px;" placeholder="ชื่อของคุณ" />
+        <div class="form-group">
+          <label class="form-label">ชื่อ (Name)</label>
+          <input v-model="form.name" type="text" class="form-input" placeholder="ชื่อของคุณ" />
         </div>
 
-        <div style="margin-bottom: 14px;">
-          <label style="font-size: 12px; color: #475569;">เบอร์โทรศัพท์ (Phone)</label>
-          <input v-model="form.phone" type="tel" style="width: 100%; padding: 10px; margin-top: 4px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-size: 14px;" placeholder="เบอร์ติดต่อ" />
+        <div class="form-group form-group--last">
+          <label class="form-label">เบอร์โทรศัพท์ (Phone)</label>
+          <input v-model="form.phone" type="tel" class="form-input" placeholder="เบอร์ติดต่อ" />
         </div>
 
         <AppButton type="submit" :disabled="loading">
@@ -93,23 +71,165 @@ const activeTab = ref<'register' | 'users'>('register');
         </AppButton>
       </form>
 
-      <div v-if="message" :style="{ marginTop: '12px', padding: '10px', borderRadius: '6px', fontSize: '13px', backgroundColor: isError ? '#fee2e2' : '#dcfce7', color: isError ? '#dc2626' : '#16a34a' }">
+      <div v-if="message" :class="['alert', isError ? 'alert--error' : 'alert--success']">
         {{ message }}
       </div>
     </div>
 
     <!-- Tab 2: ลิสต์ Users -->
     <div v-else>
-      <div v-if="users.length === 0" style="padding: 20px; text-align: center; color: #94a3b8; font-size: 14px;">
+      <div v-if="users.length === 0" class="empty-state">
         ยังไม่มีรายชื่อในระบบ
       </div>
-      <div v-else style="display: flex; flex-direction: column; gap: 8px;">
-        <div v-for="user in users" :key="user.id" style="padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc;">
-          <div style="font-weight: 600; font-size: 14px; color: #0f172a;">{{ user.name || 'ไม่ระบุชื่อ' }}</div>
-          <div style="font-size: 12px; color: #64748b;">📧 {{ user.email }}</div>
-          <div v-if="user.phone" style="font-size: 12px; color: #64748b;">📞 {{ user.phone }}</div>
+      <div v-else class="user-list">
+        <div v-for="user in users" :key="user.id" class="user-card">
+          <div class="user-name">{{ user.name || 'ไม่ระบุชื่อ' }}</div>
+          <div class="user-detail">📧 {{ user.email }}</div>
+          <div v-if="user.phone" class="user-detail">📞 {{ user.phone }}</div>
         </div>
       </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+.mobile-container {
+  max-width: 480px;
+  margin: 20px auto;
+  padding: 16px;
+  font-family: sans-serif;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+}
+
+.mobile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.mobile-title {
+  margin: 0;
+  color: #0f172a;
+  font-size: 18px;
+}
+
+.mobile-subtitle {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.mobile-badge {
+  background: #fef3c7;
+  color: #92400e;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.tab {
+  flex: 1;
+  padding: 8px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: normal;
+  background: transparent;
+  color: #64748b;
+  box-shadow: none;
+  transition: all 0.2s ease;
+}
+
+.tab--active {
+  font-weight: bold;
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* ฟอร์ม */
+.form-group {
+  margin-bottom: 10px;
+}
+
+.form-group--last {
+  margin-bottom: 14px;
+}
+
+.form-label {
+  font-size: 12px;
+  color: #475569;
+}
+
+.form-input {
+  width: 100%;
+  padding: 10px;
+  margin-top: 4px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  box-sizing: border-box;
+  font-size: 14px;
+}
+
+/* Alert */
+.alert {
+  margin-top: 12px;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.alert--success {
+  background-color: #dcfce7;
+  color: #16a34a;
+}
+
+.alert--error {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+/* รายชื่อผู้ใช้ */
+.empty-state {
+  padding: 20px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.user-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.user-card {
+  padding: 10px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.user-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: #0f172a;
+}
+
+.user-detail {
+  font-size: 12px;
+  color: #64748b;
+}
+</style>

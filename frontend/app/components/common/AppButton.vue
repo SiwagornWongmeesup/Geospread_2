@@ -10,17 +10,51 @@ defineProps<{
   <button
     :type="type || 'button'"
     :disabled="disabled"
-    :class="[
-      'w-full py-2.5 px-4 rounded-lg font-medium transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed text-white',
-      variant === 'danger' ? 'bg-red-600 hover:bg-red-700' :
-      variant === 'secondary' ? 'bg-gray-600 hover:bg-gray-700' :
-      'bg-sky-600 hover:bg-sky-700'
-    ]"
-    style="padding: 10px 16px; border-radius: 6px; font-weight: 500; border: none; cursor: pointer; color: white;"
-    :style="{
-      backgroundColor: disabled ? '#94a3b8' : (variant === 'danger' ? '#dc2626' : (variant === 'secondary' ? '#475569' : '#0284c7'))
-    }"
+    :class="['app-btn', `app-btn--${variant || 'primary'}`]"
   >
     <slot />
   </button>
 </template>
+
+<style scoped>
+.app-btn {
+  width: 100%;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  color: #ffffff;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.app-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Variant: Primary (default) */
+.app-btn--primary {
+  background-color: #0284c7;
+}
+.app-btn--primary:hover:not(:disabled) {
+  background-color: #0369a1;
+}
+
+/* Variant: Danger */
+.app-btn--danger {
+  background-color: #dc2626;
+}
+.app-btn--danger:hover:not(:disabled) {
+  background-color: #b91c1c;
+}
+
+/* Variant: Secondary */
+.app-btn--secondary {
+  background-color: #475569;
+}
+.app-btn--secondary:hover:not(:disabled) {
+  background-color: #334155;
+}
+</style>

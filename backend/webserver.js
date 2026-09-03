@@ -2,12 +2,16 @@
 require('dotenv').config();
 const express = require('express');
 const app = express();
+const cors = require('cors');
 
 // 1. นำเข้า Routes จากโฟลเดอร์ src/routes
 const userRoutes = require('./src/routes/userRoutes');
 const errorHandler = require('./src/middlewares/errorHandler');
 
 app.use(express.json());
+app.use(cors({
+    origin: 'http://localhost:3000'
+}));
 
 
 app.use('/users', userRoutes);

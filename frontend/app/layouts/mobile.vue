@@ -1,0 +1,33 @@
+<template>
+  <!-- Mobile Layout Shell -->
+  <!-- ใช้เป็น wrapper สำหรับทุกหน้าเมื่อ layout = 'mobile' -->
+  <div class="mobile-shell">
+    <!-- Content Area (Scrollable) -->
+    <main class="mobile-shell__main">
+      <slot />
+    </main>
+
+    <!-- Bottom Navigation (Fixed ด้านล่าง) -->
+    <AppBottomNav />
+  </div>
+</template>
+
+<script setup lang="ts">
+import AppBottomNav from '~/components/mobile/AppBottomNav.vue'
+</script>
+
+<style scoped>
+.mobile-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f8fafc;
+  /* เว้นพื้นที่ด้านล่างสำหรับ Bottom Nav */
+  padding-bottom: 64px;
+}
+
+.mobile-shell__main {
+  flex: 1;
+  overflow-y: auto;
+}
+</style>
