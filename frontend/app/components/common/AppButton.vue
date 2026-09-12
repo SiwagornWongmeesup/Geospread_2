@@ -1,9 +1,9 @@
-<script setup lang="ts">
-defineProps<{
-  type?: 'button' | 'submit' | 'reset';
-  variant?: 'primary' | 'danger' | 'secondary';
-  disabled?: boolean;
-}>();
+<script setup>
+defineProps({
+  type: { type: String, default: 'button' },
+  variant: { type: String, default: 'primary' },
+  disabled: { type: Boolean, default: false }
+});
 </script>
 
 <template>

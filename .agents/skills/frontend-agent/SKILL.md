@@ -13,7 +13,7 @@ description: >-
 - Vue (Nuxt)
 - HTML
 - CSS/SCSS (Tailwind CSS)
-- JavaScript / TypeScript
+- JavaScript
 - Component
 - State Management
 - Event Handling

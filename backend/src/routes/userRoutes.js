@@ -1,15 +1,28 @@
 const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
+const { registerValidator, loginValidator, getUserByIdValidator } = require('../validators/userValidator');
+const authMiddleware = require('../middlewares/authMiddleware');
+const checkRole = require('../middlewares/checkRole');
 
-// Route: GET /users
-// หน้าที่: ดึงข้อมูลผู้ใช้งานทั้งหมด
-router.get('/', userController.getAllUsers);
+// ---------------------------------------------------------------------------
+// Public Routes (ไม่ต้อง login)
+// ---------------------------------------------------------------------------
 
-// Route: GET /users/:id
-// หน้าที่: ดึงข้อมูลผู้ใช้งานตาม ID
-// const { getUserByIdValidator } = require('../validators/userValidator');
-router.get('/:id', userController.getUserById);
-router.post('/', userController.createUser)
+// POST /users — สมัครสมาชิก
+router.post('/', registerValidator, userController.createUser);
+
+// POST /users/login — เข้าสู่ระบบ
+router.post('/login', loginValidator, userController.loginUser);
+
+// ---------------------------------------------------------------------------
+// Protected Routes (ต้อง login)
+// ---------------------------------------------------------------------------
+
+// GET /users — ดูรายชื่อผู้ใช้ทั้งหมด (เฉพาะ admin)
+router.get('/', authMiddleware, checkRole('admin'), userController.getAllUsers);
+
+// GET /users/:id — ดูข้อมูลผู้ใช้ตาม ID (ต้อง login)
+router.get('/:id', authMiddleware, getUserByIdValidator, userController.getUserById);
 
 module.exports = router;

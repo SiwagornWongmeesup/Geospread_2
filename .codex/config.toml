@@ -1,0 +1,5 @@
+# Keep delegation deliberate and bounded. Each custom agent below selects the
+# model and reasoning effort appropriate for its own job.
+[agents]
+enabled = true
+max_concurrent_threads_per_session = 2

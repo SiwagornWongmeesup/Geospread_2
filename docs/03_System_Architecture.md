@@ -17,7 +17,7 @@
 
 ### ฟรอนต์เอนด์ (Frontend)
 - **Nuxt 4 + Vue 3:** เฟรมเวิร์กหลัก
-- **TypeScript:** เพื่อความปลอดภัยด้าน Type
+- **JavaScript:** ภาษาหลักทั้ง Frontend และ Backend
 - **Tailwind CSS:** จัดการสไตล์
 - **Mapbox:** เรนเดอร์แผนที่
 

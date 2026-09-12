@@ -16,7 +16,7 @@
 
 ## 1. โครงสร้างโค้ด (Code Structure)
 
-- **Frontend:** ใช้ TypeScript เป็นหลัก (Nuxt 4 / Vue)
+- **Frontend:** ใช้ JavaScript เป็นหลัก (Nuxt 4 / Vue)
 - **Backend:** ใช้ JavaScript (Express.js)
 - **Layer Separation:** 
   - Frontend: ใช้แนวคิด Container-Presentational Pattern (ดูรายละเอียดใน `12_Frontend_Folder_Structure.md`)
@@ -31,7 +31,7 @@
 ## 2. มาตรฐานคุณภาพโค้ด (Code Quality Standards)
 
 ก่อนจะ Commit หรือ Merge โค้ด ต้องผ่านเกณฑ์ต่อไปนี้เสมอ:
-- [ ] ไม่มีข้อผิดพลาดจาก TypeScript (`tsc --noEmit`)
+- [ ] ไม่มีข้อผิดพลาดจาก JavaScript (ไม่มี syntax error)
 - [ ] ไม่มีข้อผิดพลาดหรือคำเตือนจาก ESLint
 - [ ] ไม่มีตัวแปรหรือ Imports ที่ไม่ได้ใช้งาน (Unused variables/imports)
 - [ ] ใช้ชื่อไฟล์ ตัวแปร และฟังก์ชันที่เป็น **ภาษาอังกฤษ** และสื่อความหมายชัดเจน

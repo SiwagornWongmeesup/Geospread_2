@@ -1,18 +1,17 @@
-<script setup lang="ts">
+<script setup>
 import { ref } from 'vue';
-import type { User } from '~/types/user';
 import AppButton from '../common/AppButton.vue';
 
-defineProps<{
-  users: User[];
-  loading: boolean;
-  form: { email: string; password: string; name: string; phone: string };
-  message: string;
-  isError: boolean;
-}>();
+defineProps({
+  users: { type: Array, default: () => [] },
+  loading: { type: Boolean, default: false },
+  form: { type: Object, required: true },
+  message: { type: String, default: '' },
+  isError: { type: Boolean, default: false }
+});
 
 const emit = defineEmits(['submitRegister']);
-const activeTab = ref<'register' | 'users'>('register');
+const activeTab = ref('register');
 </script>
 
 <template>

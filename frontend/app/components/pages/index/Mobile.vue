@@ -70,18 +70,8 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import MapboxMap from '~/components/MapboxMap.vue'
-
-defineProps<{
-  users?: any[]
-  loading?: boolean
-  form?: any
-  message?: string
-  isError?: boolean
-}>()
-
-defineEmits(['submitRegister'])
 </script>
 
 <style scoped>
@@ -91,7 +81,8 @@ defineEmits(['submitRegister'])
 .mobile-layout {
   position: relative;
   width: 100%;
-  height: 100dvh;
+  height: 100%;
+  min-height: 0;
   overflow: hidden;
   background: #0f172a;
   display: flex;

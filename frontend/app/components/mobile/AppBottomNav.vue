@@ -15,7 +15,7 @@
   </nav>
 </template>
 
-<script setup lang="ts">
+<script setup>
 // Mobile Bottom Navigation Component
 // จะเชื่อมต่อ useRouter() ในระยะต่อไป
 

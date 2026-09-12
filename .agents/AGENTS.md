@@ -7,7 +7,7 @@
 ## ข้อมูลโปรเจกต์ (Project Identity)
 
 **GeoSpread** คือ **แพลตฟอร์มแจ้งเตือนความปลอดภัยของชุมชนที่อิงตามตำแหน่ง (Location-based Community Safety Platform)**
-- ใช้ TypeScript ตลอดทั้งโปรเจกต์ (Frontend: TypeScript, Backend: JavaScript/TypeScript)
+- ใช้ JavaScript ตลอดทั้งโปรเจกต์ (Frontend: JavaScript, Backend: JavaScript)
 - ผู้ใช้รับการแจ้งเตือนแบบเรียลไทม์, แชทใน Event Room, และขอความช่วยเหลือได้
 - ข้อมูลมาจาก: รายงานจากชุมชน (Community Reports) เป็นหลัก
 
@@ -20,7 +20,7 @@
 | ส่วน (Layer) | เทคโนโลยี |
 |---|---|
 | Frontend Framework | Nuxt 4 + Vue 3 |
-| Frontend Language | TypeScript |
+| Frontend Language | JavaScript |
 | Frontend Styling | Tailwind CSS |
 | Map | Mapbox |
 | Backend Framework | Express.js |
@@ -53,6 +53,7 @@
 | อัปเดต `docs/06_API_Design.md` | ทุกครั้งที่มีการแก้ Endpoint |
 | อัปเดต `docs/05_Database_Design.md` | ทุกครั้งที่มีการแก้ Schema |
 | สร้างและนำเสนอ Plan ก่อนทำเรื่องซับซ้อน | ก่อนเริ่มเขียนโค้ดปรับแก้ครั้งใหญ่ |
+| ใช้ `$grill-with-docs` | ก่อนตัดสินใจเรื่องฟีเจอร์ข้ามระบบ หรือเมื่อ requirement ยังคลุมเครือ |
 
 ---
 
@@ -66,3 +67,13 @@
 - **การออกแบบ API:** `docs/06_API_Design.md`
 - **ฐานข้อมูล:** `docs/05_Database_Design.md`
 - **การจัดการของ AI:** `docs/10_AI_CONTEXT.md`
+
+---
+
+## Workflow สำหรับ Requirement และเอกสาร
+
+สำหรับงานที่มีผลต่อหลายส่วนของระบบ ให้เริ่มด้วย `$grill-with-docs` ก่อนออกแบบหรือเขียนโค้ด เพื่อถามและยืนยันการตัดสินใจเป็นรอบ ๆ โดยใช้เอกสาร GeoSpread ด้านบนเป็นข้อมูลตั้งต้น ไม่สร้างเอกสารสเปกซ้ำ
+
+- เก็บคำศัพท์ธุรกิจที่ตกลงแล้วไว้ที่ `CONTEXT.md` เฉพาะเมื่อมีคำศัพท์ใหม่ที่ชัดเจน; ไฟล์นี้เป็น glossary เท่านั้น ไม่ใช่ technical spec
+- เก็บการตัดสินใจที่ย้อนกลับยากและมี trade-off จริงเท่านั้นใน `docs/adr/`; สร้างเมื่อจำเป็น ไม่ต้องสร้างโฟลเดอร์ล่วงหน้า
+- หลังยืนยัน requirement แล้ว ค่อยเลือก agent ตามหน้าที่ (`project-manager` วางแผน, `frontend-agent`/`backend-agent` ลงมือ, `qa-agent` ตรวจสอบ)

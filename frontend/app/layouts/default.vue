@@ -12,20 +12,23 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import AppHeader from '~/components/desktop/AppHeader.vue'
 </script>
 
 <style scoped>
 .desktop-shell {
-  min-height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   background-color: #f1f5f9;
 }
 
 .desktop-shell__main {
   flex: 1;
+  min-height: 0;
   padding: 0;
+  overflow: hidden;
 }
 </style>

@@ -1,18 +1,66 @@
-// const { param } = require('express-validator');
-// const validateRequest = require('../middlewares/validateRequest');
+const { body, param } = require('express-validator');
+const validateRequest = require('../middlewares/validateRequest');
 
-// const getUserByIdValidator = [
-//     // ตรวจสอบว่า id ใน path parameter เป็นตัวเลข (หรือตาม schema ที่คุณใช้ เช่น UUID)
-//     // ในที่นี้สมมติให้รับ id แบบตัวเลขก่อน
-//     param('id')
-//         .notEmpty().withMessage('User ID is required')
-//         .isInt({ min: 1 }).withMessage('User ID must be a valid positive integer')
-//         .toInt(), // แปลงจาก string เป็น integer
-    
-//     // ใช้ middleware กลางเพื่อดักผลลัพธ์
-//     validateRequest
-// ];
+/**
+ * registerValidator
+ * -----------------------------------------------------------------------
+ * ใช้กับ POST /users (สมัครสมาชิก)
+ */
+const registerValidator = [
+    body('email')
+        .notEmpty().withMessage('กรุณากรอกอีเมล')
+        .isEmail().withMessage('รูปแบบอีเมลไม่ถูกต้อง')
+        .normalizeEmail(),
 
-// module.exports = {
-//     getUserByIdValidator
-// };
+    body('password')
+        .notEmpty().withMessage('กรุณากรอกรหัสผ่าน')
+        .isLength({ min: 8 }).withMessage('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร'),
+
+    body('name')
+        .optional()
+        .trim()
+        .isLength({ max: 100 }).withMessage('ชื่อต้องไม่เกิน 100 ตัวอักษร'),
+
+    body('phone')
+        .optional()
+        .isMobilePhone('th-TH').withMessage('เบอร์โทรศัพท์ไม่ถูกต้อง'),
+
+    validateRequest
+];
+
+/**
+ * loginValidator
+ * -----------------------------------------------------------------------
+ * ใช้กับ POST /users/login (เข้าสู่ระบบ)
+ */
+const loginValidator = [
+    body('email')
+        .notEmpty().withMessage('กรุณากรอกอีเมล')
+        .isEmail().withMessage('รูปแบบอีเมลไม่ถูกต้อง')
+        .normalizeEmail(),
+
+    body('password')
+        .notEmpty().withMessage('กรุณากรอกรหัสผ่าน'),
+
+    validateRequest
+];
+
+/**
+ * getUserByIdValidator
+ * -----------------------------------------------------------------------
+ * ใช้กับ GET /users/:id
+ */
+const getUserByIdValidator = [
+    param('id')
+        .notEmpty().withMessage('กรุณาระบุ User ID')
+        .isInt({ min: 1 }).withMessage('User ID ต้องเป็นตัวเลขที่มากกว่า 0')
+        .toInt(),
+
+    validateRequest
+];
+
+module.exports = {
+    registerValidator,
+    loginValidator,
+    getUserByIdValidator
+};

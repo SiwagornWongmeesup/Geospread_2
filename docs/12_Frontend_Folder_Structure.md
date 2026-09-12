@@ -1,6 +1,6 @@
 # โครงสร้างโฟลเดอร์ Frontend และสถาปัตยกรรม Component (Nuxt 4 + Vue 3)
 
-เอกสารนี้ใช้อ้างอิงสำหรับการจัดโครงสร้างโค้ดส่วนของ Frontend (Nuxt 4 + Vue 3 + TypeScript + Tailwind CSS) สำหรับโปรเจกต์ **GeoSpread**
+เอกสารนี้ใช้อ้างอิงสำหรับการจัดโครงสร้างโค้ดส่วนของ Frontend (Nuxt 4 + Vue 3 + JavaScript + Tailwind CSS) สำหรับโปรเจกต์ **GeoSpread**
 
 ---
 
@@ -14,7 +14,7 @@
    * ส่งข้อมูล (Props) และฟังก์ชัน (Callbacks) ต่อไปยัง View Component
 
 2. **Layer 2: Responsive Views (แยกหน้า Desktop และ Mobile ชัดเจน)**
-   * แยกโฟลเดอร์เป็น `components/desktop/` และ `components/mobile/`
+   * วาง View ของแต่ละหน้าไว้คู่กันที่ `components/pages/<route>/Desktop.vue` และ `Mobile.vue`
    * เป็น Presentational / Dumb Components: มีหน้าที่แค่รับ Props มา Render UI และ Emit Event กลับไปหา Page หลัก
    * **ห้ามยิง API ซ้ำซ้อนที่ระดับ Component แสดงผล** เพื่อป้องกันการยิง Request ซ้ำและทำให้โค้ดเป็นระเบียบ
 
@@ -33,28 +33,31 @@ frontend/
 │   │   └── events/
 │   │       └── [id].vue        # หน้า Event Room
 │   ├── components/             # คอมโพเนนต์แสดงผล (Presentational Views)
+│   │   ├── MapboxMap.vue       # ตัวเรนเดอร์แผนที่ที่ใช้ร่วมกัน
 │   │   ├── common/             # UI ทั่วไปที่ใช้ร่วมกัน (ปุ่ม, โมดอล, อินพุต, Badge)
 │   │   │   ├── AppButton.vue
 │   │   │   ├── AppModal.vue
 │   │   │   └── SeverityBadge.vue
-│   │   ├── desktop/            # ส่วนแสดงผลสำหรับหน้าจอ Desktop (Sidebar, Multi-panel)
-│   │   │   ├── DesktopHeader.vue
-│   │   │   ├── DesktopMapLayout.vue
-│   │   │   └── DesktopIncidentFeed.vue
-│   │   └── mobile/             # ส่วนแสดงผลสำหรับหน้าจอ Mobile (Bottom Sheet, FAB, Full-screen Map)
-│   │       ├── MobileBottomNav.vue
-│   │       ├── MobileBottomSheet.vue
-│   │       └── MobileIncidentCard.vue
+│   │   ├── desktop/            # Global desktop shell เช่น AppHeader
+│   │   ├── mobile/             # Global mobile shell เช่น AppBottomNav
+│   │   └── pages/              # View เฉพาะหน้า; CSS อยู่ในไฟล์ Desktop/Mobile ของหน้านั้น
+│   │       ├── index/
+│   │       │   ├── Desktop.vue
+│   │       │   └── Mobile.vue
+│   │       ├── login/
+│   │       │   ├── Desktop.vue
+│   │       │   └── Mobile.vue
+│   │       └── register/
+│   │           ├── Desktop.vue
+│   │           └── Mobile.vue
 │   ├── composables/            # Reusable Logic & API Calls (useAuth, useIncidents, useMap)
-│   │   ├── useAuth.ts
-│   │   ├── useIncident.ts
-│   │   └── useLocation.ts
-│   ├── types/                  # TypeScript Interfaces / Types (User, Incident, Event)
-│   │   └── index.ts
+│   │   ├── useAuth.js
+│   │   ├── useIncident.js
+│   │   └── useLocation.js
 │   └── assets/                 # สไตล์ CSS, รูปภาพ, ฟอนต์
 │       └── css/
 │           └── main.css
-├── nuxt.config.ts
+├── nuxt.config.js
 └── package.json
 ```
 
@@ -102,8 +105,8 @@ frontend/
 
 ```vue
 <script setup lang="ts">
-import DesktopMapLayout from '~/components/desktop/DesktopMapLayout.vue';
-import MobileMapLayout from '~/components/mobile/MobileMapLayout.vue';
+import DesktopView from '~/components/pages/index/Desktop.vue';
+import MobileView from '~/components/pages/index/Mobile.vue';
 
 // 1. ดึงข้อมูลจาก API (ทำที่ Page เดียวเท่านั้น)
 const { data: incidents, pending, refresh } = await useFetch('http://localhost:5000/incidents');
@@ -128,7 +131,7 @@ const handleReportIncident = async (newIncidentData: any) => {
 <template>
   <div class="page-wrapper">
     <!-- Render สำหรับ Mobile -->
-    <MobileMapLayout
+    <MobileView
       v-if="isMobile"
       :incidents="incidents"
       :loading="pending"
@@ -136,7 +139,7 @@ const handleReportIncident = async (newIncidentData: any) => {
     />
 
     <!-- Render สำหรับ Desktop -->
-    <DesktopMapLayout
+    <DesktopView
       v-else
       :incidents="incidents"
       :loading="pending"
@@ -153,7 +156,7 @@ const handleReportIncident = async (newIncidentData: any) => {
 </style>
 ```
 
-### 2. Desktop Component (`app/components/desktop/DesktopMapLayout.vue`)
+### 2. Desktop Component (`app/components/pages/index/Desktop.vue`)
 แสดงผลแบบ Split Screen (แถบ Sidebar ซ้าย + แผนที่ขวา) — **CSS อยู่ใน `<style scoped>`**:
 ```vue
 <script setup lang="ts">
@@ -206,7 +209,7 @@ defineEmits(['report']);
 </style>
 ```
 
-### 3. Mobile Component (`app/components/mobile/MobileMapLayout.vue`)
+### 3. Mobile Component (`app/components/pages/index/Mobile.vue`)
 แสดงผลแบบ แผนที่เต็มจอ + แผ่นดึงด้านล่าง (Bottom Sheet) + ปุ่มแจ้งเหตุด่วน (FAB) — **CSS อยู่ใน `<style scoped>`**:
 ```vue
 <script setup lang="ts">

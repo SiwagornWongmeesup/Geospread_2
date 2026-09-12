@@ -26,7 +26,7 @@
   </header>
 </template>
 
-<script setup lang="ts">
+<script setup>
 // Desktop Header Component
 // จะเชื่อมต่อ Auth Store และ Router ในระยะต่อไป
 </script>

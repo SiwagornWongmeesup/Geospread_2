@@ -1,14 +1,13 @@
-<script setup lang="ts">
-import type { User } from '~/types/user';
+<script setup>
 import AppButton from '../common/AppButton.vue';
 
-defineProps<{
-  users: User[];
-  loading: boolean;
-  form: { email: string; password: string; name: string; phone: string };
-  message: string;
-  isError: boolean;
-}>();
+defineProps({
+  users: { type: Array, default: () => [] },
+  loading: { type: Boolean, default: false },
+  form: { type: Object, required: true },
+  message: { type: String, default: '' },
+  isError: { type: Boolean, default: false }
+});
 
 const emit = defineEmits(['submitRegister']);
 </script>

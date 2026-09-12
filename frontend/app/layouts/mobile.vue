@@ -12,22 +12,25 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import AppBottomNav from '~/components/mobile/AppBottomNav.vue'
 </script>
 
 <style scoped>
 .mobile-shell {
-  min-height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   background-color: #f8fafc;
+  overflow: hidden;
   /* เว้นพื้นที่ด้านล่างสำหรับ Bottom Nav */
   padding-bottom: 64px;
+  box-sizing: border-box;
 }
 
 .mobile-shell__main {
   flex: 1;
-  overflow-y: auto;
+  min-height: 0;
+  overflow: hidden;
 }
 </style>

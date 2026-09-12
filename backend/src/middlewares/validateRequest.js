@@ -1,21 +1,30 @@
-// const { validationResult } = require('express-validator');
-// const AppError = require('../utils/AppError');
+const { validationResult } = require('express-validator');
+const AppError = require('../utils/AppError');
 
-// const validateRequest = (req, res, next) => {
-//     const errors = validationResult(req);
-//     if (!errors.isEmpty()) {
-//         // จัดรูปแบบ error ให้อ่านง่ายขึ้น (array of { field, message })
-//         const formattedErrors = errors.array().map(err => ({
-//             field: err.path,
-//             message: err.msg
-//         }));
+/**
+ * validateRequest
+ * -----------------------------------------------------------------------
+ * Middleware กลาง: ดักผลลัพธ์จาก express-validator
+ * ต้องวางหลัง validator array เสมอใน route
+ *
+ * ตัวอย่างการใช้งาน:
+ *   router.post('/', registerValidator, validateRequest, controller.create)
+ * -----------------------------------------------------------------------
+ */
+const validateRequest = (req, res, next) => {
+    const errors = validationResult(req);
 
-//         // โยน AppError กลับไปพร้อม status 400
-//         return next(new AppError('Validation failed', 400, formattedErrors));
-//     }
-    
-//     // ถ้าผ่านหมด ให้ไปทำงานต่อ
-//     next();
-// };
+    if (!errors.isEmpty()) {
+        // จัดรูปแบบ error ให้อ่านง่าย: [{ field, message }]
+        const formattedErrors = errors.array().map(err => ({
+            field: err.path,
+            message: err.msg
+        }));
 
-// module.exports = validateRequest;
+        return next(new AppError('Validation failed', 400, formattedErrors));
+    }
+
+    next();
+};
+
+module.exports = validateRequest;

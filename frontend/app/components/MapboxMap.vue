@@ -2,26 +2,20 @@
   <div ref="mapContainer" class="w-full h-full min-h-[400px] rounded-lg overflow-hidden shadow-lg border border-gray-200 dark:border-gray-700"></div>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 
 const config = useRuntimeConfig()
-const mapContainer = ref<HTMLElement | null>(null)
-let map: mapboxgl.Map | null = null
+const mapContainer = ref(null)
+let map = null
 
 // Props for map configuration
-const props = defineProps({
-  center: {
-    type: Array as PropType<[number, number]>,
-    default: () => [100.5018, 13.7563] // Default: Bangkok
-  },
-  zoom: {
-    type: Number,
-    default: 10
-  }
-})
+const props = withDefaults(defineProps({
+  center: { type: Array, default: () => [100.5018, 13.7563] },
+  zoom: { type: Number, default: 10 }
+}), {})
 
 onMounted(() => {
   if (!config.public.mapboxToken) {

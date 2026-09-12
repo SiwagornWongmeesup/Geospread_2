@@ -1,5 +1,6 @@
 const userRepository = require('../repositories/userRepository');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const AppError = require('../utils/AppError');
 
 const getAllUsers = async () => {
@@ -46,8 +47,40 @@ const createUser = async (userData) => {
 
 
 
+const loginUser = async ({ email, password }) => {
+    // 1. หา user จาก email
+    const user = await userRepository.getUserByEmail(email);
+    if (!user) {
+        throw new AppError('อีเมลหรือรหัสผ่านไม่ถูกต้อง', 401);
+    }
+
+    // 2. เปรียบเทียบรหัสผ่าน
+    const isPasswordValid = await bcrypt.compare(String(password), user.password);
+    if (!isPasswordValid) {
+        throw new AppError('อีเมลหรือรหัสผ่านไม่ถูกต้อง', 401);
+    }
+
+    // 3. สร้าง JWT Token
+    const token = jwt.sign(
+        { id: user.id, email: user.email, role: user.role },
+        process.env.JWT_SECRET,
+        { expiresIn: '7d' }
+    );
+
+    // 4. ส่งกลับ token + ข้อมูล user (ไม่ส่ง password)
+    return {
+        token,
+        user: {
+            id: user.id,
+            email: user.email,
+            role: user.role
+        }
+    };
+};
+
 module.exports = {
     getAllUsers,
     getUserById,
-    createUser
+    createUser,
+    loginUser
 };

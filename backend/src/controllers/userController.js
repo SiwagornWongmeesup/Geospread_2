@@ -43,8 +43,23 @@ const createUser = async (req, res, next) => {
         next(error);
     }
 }
+const loginUser = async (req, res, next) => {
+    try {
+        const result = await userService.loginUser(req.body);
+
+        res.status(200).json({
+            success: true,
+            message: 'เข้าสู่ระบบสำเร็จ',
+            data: result
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getAllUsers,
     getUserById,
-    createUser
+    createUser,
+    loginUser
 };

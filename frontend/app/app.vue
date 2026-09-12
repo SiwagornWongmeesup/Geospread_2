@@ -1,11 +1,7 @@
-<script setup lang="ts">
-// จุดเริ่มต้นของ Nuxt App
-</script>
-
 <template>
-  <div>
+  <NuxtLayout>
     <NuxtPage />
-  </div>
+  </NuxtLayout>
 </template>
 
 <style>
