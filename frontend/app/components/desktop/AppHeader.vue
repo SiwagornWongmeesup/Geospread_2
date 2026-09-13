@@ -5,7 +5,7 @@
     <div class="app-header__inner">
       <!-- Logo + Brand -->
       <div class="app-header__brand">
-        <span class="app-header__logo">🌍</span>
+        
         <span class="app-header__name">GeoSpread</span>
         <span class="app-header__tagline">Community Safety Platform</span>
       </div>

@@ -12,10 +12,10 @@ const mapContainer = ref(null)
 let map = null
 
 // Props for map configuration
-const props = withDefaults(defineProps({
+const props = defineProps({
   center: { type: Array, default: () => [100.5018, 13.7563] },
   zoom: { type: Number, default: 10 }
-}), {})
+})
 
 onMounted(() => {
   if (!config.public.mapboxToken) {
