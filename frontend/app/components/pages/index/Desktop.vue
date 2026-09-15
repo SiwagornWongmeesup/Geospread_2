@@ -1,38 +1,110 @@
 <template>
-  <div class="desktop-layout">
-    <main class="map-area">
+  <div class="desktop-home">
+    <section class="desktop-home__map" aria-label="แผนที่เหตุการณ์">
       <MapboxMap
-        :center="[100.5018, 13.7563]"
-        :zoom="12"
-        class="map-area__map"
+        :center="[98.9853, 18.7883]"
+        :zoom="11"
+        class="desktop-home__map-canvas"
       />
-    </main>
+      <div class="desktop-home__map-label">
+        <span class="desktop-home__map-pulse" aria-hidden="true" />
+        พื้นที่เชียงใหม่
+      </div>
+    </section>
+
+    <NearbyIncidents
+      :selected-incident-id="selectedIncident?.id"
+      @select="selectIncident"
+    />
+
+    <div class="desktop-home__lower-grid">
+      <HelpRequests />
+      <RecentActivity />
+    </div>
   </div>
 </template>
 
 <script setup>
 import MapboxMap from '~/components/MapboxMap.vue'
+import HelpRequests from '~/components/dashboard/HelpRequests.vue'
+import NearbyIncidents from '~/components/dashboard/NearbyIncidents.vue'
+import RecentActivity from '~/components/dashboard/RecentActivity.vue'
+
+const { selectedIncident, selectIncident } = useHomeDashboard()
 </script>
 
 <style scoped>
-.desktop-layout {
+.desktop-home {
+  display: grid;
+  gap: 1rem;
+  min-height: 100%;
+  padding: 1.25rem;
+  background: #f5f8fc;
+}
+
+.desktop-home__map {
+  position: relative;
+  width: 100%;
+  height: clamp(22rem, 42vh, 30rem);
+  min-height: 25rem;
+  overflow: hidden;
+  border: 1px solid #dce6f2;
+  border-radius: 1rem;
+  background: #dceef1;
+  box-shadow: 0 8px 24px rgb(36 75 122 / 10%);
+}
+
+.desktop-home__map-canvas {
   width: 100%;
   height: 100%;
   min-height: 0;
-  overflow: hidden;
-  background: #0f172a;
 }
 
-.map-area {
-  width: 100%;
-  height: 100%;
+.desktop-home__map-label {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid #d8e5f4;
+  border-radius: 0.625rem;
+  background: rgb(255 255 255 / 94%);
+  color: #173a75;
+  font-size: 0.875rem;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgb(26 58 108 / 12%);
+  pointer-events: none;
 }
 
-.map-area__map {
-  width: 100%;
-  height: 100%;
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
+.desktop-home__map-pulse {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 50%;
+  background: #1479ef;
+  box-shadow: 0 0 0 4px rgb(20 121 239 / 16%);
+}
+
+.desktop-home__lower-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.92fr);
+  gap: 1rem;
+}
+
+@media (max-width: 72rem) {
+  .desktop-home__lower-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 48rem) {
+  .desktop-home {
+    padding: 1rem;
+  }
+
+  .desktop-home__map {
+    min-height: 20rem;
+  }
 }
 </style>

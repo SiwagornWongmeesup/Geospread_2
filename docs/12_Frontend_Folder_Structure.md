@@ -6,14 +6,20 @@
 
 ## 🏛️ แนวคิดสถาปัตยกรรม (Architecture Concept)
 
-เพื่อรองรับการใช้งานทั้งบน **Desktop (จอคอมพิวเตอร์)** และ **Mobile (สมาร์ตโฟน)** ซึ่งมีพฤติกรรมการใช้งานและ Layout ที่ต่างกันมากในระบบแผนที่และเหตุการณ์ฉุกเฉิน เราจึงแบ่งสถาปัตยกรรมออกเป็น **2 เลเยอร์หลัก (Container-Presentational Pattern)**:
+เพื่อรองรับการใช้งานทั้งบน **Desktop (จอคอมพิวเตอร์)** และ **Mobile (สมาร์ตโฟน)** ซึ่งมีพฤติกรรมการใช้งานและ Layout ที่ต่างกันมากในระบบแผนที่และเหตุการณ์ฉุกเฉิน เราจึงแบ่งสถาปัตยกรรมออกเป็น **3 เลเยอร์** โดย Nuxt Layout เป็นเจ้าของ shell ของแอปเพียงจุดเดียว:
 
-1. **Layer 1: Pages / Smart Containers (ศูนย์กลางข้อมูลและ API)**
+1. **Layer 1: Nuxt Layout Shell (Chrome ที่ใช้ร่วมกัน)**
+   * อยู่ใน `app/layouts/default.vue` สำหรับ Desktop และ `app/layouts/mobile.vue` สำหรับ Mobile
+   * `default.vue` เป็นเจ้าของ Header, Sidebar, Main `<slot />` และ Right Panel เพียงชุดเดียว
+   * Component ใน `components/layout/` เป็นชิ้นส่วนของ shell; ห้ามสร้าง shell ซ้อนอีกชั้นใน `components/AppLayout.vue`
+
+2. **Layer 2: Pages / Smart Containers (ศูนย์กลางข้อมูลและ API)**
    * อยู่ใน `app/pages/` หรือ `app/app.vue`
    * ทำหน้าที่เรียก API (`$fetch`, `useFetch`, Composables), จัดการ State กลาง, และจัดการ Business Events
    * ส่งข้อมูล (Props) และฟังก์ชัน (Callbacks) ต่อไปยัง View Component
+   * หน้าที่ต้องแสดง Right Panel กำหนดด้วย `definePageMeta({ showRightPanel: true })`; ปัจจุบันคือ Home และ Map
 
-2. **Layer 2: Responsive Views (แยกหน้า Desktop และ Mobile ชัดเจน)**
+3. **Layer 3: Responsive Views (แยกหน้า Desktop และ Mobile ชัดเจน)**
    * วาง View ของแต่ละหน้าไว้คู่กันที่ `components/pages/<route>/Desktop.vue` และ `Mobile.vue`
    * เป็น Presentational / Dumb Components: มีหน้าที่แค่รับ Props มา Render UI และ Emit Event กลับไปหา Page หลัก
    * **ห้ามยิง API ซ้ำซ้อนที่ระดับ Component แสดงผล** เพื่อป้องกันการยิง Request ซ้ำและทำให้โค้ดเป็นระเบียบ
@@ -26,20 +32,32 @@
 frontend/
 ├── app/
 │   ├── app.vue                 # จุดเริ่มต้นของแอปพลิเคชัน
+│   ├── layouts/                 # Nuxt application shell (มี slot เพียงชั้นเดียวต่อ route)
+│   │   ├── default.vue          # Desktop: Header + Sidebar + Main + Right Panel
+│   │   └── mobile.vue           # Mobile: Main + Bottom Navigation
 │   ├── pages/                  # หน้าต่างๆ (Smart Containers / API Fetching)
 │   │   ├── index.vue           # หน้าหลัก (Live Map & Incident Feed)
+│   │   ├── map.vue
+│   │   ├── incidents.vue
+│   │   ├── report-incident.vue
 │   │   ├── login.vue           # หน้าเข้าสู่ระบบ
 │   │   ├── register.vue        # หน้าสมัครสมาชิก
 │   │   └── events/
 │   │       └── [id].vue        # หน้า Event Room
 │   ├── components/             # คอมโพเนนต์แสดงผล (Presentational Views)
 │   │   ├── MapboxMap.vue       # ตัวเรนเดอร์แผนที่ที่ใช้ร่วมกัน
+│   │   ├── layout/             # ส่วนย่อยของ Nuxt Layout เท่านั้น
+│   │   │   ├── AppHeader.vue
+│   │   │   ├── AppSidebar.vue
+│   │   │   └── AppRightPanel.vue
 │   │   ├── common/             # UI ทั่วไปที่ใช้ร่วมกัน (ปุ่ม, โมดอล, อินพุต, Badge)
 │   │   │   ├── AppButton.vue
 │   │   │   ├── AppModal.vue
 │   │   │   └── SeverityBadge.vue
-│   │   ├── desktop/            # Global desktop shell เช่น AppHeader
 │   │   ├── mobile/             # Global mobile shell เช่น AppBottomNav
+│   │   ├── dashboard/          # ส่วนประกอบข้อมูลของ Dashboard
+│   │   ├── incidents/          # ส่วนประกอบของ Incident
+│   │   ├── report/             # ส่วนประกอบของการแจ้งเหตุ
 │   │   └── pages/              # View เฉพาะหน้า; CSS อยู่ในไฟล์ Desktop/Mobile ของหน้านั้น
 │   │       ├── index/
 │   │       │   ├── Desktop.vue
@@ -60,6 +78,14 @@ frontend/
 ├── nuxt.config.js
 └── package.json
 ```
+
+### กฎสำคัญเพื่อไม่ให้ Layout ซ้ำ
+
+- `app.vue` เรียก `<NuxtLayout><NuxtPage /></NuxtLayout>` เพียงครั้งเดียว
+- `layouts/default.vue` และ `layouts/mobile.vue` คือไฟล์เดียวที่มี Main `<slot />` สำหรับ shell ของแอป
+- `components/layout/` ห้ามมี `<slot />` ระดับหน้าหลัก และห้ามมี component ชื่อ `AppLayout.vue` ซ้ำกับ Nuxt Layout
+- Login และ Register ใช้ `definePageMeta({ layout: false })` ได้ เพราะไม่ใช่ Dashboard
+- `components/pages/<route>/Desktop.vue` และ `Mobile.vue` แสดงเฉพาะเนื้อหาของ route นั้น ห้ามวาง Header, Sidebar หรือ Right Panel ซ้ำ
 
 ---
 
@@ -157,7 +183,7 @@ const handleReportIncident = async (newIncidentData: any) => {
 ```
 
 ### 2. Desktop Component (`app/components/pages/index/Desktop.vue`)
-แสดงผลแบบ Split Screen (แถบ Sidebar ซ้าย + แผนที่ขวา) — **CSS อยู่ใน `<style scoped>`**:
+แสดงเฉพาะเนื้อหาของหน้าจอ Desktop เช่นแผนที่ — Header, Sidebar และ Right Panel อยู่ที่ `app/layouts/default.vue` แล้ว จึงไม่ต้องสร้างซ้ำใน component หน้านี้:
 ```vue
 <script setup lang="ts">
 defineProps<{
@@ -169,42 +195,15 @@ defineEmits(['report']);
 </script>
 
 <template>
-  <div class="desktop-layout">
-    <aside class="desktop-sidebar">
-      <h2 class="sidebar-title">รายการเหตุการณ์</h2>
-      <!-- ลิสต์รายการ -->
-    </aside>
-
-    <main class="desktop-map">
-      <div id="desktop-map"></div>
-    </main>
-  </div>
+  <main class="desktop-map">
+    <div id="desktop-map"></div>
+  </main>
 </template>
 
 <style scoped>
-.desktop-layout {
-  display: flex;
-  height: 100vh;
-  width: 100vw;
-}
-
-.desktop-sidebar {
-  width: 24rem;
-  border-right: 1px solid #e2e8f0;
-  overflow-y: auto;
-  padding: 16px;
-}
-
-.sidebar-title {
-  font-size: 1.25rem;
-  font-weight: bold;
-  margin-bottom: 16px;
-}
-
 .desktop-map {
-  flex: 1;
+  height: 100vh;
   width: 100%;
-  height: 100%;
 }
 </style>
 ```
