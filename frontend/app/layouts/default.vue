@@ -49,7 +49,6 @@ const toggleSidebar = () => {
 
 .desktop-shell__body {
   --sidebar-width: 16.5rem;
-
   flex: 1;
   display: grid;
   min-height: 0;

@@ -1,126 +1,111 @@
 <template>
   <!-- Mobile Register UI -->
   <div class="mobile-register">
-
     <!-- Background Glow -->
     <div class="mobile-register__glow" />
-
     <div class="mobile-register__content">
-
       <!-- Logo -->
       <div class="mobile-logo">
         <span class="mobile-logo__icon">📍</span>
-        <h1 class="mobile-logo__title">GEO<span class="mobile-logo__accent">SPREAD</span></h1>
-        <p class="mobile-logo__tagline">ร่วมเป็นส่วนหนึ่งของเครือข่ายการช่วยเหลือ</p>
-      </div>
-
-      <!-- Card -->
-      <div class="mobile-card">
-
-        <!-- Google Button -->
-        <button type="button" class="google-btn">
-          <svg width="18" height="18" viewBox="0 0 24 24">
-            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
-            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-          </svg>
-          <span>Sign up with Google</span>
-        </button>
-
-        <!-- Divider -->
-        <div class="divider">
-          <span class="divider__line" />
-          <span class="divider__text">หรือสมัครด้วยอีเมล</span>
-          <span class="divider__line" />
-        </div>
-
-        <!-- Form -->
-        <form @submit.prevent="emit('submitRegister')">
-
-          <!-- Error Alert -->
-          <div v-if="error" class="error-alert">⚠️ {{ error }}</div>
-
-          <div class="field">
-            <div class="field__wrap">
-              <span class="field__icon">👤</span>
-              <input
-                id="mobile-reg-name"
-                v-model="form.name"
-                type="text"
-                required
-                placeholder="ชื่อผู้ใช้งาน"
-                class="field__input"
-              />
-            </div>
-          </div>
-
-          <div class="field">
-            <div class="field__wrap">
-              <span class="field__icon">✉️</span>
-              <input
-                id="mobile-reg-email"
-                v-model="form.email"
-                type="email"
-                required
-                placeholder="อีเมลของคุณ"
-                class="field__input"
-              />
-            </div>
-          </div>
-
-          <div class="field">
-            <div class="field__wrap">
-              <span class="field__icon">🔒</span>
-              <input
-                id="mobile-reg-password"
-                v-model="form.password"
-                type="password"
-                required
-                placeholder="รหัสผ่าน (อย่างน้อย 8 ตัว)"
-                class="field__input"
-              />
-            </div>
-          </div>
-
-          <!-- Terms Checkbox -->
-          <label class="terms-label">
-            <div class="terms-checkbox-wrap">
-              <input
-                id="mobile-reg-terms"
-                type="checkbox"
-                :checked="acceptTerms"
-                @change="emit('update:acceptTerms', $event.target.checked)"
-                class="terms-checkbox"
-              />
-              <span class="terms-checkmark">✓</span>
-            </div>
-            <span class="terms-text">
-              ฉันยอมรับ
-              <NuxtLink to="/terms" class="terms-link">เงื่อนไขการใช้งาน</NuxtLink>
-              และนโยบายความเป็นส่วนตัว
-            </span>
-          </label>
-
-          <button
-            id="mobile-reg-btn"
-            type="submit"
-            :disabled="loading"
-            class="submit-btn"
-          >
-            {{ loading ? 'กำลังสร้างบัญชี...' : 'สร้างบัญชีใหม่' }}
-          </button>
-
-        </form>
-      </div>
-
-      <p class="mobile-register__footer">
-        มีบัญชีอยู่แล้ว?
-        <NuxtLink to="/login" class="link">เข้าสู่ระบบ</NuxtLink>
-      </p>
-
+        <h1 class="mobile-logo__title">GEO<span class="mobile-logo__accent">SPREAD</span>
+      </h1>
+      <p class="mobile-logo__tagline">ร่วมเป็นส่วนหนึ่งของเครือข่ายการช่วยเหลือ</p>
     </div>
+    <!-- Card -->
+    <div class="mobile-card">
+      <!-- Google Button -->
+      <button type="button" class="google-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24">
+          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+        </svg>
+        <span>Sign up with Google</span>
+      </button>
+      <!-- Divider -->
+      <div class="divider">
+        <span class="divider__line" />
+        <span class="divider__text">หรือสมัครด้วยอีเมล</span>
+        <span class="divider__line" />
+      </div>
+      <!-- Form -->
+      <form @submit.prevent="emit('submitRegister')">
+        <!-- Error Alert -->
+        <div v-if="error" class="error-alert">⚠️ {{ error }}</div>
+        <div class="field">
+          <div class="field__wrap">
+            <span class="field__icon">👤</span>
+            <input
+            id="mobile-reg-name"
+            v-model="form.name"
+            type="text"
+            required
+            placeholder="ชื่อผู้ใช้งาน"
+            class="field__input"
+            />
+          </div>
+        </div>
+        <div class="field">
+          <div class="field__wrap">
+            <span class="field__icon">✉️</span>
+            <input
+            id="mobile-reg-email"
+            v-model="form.email"
+            type="email"
+            required
+            placeholder="อีเมลของคุณ"
+            class="field__input"
+            />
+          </div>
+        </div>
+        <div class="field">
+          <div class="field__wrap">
+            <span class="field__icon">🔒</span>
+            <input
+            id="mobile-reg-password"
+            v-model="form.password"
+            type="password"
+            required
+            placeholder="รหัสผ่าน (อย่างน้อย 8 ตัว)"
+            class="field__input"
+            />
+          </div>
+        </div>
+        <!-- Terms Checkbox -->
+        <label class="terms-label">
+          <div class="terms-checkbox-wrap">
+            <input
+            id="mobile-reg-terms"
+            type="checkbox"
+            :checked="acceptTerms"
+            @change="emit('update:acceptTerms', $event.target.checked)"
+            class="terms-checkbox"
+            />
+            <span class="terms-checkmark">✓</span>
+          </div>
+          <span class="terms-text">
+            ฉันยอมรับ
+            <NuxtLink to="/terms" class="terms-link">เงื่อนไขการใช้งาน</NuxtLink>
+            และนโยบายความเป็นส่วนตัว
+          </span>
+        </label>
+        <button
+          id="mobile-reg-btn"
+          type="submit"
+          :disabled="loading"
+          class="submit-btn"
+          >
+          {{ loading ? 'กำลังสร้างบัญชี...' : 'สร้างบัญชีใหม่' }}
+        </button>
+      </form>
+    </div>
+    <p class="mobile-register__footer">
+      มีบัญชีอยู่แล้ว?
+      <NuxtLink to="/login" class="link">เข้าสู่ระบบ</NuxtLink>
+    </p>
   </div>
+</div>
 </template>
 
 <script setup>
@@ -135,9 +120,8 @@ const emit = defineEmits(['submitRegister', 'update:acceptTerms'])
 </script>
 
 <style scoped>
-/* ==============================
-   Layout
-   ============================== */
+/* ============================== Layout ============================== */
+
 .mobile-register {
   min-height: 100dvh;
   background: #0f172a;
@@ -171,9 +155,8 @@ const emit = defineEmits(['submitRegister', 'update:acceptTerms'])
   z-index: 1;
 }
 
-/* ==============================
-   Logo
-   ============================== */
+/* ============================== Logo ============================== */
+
 .mobile-logo {
   text-align: center;
 }
@@ -203,9 +186,8 @@ const emit = defineEmits(['submitRegister', 'update:acceptTerms'])
   margin: 0;
 }
 
-/* ==============================
-   Card
-   ============================== */
+/* ============================== Card ============================== */
+
 .mobile-card {
   width: 100%;
   background: #1e293b;
@@ -214,9 +196,8 @@ const emit = defineEmits(['submitRegister', 'update:acceptTerms'])
   padding: 24px 20px;
 }
 
-/* ==============================
-   Google Button
-   ============================== */
+/* ============================== Google Button ============================== */
+
 .google-btn {
   width: 100%;
   display: flex;
@@ -238,9 +219,8 @@ const emit = defineEmits(['submitRegister', 'update:acceptTerms'])
   background: #f1f5f9;
 }
 
-/* ==============================
-   Divider
-   ============================== */
+/* ============================== Divider ============================== */
+
 .divider {
   display: flex;
   align-items: center;
@@ -262,9 +242,8 @@ const emit = defineEmits(['submitRegister', 'update:acceptTerms'])
   white-space: nowrap;
 }
 
-/* ==============================
-   Error Alert
-   ============================== */
+/* ============================== Error Alert ============================== */
+
 .error-alert {
   padding: 11px 14px;
   background: rgba(239, 68, 68, 0.12);
@@ -275,9 +254,8 @@ const emit = defineEmits(['submitRegister', 'update:acceptTerms'])
   margin-bottom: 14px;
 }
 
-/* ==============================
-   Form Fields
-   ============================== */
+/* ============================== Form Fields ============================== */
+
 .field {
   margin-bottom: 12px;
 }
@@ -317,9 +295,8 @@ const emit = defineEmits(['submitRegister', 'update:acceptTerms'])
   color: #475569;
 }
 
-/* ==============================
-   Terms Checkbox
-   ============================== */
+/* ============================== Terms Checkbox ============================== */
+
 .terms-label {
   display: flex;
   align-items: flex-start;
@@ -380,9 +357,8 @@ const emit = defineEmits(['submitRegister', 'update:acceptTerms'])
   font-weight: 600;
 }
 
-/* ==============================
-   Submit Button
-   ============================== */
+/* ============================== Submit Button ============================== */
+
 .submit-btn {
   width: 100%;
   padding: 15px;
@@ -408,9 +384,8 @@ const emit = defineEmits(['submitRegister', 'update:acceptTerms'])
   cursor: not-allowed;
 }
 
-/* ==============================
-   Footer
-   ============================== */
+/* ============================== Footer ============================== */
+
 .mobile-register__footer {
   font-size: 13px;
   color: #64748b;

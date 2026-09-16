@@ -35,25 +35,31 @@ defineProps({
 }
 
 /* Variant: Primary (default) */
+
 .app-btn--primary {
   background-color: #0284c7;
 }
+
 .app-btn--primary:hover:not(:disabled) {
   background-color: #0369a1;
 }
 
 /* Variant: Danger */
+
 .app-btn--danger {
   background-color: #dc2626;
 }
+
 .app-btn--danger:hover:not(:disabled) {
   background-color: #b91c1c;
 }
 
 /* Variant: Secondary */
+
 .app-btn--secondary {
   background-color: #475569;
 }
+
 .app-btn--secondary:hover:not(:disabled) {
   background-color: #334155;
 }

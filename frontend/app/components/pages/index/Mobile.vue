@@ -75,9 +75,8 @@ import MapboxMap from '~/components/MapboxMap.vue'
 </script>
 
 <style scoped>
-/* ==============================
-   Layout
-   ============================== */
+/* ============================== Layout ============================== */
+
 .mobile-layout {
   position: relative;
   width: 100%;
@@ -89,9 +88,8 @@ import MapboxMap from '~/components/MapboxMap.vue'
   flex-direction: column;
 }
 
-/* ==============================
-   Header
-   ============================== */
+/* ============================== Header ============================== */
+
 .mobile-header {
   position: absolute;
   top: 0;
@@ -149,9 +147,8 @@ import MapboxMap from '~/components/MapboxMap.vue'
   justify-content: center;
 }
 
-/* ==============================
-   Map
-   ============================== */
+/* ============================== Map ============================== */
+
 .mobile-map-wrapper {
   flex: 1;
   position: absolute;
@@ -168,9 +165,8 @@ import MapboxMap from '~/components/MapboxMap.vue'
   box-shadow: none !important;
 }
 
-/* ==============================
-   Bottom Sheet
-   ============================== */
+/* ============================== Bottom Sheet ============================== */
+
 .bottom-sheet {
   position: absolute;
   bottom: 0;
@@ -215,9 +211,8 @@ import MapboxMap from '~/components/MapboxMap.vue'
   border-radius: 10px;
 }
 
-/* ==============================
-   Mobile Event Cards
-   ============================== */
+/* ============================== Mobile Event Cards ============================== */
+
 .bottom-sheet__events {
   display: flex;
   flex-direction: column;
@@ -241,9 +236,17 @@ import MapboxMap from '~/components/MapboxMap.vue'
   background: rgba(255, 255, 255, 0.08);
 }
 
-.mobile-event--danger  { border-left-color: #ef4444; }
-.mobile-event--warning { border-left-color: #f59e0b; }
-.mobile-event--info    { border-left-color: #3b82f6; }
+.mobile-event--danger {
+  border-left-color: #ef4444;
+}
+
+.mobile-event--warning {
+  border-left-color: #f59e0b;
+}
+
+.mobile-event--info {
+  border-left-color: #3b82f6;
+}
 
 .mobile-event__icon {
   font-size: 22px;
@@ -272,9 +275,8 @@ import MapboxMap from '~/components/MapboxMap.vue'
   color: #475569;
 }
 
-/* ==============================
-   Report Button
-   ============================== */
+/* ============================== Report Button ============================== */
+
 .mobile-report-btn {
   width: 100%;
   padding: 14px;

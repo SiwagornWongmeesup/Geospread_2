@@ -20,6 +20,14 @@ _Avoid_: Admin Dashboard, Control Panel
 เหตุการณ์ด้านความปลอดภัยหรือภัยพิบัติที่ผูกกับตำแหน่งและมีสถานะการยืนยันของข้อมูล
 _Avoid_: News, Alert เมื่อหมายถึงตัวเหตุการณ์
 
+**Incident Report**:
+ข้อมูลเหตุการณ์ที่ Community User กรอกเพื่อแจ้งเหตุแก่ชุมชนและระบบ โดยมีประเภท ระดับความรุนแรง รายละเอียด สื่อประกอบ และตำแหน่งเป็นข้อมูลสำคัญ
+_Avoid_: Complaint, Ticket
+
+**Severity Level**:
+ระดับผลกระทบของ Incident Report ที่ Community User เลือกจาก ต่ำ ปานกลาง สูง และวิกฤต
+_Avoid_: Priority เมื่อไม่ได้หมายถึงลำดับการจัดการของเจ้าหน้าที่
+
 **Nearby Incident**:
 Incident ที่ถูกจัดลำดับให้ Community User เห็นก่อน เพราะอยู่ใกล้ตำแหน่งปัจจุบันหรือ Followed Location
 _Avoid_: Local News

@@ -12,7 +12,7 @@ const navigationItems = [
   { label: 'หน้าหลัก', to: '/' },
   { label: 'เหตุการณ์', to: '/incidents' },
   { label: 'คำขอความช่วยเหลือ', to: '/help-requests' },
-  { label: 'แจ้งเหตุ', to: '/report-incident', emphasis: true },
+  { label: 'แจ้งเหตุ', to: '/report-incident'},
   { label: 'พื้นที่ที่ติดตาม', to: '/followed-locations' },
   { label: 'การแจ้งเตือน', to: '/notifications' },
   { label: 'คู่มือความปลอดภัย', to: '/safety-guide' },

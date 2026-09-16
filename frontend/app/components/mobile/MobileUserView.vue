@@ -130,6 +130,7 @@ const activeTab = ref('register');
 }
 
 /* Tabs */
+
 .tabs {
   display: flex;
   background: #f1f5f9;
@@ -159,6 +160,7 @@ const activeTab = ref('register');
 }
 
 /* ฟอร์ม */
+
 .form-group {
   margin-bottom: 10px;
 }
@@ -183,6 +185,7 @@ const activeTab = ref('register');
 }
 
 /* Alert */
+
 .alert {
   margin-top: 12px;
   padding: 10px;
@@ -201,6 +204,7 @@ const activeTab = ref('register');
 }
 
 /* รายชื่อผู้ใช้ */
+
 .empty-state {
   padding: 20px;
   text-align: center;

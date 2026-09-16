@@ -57,13 +57,15 @@ onUnmounted(() => {
 })
 
 // Watch for prop changes to update map
-watch(() => props.center, (newCenter) => {
+watch(() => props.center,
+(newCenter) => {
   if (map) {
     map.flyTo({ center: newCenter })
   }
 })
 
-watch(() => props.zoom, (newZoom) => {
+watch(() => props.zoom,
+(newZoom) => {
   if (map) {
     map.zoomTo(newZoom)
   }

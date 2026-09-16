@@ -1,5 +1,7 @@
 <template>
-  <aside class="app-right-panel" aria-label="ข้อมูลเสริม">
+  <ReportIncidentRightPanel v-if="isReportIncident" />
+
+  <aside v-else class="app-right-panel" aria-label="ข้อมูลเสริม">
     <section class="app-right-panel__section">
       <h2>ดำเนินการด่วน</h2>
 
@@ -57,6 +59,7 @@
 <script setup>
 import { computed } from 'vue'
 import TodaySummary from '~/components/dashboard/TodaySummary.vue'
+import ReportIncidentRightPanel from '~/components/report/ReportIncidentRightPanel.vue'
 
 const route = useRoute()
 const { selectedIncident, clearSelectedIncident } = useHomeDashboard()
@@ -73,6 +76,7 @@ const followedLocations = [
 ]
 
 const showSafetyGuide = computed(() => route.path === '/' && selectedIncident.value)
+const isReportIncident = computed(() => route.path === '/report-incident')
 </script>
 
 <style scoped>
@@ -124,18 +128,178 @@ const showSafetyGuide = computed(() => route.path === '/' && selectedIncident.va
   transform: translateY(-2px);
 }
 
-.app-right-panel__actions svg { width: 1.9rem; height: 1.9rem; }
-.app-right-panel__actions strong { font-size: 0.8rem; line-height: 1.3; }
-.app-right-panel__actions span { font-size: 0.67rem; line-height: 1.35; }
-.action-card--report { background: #ee343d; }.action-card--help { background: #1377e9; }
-.app-right-panel__section-heading { display: flex; align-items: start; justify-content: space-between; gap: 0.5rem; }
-.app-right-panel__section-heading h2 { margin-bottom: 0.6rem; }
-.app-right-panel__text-link { color: #1479ef; font-size: 0.74rem; font-weight: 700; text-decoration: none; }
-.app-right-panel__text-link:hover { text-decoration: underline; }
-.followed-locations { display: grid; gap: 0.55rem; margin: 0; padding: 0; list-style: none; }
-.followed-locations li { display: grid; grid-template-columns: 2rem minmax(0, 1fr) auto; align-items: center; gap: 0.45rem; }
-.followed-locations__marker { display: grid; width: 2rem; height: 2rem; place-items: center; border-radius: 50%; background: #e6f1ff; color: #1479ef; font-size: 0.76rem; font-weight: 800; }
-.followed-locations__details { display: grid; min-width: 0; gap: 0.1rem; }.followed-locations__details strong { overflow: hidden; color: #294265; font-size: 0.72rem; text-overflow: ellipsis; white-space: nowrap; }.followed-locations__details small { overflow: hidden; color: #7b8ba2; font-size: 0.63rem; text-overflow: ellipsis; white-space: nowrap; }
-.followed-locations li > a { padding: 0.35rem 0.45rem; border-radius: 0.35rem; background: #eaf3ff; color: #1479ef; font-size: 0.61rem; font-weight: 700; text-decoration: none; }.followed-locations li > a:hover { background: #d9ebff; }
-.safety-guide { border-color: #bcd9fc; background: #f7fbff; }.safety-guide__eyebrow { margin: 0 0 0.2rem; color: #5c7da6; font-size: 0.66rem; }.safety-guide__title { margin: 0 0 0.55rem; color: #304b70; font-size: 0.76rem; font-weight: 700; line-height: 1.4; }.safety-guide button { display: grid; width: 1.4rem; height: 1.4rem; padding: 0; place-items: center; border: 0; border-radius: 50%; background: #e3eefb; color: #37618f; cursor: pointer; }.safety-guide button svg { width: 0.85rem; height: 0.85rem; }.safety-guide button:hover { background: #d1e4fb; }.safety-guide ol { display: grid; gap: 0.35rem; margin: 0 0 0.7rem; padding-left: 1.1rem; color: #405878; font-size: 0.72rem; line-height: 1.45; }.safety-guide__link { display: block; padding: 0.5rem; border-radius: 0.45rem; background: #1479ef; color: #fff; font-size: 0.72rem; font-weight: 700; text-align: center; text-decoration: none; }.safety-guide__link:hover { background: #096bdc; }
+.app-right-panel__actions svg {
+  width: 1.9rem;
+  height: 1.9rem;
+}
+
+.app-right-panel__actions strong {
+  font-size: 0.8rem;
+  line-height: 1.3;
+}
+
+.app-right-panel__actions span {
+  font-size: 0.67rem;
+  line-height: 1.35;
+}
+
+.action-card--report {
+  background: #ee343d;
+}
+
+.action-card--help {
+  background: #1377e9;
+}
+
+.app-right-panel__section-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.app-right-panel__section-heading h2 {
+  margin-bottom: 0.6rem;
+}
+
+.app-right-panel__text-link {
+  color: #1479ef;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.app-right-panel__text-link:hover {
+  text-decoration: underline;
+}
+
+.followed-locations {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.followed-locations li {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.followed-locations__marker {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border-radius: 50%;
+  background: #e6f1ff;
+  color: #1479ef;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.followed-locations__details {
+  display: grid;
+  min-width: 0;
+  gap: 0.1rem;
+}
+
+.followed-locations__details strong {
+  overflow: hidden;
+  color: #294265;
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.followed-locations__details small {
+  overflow: hidden;
+  color: #7b8ba2;
+  font-size: 0.63rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.followed-locations li > a {
+  padding: 0.35rem 0.45rem;
+  border-radius: 0.35rem;
+  background: #eaf3ff;
+  color: #1479ef;
+  font-size: 0.61rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.followed-locations li > a:hover {
+  background: #d9ebff;
+}
+
+.safety-guide {
+  border-color: #bcd9fc;
+  background: #f7fbff;
+}
+
+.safety-guide__eyebrow {
+  margin: 0 0 0.2rem;
+  color: #5c7da6;
+  font-size: 0.66rem;
+}
+
+.safety-guide__title {
+  margin: 0 0 0.55rem;
+  color: #304b70;
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.safety-guide button {
+  display: grid;
+  width: 1.4rem;
+  height: 1.4rem;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: #e3eefb;
+  color: #37618f;
+  cursor: pointer;
+}
+
+.safety-guide button svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.safety-guide button:hover {
+  background: #d1e4fb;
+}
+
+.safety-guide ol {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0 0 0.7rem;
+  padding-left: 1.1rem;
+  color: #405878;
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.safety-guide__link {
+  display: block;
+  padding: 0.5rem;
+  border-radius: 0.45rem;
+  background: #1479ef;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+}
+
+.safety-guide__link:hover {
+  background: #096bdc;
+}
 </style>

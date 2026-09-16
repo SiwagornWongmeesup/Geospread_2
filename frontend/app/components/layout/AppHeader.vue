@@ -62,6 +62,7 @@
 }
 
 /* Logo */
+
 .app-header__brand {
   display: flex;
   align-items: center;
@@ -95,6 +96,7 @@
 }
 
 /* Search */
+
 .app-header__search {
   flex: 1;
   height: 40px;
@@ -136,6 +138,7 @@
 }
 
 /* Location */
+
 .location-button {
   height: 40px;
   display: flex;
@@ -157,6 +160,7 @@
 }
 
 /* Notification */
+
 .notification-button {
   position: relative;
   width: 40px;
@@ -186,6 +190,7 @@
 }
 
 /* Profile */
+
 .app-header__profile {
   display: flex;
   align-items: center;
