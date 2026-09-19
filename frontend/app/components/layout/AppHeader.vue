@@ -1,13 +1,13 @@
 <template>
   <header class="app-header">
-    <div class="app-header__brand">
+    <NuxtLink to="/" class="app-header__brand">
       <img src="/logo.png" alt="GeoSpread Logo" class="app-header__logo-img" />
 
       <div class="app-header__brand-text">
         <span class="app-header__name">GeoSpread</span>
         <span class="app-header__tagline">Safer Communities Together</span>
       </div>
-    </div>
+    </NuxtLink>
 
     <div class="app-header__search">
       <span class="search-icon">⌕</span>
@@ -17,32 +17,73 @@
       />
     </div>
 
-    <button class="location-button">
-      <span>📍</span>
-      Chiang Mai
-      <span class="arrow">⌄</span>
-    </button>
+   
 
-    <button class="notification-button" aria-label="Notifications">
-      ♧
-      <span class="notification-badge">3</span>
-    </button>
+  
+    <template v-if="isLoggedIn">
+       <button class="location-button">
+        <span>📍</span>
+        Chiang Mai
+        <span class="arrow">⌄</span>
+      </button>
+      <button class="notification-button" aria-label="Notifications">
+        ♧
+        <span class="notification-badge">3</span>
+      </button>
 
-    <div class="app-header__profile">
-      <img src="" alt="Siwagorn profile" class="profile-image" />
+      <div class="app-header__profile" title="คลิกเพื่อออกจากระบบ" @click="handleLogout">
+        <div class="profile-avatar">
+          {{ userInitial }}
+        </div>
 
-      <div class="profile-info">
-        <span class="welcome-text">Welcome</span>
-        <strong>Siwagorn</strong>
+        <div class="profile-info">
+          <span class="welcome-text">ยินดีต้อนรับ</span>
+          <strong>{{ userDisplayName }}</strong>
+        </div>
+
+        <button class="logout-button" type="button">
+          ออกจากระบบ
+        </button>
       </div>
+    </template>
 
-      <span class="arrow">⌄</span>
-    </div>
+  
+    <template v-else>
+      <div class="auth-buttons">
+        <button type="button" class="btn-login" @click="goToLogin">เข้าสู่ระบบ</button>
+        <NuxtLink to="/register" class="btn-register">สมัครสมาชิก</NuxtLink>
+      </div>
+    </template>
   </header>
 </template>
 
 <script setup>
-// เชื่อมต่อ Router / Auth / Notifications ภายหลังได้
+import { computed } from 'vue'
+import { useAuth } from '~/composables/useAuth'
+
+const router = useRouter()
+const { isLoggedIn, getUser, logout } = useAuth()
+
+const goToLogin = () => {
+  navigateTo('/login') 
+}
+
+const currentUser = computed(() => getUser()?.user)
+
+const userDisplayName = computed(() => {
+  if (!currentUser.value) return 'ผู้ใช้งาน'
+  return currentUser.value.name || currentUser.value.email?.split('@')[0] || 'ผู้ใช้งาน'
+})
+
+const userInitial = computed(() => {
+  return userDisplayName.value.charAt(0).toUpperCase()
+})
+
+const handleLogout = () => {
+  if (confirm('คุณต้องการออกจากระบบใช่หรือไม่?')) {
+    logout()
+  }
+}
 </script>
 
 <style scoped>
@@ -68,6 +109,7 @@
   align-items: center;
   gap: 8px;
   min-width: 242px;
+  text-decoration: none;
 }
 
 .app-header__logo-img {
@@ -194,17 +236,29 @@
 .app-header__profile {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 10px;
+  padding: 4px 8px;
+  border-radius: 10px;
   cursor: pointer;
+  transition: background 0.15s ease;
 }
 
-.profile-image {
-  width: 42px;
-  height: 42px;
+.app-header__profile:hover {
+  background: #f2f6fd;
+}
+
+.profile-avatar {
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid #ffffff;
-  box-shadow: 0 2px 8px rgba(31, 74, 142, 0.15);
+  background: linear-gradient(135deg, #1479ef, #0b2372);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+  box-shadow: 0 2px 8px rgba(20, 121, 239, 0.25);
 }
 
 .profile-info {
@@ -218,6 +272,62 @@
 .welcome-text {
   color: #6576a5;
   font-size: 11px;
+}
+
+.logout-button {
+  margin-left: 4px;
+  padding: 6px 12px;
+  border: 1px solid #dbe5ef;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #e53935;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.15s ease;
+}
+
+.logout-button:hover {
+  background: #ffebee;
+  border-color: #ffcdd2;
+}
+
+/* Auth Buttons (กรณี Guest) */
+
+.auth-buttons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-login,
+.btn-register {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: 0.15s ease;
+}
+
+.btn-login {
+  color: #1479ef;
+  background: #f0f6ff;
+  border: 1px solid #cce3ff;
+}
+
+.btn-login:hover {
+  background: #e0eeff;
+}
+
+.btn-register {
+  color: #ffffff;
+  background: #1479ef;
+  box-shadow: 0 2px 8px rgba(20, 121, 239, 0.3);
+}
+
+.btn-register:hover {
+  background: #0d63cc;
 }
 
 .arrow {

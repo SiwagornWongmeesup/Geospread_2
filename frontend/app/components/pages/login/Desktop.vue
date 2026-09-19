@@ -1,17 +1,7 @@
 <template>
   <main class="login-page">
-    <header class="login-nav">
-      <NuxtLink to="/" class="brand">
-        <img src="/logo.png" alt="" />
-        <span>GeoSpread<small>Safer Communities Together</small>
-      </span>
-    </NuxtLink>
-    <nav>
-      <NuxtLink to="/login" class="active">เข้าสู่ระบบ</NuxtLink>
-      <NuxtLink to="/register">สมัครสมาชิก</NuxtLink>
-    </nav>
-  </header>
-  <div class="login-layout">
+    <AppHeader />
+    <div class="login-layout">
     <section class="visual" aria-labelledby="visual-title">
       <img src="/login-community-background.png" alt="ภาพชุมชนไทยและสถานการณ์ภัยพิบัติ" />
       <div class="visual__wash" />
@@ -22,10 +12,10 @@
     </section>
     <section class="form-area" aria-labelledby="login-title">
       <div class="form-card">
-        <div class="form-brand">
+        <NuxtLink to="/" class="form-brand">
           <img src="/logo.png" alt="GeoSpread" />
           <span>GeoSpread</span>
-        </div>
+        </NuxtLink>
         <h2 id="login-title">เข้าสู่ระบบ</h2>
         <p class="intro">ยินดีต้อนรับกลับสู่ GeoSpread</p>
         <form @submit.prevent="emit('submitLogin')">
@@ -54,6 +44,8 @@
 </template>
 
 <script setup>
+import AppHeader from '~/components/layout/AppHeader.vue'
+
 defineProps({
   form: { type: Object,
   required: true },
@@ -178,6 +170,7 @@ const emit = defineEmits(['submitLogin'])
   gap: .4rem;
   color: #0b2372;
   font-weight: 800;
+  text-decoration: none;
 }
 .form-brand img {
   width: 1.9rem;

@@ -66,7 +66,7 @@ const { selectedIncident, clearSelectedIncident } = useHomeDashboard()
 
 const quickActions = [
   { label: 'รายงานเหตุการณ์', description: 'แจ้งสิ่งที่คุณพบ', to: '/report-incident', tone: 'report', icon: 'M12 2a2 2 0 0 1 1.8 1.12l8 16A2 2 0 0 1 20 22H4a2 2 0 0 1-1.8-2.88l8-16A2 2 0 0 1 12 2Zm0 5.5a1 1 0 0 0-1 1v5a1 1 0 1 0 2 0v-5a1 1 0 0 0-1-1Zm0 9a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5Z' },
-  { label: 'ขอความช่วยเหลือ', description: 'ขอแรงสนับสนุนจากชุมชน', to: '/help-requests', tone: 'help', icon: 'M12 21.35 10.55 20C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09A5.5 5.5 0 0 1 16.5 3C19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.51L12 21.35Z' },
+  { label: 'ขอความช่วยเหลือ', description: 'ขอแรงสนับสนุนจากชุมชน', to: '/request-help', tone: 'help', icon: 'M12 21.35 10.55 20C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09A5.5 5.5 0 0 1 16.5 3C19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.51L12 21.35Z' },
 ]
 
 const followedLocations = [

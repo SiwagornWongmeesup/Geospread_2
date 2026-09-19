@@ -16,6 +16,13 @@
       </div>
     </fieldset>
 
+    <label class="report-incident-form__section report-incident-form__details">
+      <span>{{ isOtherType ? 'รายละเอียดเหตุการณ์อื่น' : 'รายละเอียดเหตุการณ์' }}</span>
+      <small>{{ isOtherType ? 'ระบุประเภทเหตุการณ์ที่พบ และอธิบายสถานการณ์เพิ่มเติม' : 'ระบุสิ่งที่เกิดขึ้น จุดสังเกต และผลกระทบที่พบ' }}</small>
+      <textarea v-model="details" rows="5" maxlength="500" :placeholder="detailsPlaceholder" />
+      <em>{{ details.length }}/500</em>
+    </label>
+
     <fieldset class="report-incident-form__section">
       <legend>ระดับความรุนแรง</legend>
       <p>ประเมินจากผลกระทบที่เกิดขึ้น ณ ตอนนี้</p>
@@ -26,13 +33,6 @@
         </button>
       </div>
     </fieldset>
-
-    <label class="report-incident-form__section report-incident-form__details">
-      <span>รายละเอียดเหตุการณ์</span>
-      <small>ระบุสิ่งที่เกิดขึ้น จุดสังเกต และผลกระทบที่พบ</small>
-      <textarea v-model="details" rows="5" maxlength="500" placeholder="เช่น มีน้ำท่วมขังบนถนน รถสัญจรลำบาก และเริ่มมีผู้ต้องการความช่วยเหลือ" />
-      <em>{{ details.length }}/500</em>
-    </label>
 
     <section class="report-incident-form__section report-incident-form__upload" aria-labelledby="upload-heading">
       <h2 id="upload-heading">แนบรูปภาพหรือวิดีโอ <span>(ไม่บังคับ)</span></h2>
@@ -53,7 +53,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { reportIncidentTypes, useReportIncident } from '~/composables/useReportIncident'
 
 const { selectedTypeId, selectedSeverityId } = useReportIncident()
@@ -61,6 +61,10 @@ const details = ref('')
 const fileInput = ref(null)
 const selectedFileName = ref('')
 const feedback = ref('')
+const isOtherType = computed(() => selectedTypeId.value === 'other')
+const detailsPlaceholder = computed(() => isOtherType.value
+  ? 'เช่น ไฟฟ้าดับทั้งชุมชน มีผู้สูงอายุต้องใช้อุปกรณ์ไฟฟ้า'
+  : 'เช่น มีน้ำท่วมขังบนถนน รถสัญจรลำบาก และเริ่มมีผู้ต้องการความช่วยเหลือ')
 
 const severities = [
   { id: 'low', label: 'ต่ำ', description: 'ผลกระทบเล็กน้อย' },
@@ -76,6 +80,7 @@ const iconPaths = {
   wildfire: 'M13.6 2.5c.2 3.4-2.6 4.7-3.2 7.4-.2.9 0 1.9.6 2.7-2.8-.4-4.2-2.7-3.7-5.3-2.7 2-4.3 5.1-4.3 8.1A9 9 0 1 0 20 11.2c-1.3-3.8-4.8-5.8-6.4-8.7Zm-1.7 18a3.4 3.4 0 0 1-3.3-4.2c.3-1.5 1.4-2.4 2.4-3.5.5 1.2 1.7 1.8 1.7 3.4 0 .9.5 1.7 1.1 2.2a3.4 3.4 0 0 1-1.9 2.1Z',
   tsunami: 'M3 16c1.7 0 1.7-1.7 3.4-1.7S8.1 16 9.8 16s1.7-1.7 3.4-1.7 1.7 1.7 3.4 1.7 1.7-1.7 3.4-1.7v2.2c-1.7 0-1.7 1.7-3.4 1.7s-1.7-1.7-3.4-1.7-1.7 1.7-3.4 1.7-1.7-1.7-3.4-1.7S4.7 20 3 20v-4Zm1-4.5c1.7-4.3 5.2-6.5 10.5-6.5 3.1 0 5.3.9 6.5 2.6-3.4-.5-5.7.1-7.1 1.8-1.8-1.1-3.7-.9-5.8.6-1 .7-2.4 1.2-4.1 1.5Z',
   earthquake: 'M5 3h14v7l-2-1.4V14h-2v-3.9l-3-2.1-3 2.1V14H7V8.6L5 10V3Zm5 11h4v7h-4v-7Zm-5 2h3v5H5v-5Zm11 0h3v5h-3v-5Z',
+  other: 'M5 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm7 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm7 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z',
 }
 
 const typeIcon = (type) => iconPaths[type]

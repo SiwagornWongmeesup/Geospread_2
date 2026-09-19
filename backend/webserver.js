@@ -10,7 +10,8 @@ const errorHandler = require('./src/middlewares/errorHandler');
 
 app.use(express.json());
 app.use(cors({
-    origin: 'http://localhost:3000'
+    origin: 'http://localhost:3000',
+    credentials: true //เพื่อให้ตัวserverยอมรับการส่งCookieจากหน้าบ้าน
 }));
 
 

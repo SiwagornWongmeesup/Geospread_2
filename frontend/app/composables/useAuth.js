@@ -35,6 +35,7 @@ export const useAuth = () => {
 
       return true
     } catch (err) {
+      console.log('Login Error Detail:', err?.data || err)
       error.value = err?.data?.message || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง'
       return false
     } finally {

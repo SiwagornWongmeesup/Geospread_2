@@ -1,17 +1,7 @@
 <template>
   <main class="register-page">
-    <header class="register-nav">
-      <NuxtLink to="/" class="brand">
-        <img src="/logo.png" alt="" />
-        <span>GeoSpread<small>Safer Communities Together</small>
-      </span>
-    </NuxtLink>
-    <nav>
-      <NuxtLink to="/login">เข้าสู่ระบบ</NuxtLink>
-      <NuxtLink to="/register" class="active">สมัครสมาชิก</NuxtLink>
-    </nav>
-  </header>
-  <div class="register-layout">
+    <AppHeader />
+    <div class="register-layout">
     <section class="visual" aria-labelledby="visual-title">
       <img src="/login-community-background.png" alt="ภาพชุมชนไทยและสถานการณ์ภัยพิบัติ" />
       <div class="visual__wash" />
@@ -22,10 +12,10 @@
     </section>
     <section class="form-area" aria-labelledby="register-title">
       <div class="form-card">
-        <div class="form-brand">
+        <NuxtLink to="/" class="form-brand">
           <img src="/logo.png" alt="GeoSpread" />
           <span>GeoSpread</span>
-        </div>
+        </NuxtLink>
         <h2 id="register-title">สร้างบัญชีใหม่</h2>
         <p class="intro">ลงทะเบียนฟรี เพื่อเริ่มใช้ GeoSpread</p>
         <form @submit.prevent="emit('submitRegister')">
@@ -55,6 +45,8 @@
 </template>
 
 <script setup>
+import AppHeader from '~/components/layout/AppHeader.vue'
+
 defineProps({
   form: { type: Object,
   required: true },
@@ -178,6 +170,7 @@ const emit = defineEmits(['submitRegister', 'update:acceptTerms'])
   gap: .4rem;
   color: #0b2372;
   font-weight: 800;
+  text-decoration: none;
 }
 .form-brand img {
   width: 1.9rem;

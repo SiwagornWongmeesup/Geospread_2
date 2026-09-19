@@ -36,16 +36,16 @@
 
 อิงตามข้อมูลจาก DOCX ระบบจะประกอบด้วยเอนทิตีหลักๆ ดังนี้:
 
-| เอนทิตี (Entity) | คำอธิบาย |
-|--------|-------------|
-| **User** | ผู้ใช้งานระบบ (id, email, password, name, lastname, phone, profile, role) |
-| **Incident** | รายงานเหตุการณ์ย่อยๆ 1 จุด (id, title, desc, severity, location, status) |
-| **Event** | ศูนย์กลางเหตุการณ์ใหญ่ (รวบรวมหลาย Incident) (id, category, severity, status) |
-| **EventIncident** | ตารางเชื่อม (Join table) ผูก Incident ย่อยเข้ากับ Event ใหญ่ |
-| **ChatMessage** | ข้อความใน Event Room (id, event_id, user_id, message, created_at) |
-| **HelpRequest** | คำขอความช่วยเหลือที่ระบุพิกัด (id, event_id, user_id, desc, location, status) |
-| **FollowedArea** | พื้นที่ หรือ Event ที่ผู้ใช้กดติดตาม (id, user_id, event_id, geometry) |
-| **Notification** | แจ้งเตือนของผู้ใช้ (id, user_id, type, message, read_at) |
+| เอนทิตี (Entity) | ชื่อตาราง (Table Name) | คำอธิบาย |
+|--------|-------------|-------------|
+| **User** | `tb_users` | ผู้ใช้งานระบบ (id, email, password, name, lastname, profile, phone, role, trust_score, created_at, updated_at, last_login_at) |
+| **Incident** | `tb_incidents` | รายงานเหตุการณ์ย่อย 1 จุด (id, user_id, category, description, severity, images, location, status, created_at, updated_at, deleted_at) |
+| **HelpRequest** | `tb_help_requests` | คำขอความช่วยเหลือที่ระบุพิกัด (id, event_id, user_id, desc, location, status) |
+| **Event** | `tb_events` | ศูนย์กลางเหตุการณ์ใหญ่ (รวบรวมหลาย Incident) (id, category, severity, status) |
+| **EventIncident** | `tb_event_incidents` | ตารางเชื่อม (Join table) ผูก Incident ย่อยเข้ากับ Event ใหญ่ |
+| **ChatMessage** | `tb_chat_messages` | ข้อความใน Event Room (id, event_id, user_id, message, created_at) |
+| **FollowedArea** | `tb_followed_areas` | พื้นที่ หรือ Event ที่ผู้ใช้กดติดตาม (id, user_id, event_id, geometry) |
+| **Notification** | `tb_notifications` | แจ้งเตือนของผู้ใช้ (id, user_id, type, message, read_at) |
 
 ---
 
