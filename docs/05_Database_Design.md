@@ -39,7 +39,12 @@
 | เอนทิตี (Entity) | ชื่อตาราง (Table Name) | คำอธิบาย |
 |--------|-------------|-------------|
 | **User** | `tb_users` | ผู้ใช้งานระบบ (id, email, password, name, lastname, profile, phone, role, trust_score, created_at, updated_at, last_login_at) |
-| **Incident** | `tb_incidents` | รายงานเหตุการณ์ย่อย 1 จุด (id, user_id, category, description, severity, images, location, status, created_at, updated_at, deleted_at) |
+| **IncidentCategory** | `tb_incident_categories` | หมวดใหญ่สำหรับจัดกลุ่ม Type (code, name, icon, active, sort order) |
+| **IncidentType** | `tb_incident_types` | Type มาตรฐานที่กำหนด icon, marker color, display mode และ default radius |
+| **IncidentKeyword** | `tb_incident_keywords` | Keyword ที่เสนอ Type จากข้อความของผู้ใช้ |
+| **IncidentReport** | `tb_incident_reports` | ข้อมูลดิบที่ผู้ใช้ส่ง พร้อม Type ที่เลือก/ระบบเสนอ, custom type, PostGIS location และสถานะ Report |
+| **IncidentMedia** | `tb_incident_media` | รูปภาพหรือวิดีโอหลายไฟล์ของ IncidentReport |
+| **Incident** | `tb_incidents` | เหตุการณ์หลักที่รวม Report หนึ่งรายการหรือหลายรายการ พร้อม severity, credibility, verification และสถานะเหตุ |
 | **HelpRequest** | `tb_help_requests` | คำขอความช่วยเหลือที่ระบุพิกัด (id, event_id, user_id, desc, location, status) |
 | **Event** | `tb_events` | ศูนย์กลางเหตุการณ์ใหญ่ (รวบรวมหลาย Incident) (id, category, severity, status) |
 | **EventIncident** | `tb_event_incidents` | ตารางเชื่อม (Join table) ผูก Incident ย่อยเข้ากับ Event ใหญ่ |
@@ -109,4 +114,3 @@ ADD COLUMN IF NOT EXISTS profile TEXT;
 * [ ] รันคำสั่ง `ALTER TABLE` เพื่ออัปเดต Database จริง
 * [ ] อัปเดตไฟล์ `backend/db/schema.sql` ให้มีฟิลด์ใหม่ (รักษา Source of Truth)
 * [ ] อัปเดตเอกสาร `docs/05_Database_Design.md` ในตาราง Core Entities ให้มีฟิลด์ใหม่ตรงกัน
-

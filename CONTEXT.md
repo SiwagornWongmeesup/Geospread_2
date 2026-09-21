@@ -17,16 +17,52 @@ _Avoid_: Admin User, Back-office User
 _Avoid_: Admin Dashboard, Control Panel
 
 **Incident**:
-เหตุการณ์ด้านความปลอดภัยหรือภัยพิบัติที่ผูกกับตำแหน่งและมีสถานะการยืนยันของข้อมูล
-_Avoid_: News, Alert เมื่อหมายถึงตัวเหตุการณ์
+เหตุการณ์หลักที่ระบบสร้างหรือรวมจาก Incident Report หนึ่งรายการหรือหลายรายการ เพื่อสรุปสถานการณ์เดียวกัน
+_Avoid_: Raw Report, News, Alert
 
 **Incident Report**:
-ข้อมูลเหตุการณ์ที่ Community User กรอกเพื่อแจ้งเหตุแก่ชุมชนและระบบ โดยมีประเภท ระดับความรุนแรง รายละเอียด สื่อประกอบ และตำแหน่งเป็นข้อมูลสำคัญ
+ข้อมูลดิบที่ Community User ส่งแต่ละครั้ง โดยมีข้อความเหตุการณ์และตำแหน่งเป็นข้อมูลหลัก; อาจยังไม่ถูกเชื่อมกับ Incident หลักในทันที
 _Avoid_: Complaint, Ticket
 
+**Incident Type**:
+ประเภทมาตรฐานที่ระบบรู้จัก ใช้กำหนด icon, Map Display Mode และ Impact Radius ของ Incident
+_Avoid_: Incident, Category
+
+**Incident Category**:
+หมวดใหญ่ที่ใช้จัดกลุ่ม Incident Type สำหรับการแสดงผลและค้นหา
+_Avoid_: Incident Type
+
+**Incident Media**:
+รูปภาพหรือวิดีโอที่แนบกับ Incident Report หนึ่งรายการ
+_Avoid_: Incident Attachment เมื่อหมายถึงไฟล์ของ Incident หลัก
+
+**Reported Observation**:
+ข้อความอิสระที่ Community User ใช้อธิบายว่าเห็นอะไรหรือเกิดอะไรขึ้นใน Incident Report
+_Avoid_: Fixed Category, Severity Input
+
+**Suggested Category**:
+ประเภทมาตรฐานที่ระบบเสนอจาก Reported Observation และผู้ใช้เลือกยอมรับหรือข้ามได้
+_Avoid_: Mandatory Category, Final Classification
+
+**Custom Report Type**:
+ประเภทที่ Community User ระบุเองเมื่อไม่มี Suggested Category ที่ตรงกับสิ่งที่พบ
+_Avoid_: Invalid Report, Unsupported Report
+
+**Map Display Mode**:
+กติกาที่กำหนดการแสดง Incident บนแผนที่ตามประเภทมาตรฐาน เช่น Marker หรือ Icon พร้อม Impact Radius
+_Avoid_: Severity Display Rule
+
+**Impact Radius**:
+ขอบเขตผลกระทบเริ่มต้นของประเภทมาตรฐานที่ระบบรู้จัก ซึ่งอาจปรับโดย Administrator สำหรับเหตุเฉพาะรายได้ภายหลัง
+_Avoid_: Severity Radius
+
 **Severity Level**:
-ระดับผลกระทบของ Incident Report ที่ Community User เลือกจาก ต่ำ ปานกลาง สูง และวิกฤต
+ระดับผลกระทบของ Incident ที่ระบบหรือ Administrator ประเมินภายหลังจากข้อมูลผลกระทบ การยืนยัน และสถานการณ์; Community User ไม่ได้เลือกค่านี้ในแบบฟอร์ม
 _Avoid_: Priority เมื่อไม่ได้หมายถึงลำดับการจัดการของเจ้าหน้าที่
+
+**Credibility**:
+ระดับความมั่นใจว่าข้อมูลของ Incident น่าเชื่อถือหรือเกิดขึ้นจริง ซึ่งแยกอิสระจาก Severity Level
+_Avoid_: Severity, Priority
 
 **Nearby Incident**:
 Incident ที่ถูกจัดลำดับให้ Community User เห็นก่อน เพราะอยู่ใกล้ตำแหน่งปัจจุบันหรือ Followed Location

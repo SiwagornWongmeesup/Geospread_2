@@ -52,3 +52,21 @@ description: Use this skill when the user wants to learn, understand, debug, or 
 
 ทุกครั้งที่ช่วยแก้ปัญหา
 ฉันควรเข้าใจเพิ่มขึ้นอย่างน้อยหนึ่งเรื่อง
+
+## GeoSpread Reporting Domain Reference
+
+เมื่อสอนงานที่เกี่ยวกับ Incident ให้ยึด workflow นี้: Community User เริ่มจากพิมพ์สิ่งที่เห็นเป็นข้อความอิสระและระบุตำแหน่ง ระบบอาจเสนอ Suggested Category ด้วย keyword matching แต่ผู้ใช้ยอมรับหรือข้ามได้ และส่ง Custom Report Type ได้เสมอ ห้ามสอนหรือออกแบบให้บังคับผู้ใช้เลือกระเภทที่ไม่ตรง
+
+จำแนกข้อมูลสองระดับให้ชัด: `tb_incident_reports` คือ Report ดิบจากผู้ใช้หนึ่งครั้ง ส่วน `tb_incidents` คือ Incident หลักที่ระบบรวมจาก Report หนึ่งรายการหรือหลายรายการ Category ใช้จัดกลุ่ม, Type ใช้กำหนด logic/icon/radius, Keyword ใช้เสนอ Type, และ Media เป็นไฟล์แนบของ Report
+
+การรวมอัตโนมัติใน MVP ใช้ Type เดียวกัน 40 คะแนน + ระยะไม่เกิน 300 เมตร 35 คะแนน + เวลาไม่เกิน 30 นาที 25 คะแนน: 80–100 รวมอัตโนมัติ, 50–79 รอตรวจสอบ, ต่ำกว่า 50 สร้าง Incident ใหม่ เหตุที่ไม่มี Type มาตรฐานห้าม auto-merge และ Admin ต้องแยก Report ออกจาก Incident ได้เมื่อรวมผิด
+
+เมื่อสอน Flow DB ให้เรียงดังนี้: ข้อความผู้ใช้ → `tb_incident_keywords` → `tb_incident_types` → ผู้ใช้ยืนยัน Type → `tb_incident_reports` → `tb_incident_media` ถ้ามีไฟล์ → ตรวจหา/สร้าง `tb_incidents` แล้วผูก `incident_id` กลับเข้า Report ชื่อคอลัมน์ Type ต้องใช้ให้ถูก: `system_suggested_type_id` คือคำแนะนำ, `user_selected_type_id` คือ Type ที่ผู้ใช้กด, และ `final_type_id` คือ Type ที่ยืนยันใช้กับ logic ภายหลัง
+
+แยกคำเหล่านี้ให้ชัดทุกครั้ง: `Reported Observation` คือข้อความที่ผู้ใช้เห็น, `Suggested/Canonical Category` คือประเภทที่ระบบเสนอหรือยืนยัน, `Credibility` คือความมั่นใจว่าเหตุเกิดขึ้นจริง, และ `Severity` คือระดับผลกระทบที่ประเมินภายหลัง Community User ไม่เลือก Severity ในฟอร์ม
+
+การแสดงบนแผนที่ขึ้นกับประเภท: เหตุที่ระบบไม่รู้จักใช้ marker พร้อมสถานะรอตรวจสอบและไม่มีรัศมี; ประเภทมาตรฐานใช้ Map Display Mode ที่กำหนดไว้และอาจมี icon พร้อม Impact Radius ค่าเริ่มต้น ห้ามอธิบายว่ารัศมีคำนวณจาก Severity
+
+ใน UI ให้เสนอ Type โดยตรงจากข้อความผู้ใช้ก่อน ผู้ใช้เลือก Type แล้วระบบจึงรู้ Category เอง ไม่ให้ผู้ใช้เลือก Category ซ้ำ Category แสดงเฉพาะใน “ดูประเภทเพิ่มเติม” เพื่อจัดกลุ่มรายการ Type เท่านั้น ให้ย้ำว่า Type เป็นตัวกำหนด `display_mode` และ `default_radius_m`: `marker` ไม่มีรัศมี, `nearby` มีพื้นที่แจ้งเตือนใกล้เคียง, `area` มีพื้นที่ผลกระทบโดยประมาณ
+
+ให้ใช้ `CONTEXT.md` เป็น glossary และ `docs/13_Incident_Reporting_Concept.md` เป็น specification หลัก หากโค้ดเดิมยังบังคับ category/severity หรือไม่รับ custom type ให้ชี้ว่าเป็นความขัดแย้งกับ concept ใหม่ ไม่ควรสอนให้ทำตามโค้ดเดิมโดยไม่อธิบายข้อแตกต่าง

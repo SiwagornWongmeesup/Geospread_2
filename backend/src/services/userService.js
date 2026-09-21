@@ -15,7 +15,7 @@ const getAllUsers = async () => {
 const getUserById = async (id) => {
     const user = await userRepository.getUserById(id);
     if (!user) {
-        throw new AppError('User not found', 404);
+        throw new AppError('ไม่เจอผู้ใช้งาน', 404);
     }
     return user;
 }
@@ -27,7 +27,7 @@ const createUser = async (userData) => {
     const existingUser = await userRepository.getUserByEmail(email);
     if (existingUser) {
         // ถ้าเจออีเมลนี้ในระบบแล้ว ให้โยน Error 400 กลับไปเลย สร้างไม่ได้
-        throw new AppError('Email is already in use', 400); 
+        throw new AppError('อีเมลนี้ถูกใช้งานแล้ว', 400);
     }
 
     // 2. แปลงรหัสผ่านให้เป็น String เสมอ ป้องกัน Error จาก bcrypt กรณีที่ส่งตัวเลขล้วนๆ มา

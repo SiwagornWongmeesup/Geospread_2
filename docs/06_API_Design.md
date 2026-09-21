@@ -178,7 +178,9 @@ Database (PostgreSQL + PostGIS)
 | Method | Path | คำอธิบาย | จำเป็นต้องยืนยันตัวตน |
 |--------|------|-------------|---------------|
 | GET | `/incidents` | ดึงรายการ Incident ตามพื้นที่หรือรัศมีระยะทาง | — |
-| POST | `/incidents` | สร้างรายงาน Incident (การรายงานจากชุมชน) | ใช่ |
+| POST | `/incidents` | สร้างรายงาน Incident จากข้อความอิสระ พร้อมตำแหน่ง; category และ severity ต้องไม่เป็นข้อมูลบังคับจากผู้ใช้ | ใช่ |
+
+> สัญญา request/response ฉบับจริงต้องรองรับ `reportedObservation`, `suggestedCategory`, `customReportType`, `credibility`, `severity`, `mapDisplayMode` และ `impactRadius` ตาม [13_Incident_Reporting_Concept.md](./13_Incident_Reporting_Concept.md) ก่อนนำ endpoint นี้ไป implement ใหม่
 | GET | `/events` | ดึงรายการ Event ศูนย์กลางเหตุการณ์สำคัญ | — |
 | GET | `/events/:id` | ดึงรายละเอียด Event เดียว (Overview, Timeline) | — |
 | POST | `/admin/events` | (Admin) สร้าง Event ใหม่ หรือรวม Incidents เป็น Event | ใช่ (Admin) |

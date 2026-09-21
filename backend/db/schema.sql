@@ -1,54 +1,276 @@
--- GeoSpread Database Schema
--- ใช้สำหรับสร้างตารางทั้งหมดในระบบ (Source of Truth)
-
--- เปิดใช้งาน PostGIS Extension สำหรับจัดการพิกัดแผนที่
+-- โครงสร้างฐานข้อมูล GeoSpread (แหล่งอ้างอิงหลัก)
 CREATE EXTENSION IF NOT EXISTS postgis;
 
--- --------------------------------------------------------
--- Table: tb_users
--- หน้าที่: เก็บข้อมูลผู้ใช้งานระบบ
--- ฟิลด์ที่ต้องการ: id, email, password, profile, role, created_at
--- --------------------------------------------------------
-
+-- ข้อมูลบัญชีผู้ใช้งานระบบ
 CREATE TABLE IF NOT EXISTS tb_users (
+    -- รหัสผู้ใช้ ใช้ระบุบัญชีผู้ใช้แต่ละคน
     id SERIAL PRIMARY KEY,
+    -- อีเมล ใช้เข้าสู่ระบบและต้องไม่ซ้ำกัน
     email VARCHAR(255) UNIQUE NOT NULL,
+    -- รหัสผ่านที่เข้ารหัสแล้ว ใช้ยืนยันตัวตนผู้ใช้
     password TEXT NOT NULL,
+    -- ชื่อจริงของผู้ใช้
     name VARCHAR(50),
+    -- นามสกุลของผู้ใช้
     lastname VARCHAR(50),
+    -- URL หรือข้อมูลรูปโปรไฟล์ของผู้ใช้
     profile TEXT,
+    -- เบอร์โทรศัพท์สำหรับติดต่อผู้ใช้
     phone VARCHAR(20),
+    -- บทบาทที่ใช้กำหนดสิทธิ์การใช้งานในระบบ
     role VARCHAR(50) DEFAULT 'user',
+    -- คะแนนความน่าเชื่อถือของผู้ใช้
     trust_score INT DEFAULT 100,
+    -- วันที่และเวลาที่สร้างบัญชีผู้ใช้
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- วันที่และเวลาที่แก้ไขข้อมูลผู้ใช้ล่าสุด
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- วันที่และเวลาที่ผู้ใช้เข้าสู่ระบบล่าสุด
     last_login_at TIMESTAMP
 );
 
--- --------------------------------------------------------
--- Table: tb_incidents
--- หน้าที่: เก็บรายงานเหตุการณ์ย่อยจากชุมชน
--- --------------------------------------------------------
-
-CREATE TABLE IF NOT EXISTS tb_incidents (
-    id SERIAL PRIMARY KEY,
-    user_id INT REFERENCES tb_users(id) ON DELETE SET NULL,
-    category VARCHAR(50) NOT NULL,
-    description TEXT,
-    severity VARCHAR(20) DEFAULT 'medium',
-    images TEXT[],
-    location GEOMETRY(Point, 4326) NOT NULL,
-    status VARCHAR(20) DEFAULT 'pending',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP NULL
+-- หมวดใหญ่ ใช้จัดกลุ่มประเภทเหตุการณ์ในหน้าจอและการค้นหา
+CREATE TABLE IF NOT EXISTS tb_incident_categories (
+    -- รหัสหมวดหมู่ ใช้ระบุหมวดของประเภทเหตุการณ์
+    category_id SERIAL PRIMARY KEY,
+    -- รหัสหมวดหมู่แบบคงที่ ใช้อ้างอิงหมวดในระบบ
+    category_code VARCHAR(80) UNIQUE NOT NULL,
+    -- ชื่อหมวดหมู่ภาษาไทยที่แสดงให้ผู้ใช้เห็น
+    category_name VARCHAR(120) NOT NULL,
+    -- ชื่อไอคอนที่ใช้แสดงแทนหมวดหมู่
+    icon_name VARCHAR(120),
+    -- ลำดับที่ใช้จัดเรียงหมวดหมู่บนหน้าจอ
+    sort_order INT NOT NULL DEFAULT 0,
+    -- สถานะว่าเปิดให้เลือกใช้หมวดหมู่นี้หรือไม่
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    -- วันที่และเวลาที่สร้างหมวดหมู่
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    -- วันที่และเวลาที่แก้ไขหมวดหมู่ล่าสุด
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Spatial Index สำหรับค้นหาเหตุการณ์ตามพิกัดและระยะทาง (ST_DWithin)
-CREATE INDEX IF NOT EXISTS idx_incidents_location 
-ON tb_incidents USING GIST (location);
+-- ประเภทมาตรฐานที่ระบบรู้จัก และกำหนดกฎการแสดงผลบนแผนที่
+CREATE TABLE IF NOT EXISTS tb_incident_types (
+    -- รหัสประเภทเหตุการณ์ ใช้ระบุประเภทแต่ละรายการ
+    type_id SERIAL PRIMARY KEY,
+    -- รหัสหมวดหมู่ที่ประเภทเหตุการณ์นี้สังกัด
+    category_id INT NOT NULL REFERENCES tb_incident_categories(category_id) ON DELETE RESTRICT,
+    -- รหัสประเภทแบบคงที่ ใช้อ้างอิงประเภทในระบบ
+    type_code VARCHAR(100) UNIQUE NOT NULL,
+    -- ชื่อประเภทเหตุการณ์ภาษาไทยที่แสดงให้ผู้ใช้เห็น
+    type_name VARCHAR(150) NOT NULL,
+    -- ชื่อไอคอนที่ใช้แสดงเหตุการณ์ประเภทนี้บนแผนที่
+    icon_name VARCHAR(120) NOT NULL,
+    -- สีของหมุดที่ใช้แสดงเหตุการณ์ประเภทนี้บนแผนที่
+    marker_color VARCHAR(20) NOT NULL DEFAULT '#1479EF',
+    -- รูปแบบการแสดงเหตุการณ์บนแผนที่
+    display_mode VARCHAR(20) NOT NULL DEFAULT 'marker',
+    -- รัศมีเริ่มต้นหน่วยเมตรเมื่อแสดงแบบใกล้เคียงหรือเป็นพื้นที่
+    default_radius_m INTEGER,
+    -- สถานะว่าเปิดให้ผู้ใช้เลือกประเภทนี้หรือไม่
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    -- ลำดับที่ใช้จัดเรียงประเภทเหตุการณ์บนหน้าจอ
+    sort_order INT NOT NULL DEFAULT 0,
+    -- วันที่และเวลาที่สร้างประเภทเหตุการณ์
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    -- วันที่และเวลาที่แก้ไขประเภทเหตุการณ์ล่าสุด
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_type_mode CHECK (display_mode IN ('marker', 'nearby', 'area')),
+    CONSTRAINT chk_type_radius CHECK ((display_mode = 'marker' AND default_radius_m IS NULL) OR (display_mode IN ('nearby', 'area') AND default_radius_m > 0))
+);
 
--- Index สำหรับค้นหาเฉพาะเหตุการณ์ที่ยังไม่ถูกลบ (Soft Delete)
-CREATE INDEX IF NOT EXISTS idx_incidents_status 
-ON tb_incidents (status) WHERE deleted_at IS NULL;
+-- คำที่ใช้จับข้อความเพื่อแนะนำประเภทเหตุการณ์
+CREATE TABLE IF NOT EXISTS tb_incident_keywords (
+    -- รหัสคำสำคัญ ใช้ระบุคำสำคัญแต่ละรายการ
+    keyword_id SERIAL PRIMARY KEY,
+    -- รหัสประเภทเหตุการณ์ที่คำสำคัญนี้ใช้แนะนำ
+    type_id INT NOT NULL REFERENCES tb_incident_types(type_id) ON DELETE CASCADE,
+    -- คำหรือวลีที่ใช้ค้นหาในข้อความรายงานเพื่อแนะนำประเภทเหตุการณ์
+    keyword VARCHAR(150) NOT NULL,
+    -- สถานะว่าเปิดใช้คำสำคัญนี้ในการค้นหาหรือไม่
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    -- วันที่และเวลาที่เพิ่มคำสำคัญ
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    -- วันที่และเวลาที่แก้ไขคำสำคัญล่าสุด
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_keyword_per_type UNIQUE (type_id, keyword)
+);
 
+-- เหตุการณ์หลักที่ใช้รวมรายงานหลายรายการซึ่งอ้างถึงเหตุเดียวกัน เพื่อสรุป แสดงผล และติดตามสถานะของเหตุการณ์บนแผนที่
+CREATE TABLE IF NOT EXISTS tb_incidents (
+    -- รหัสเหตุการณ์หลัก ใช้ระบุเหตุการณ์ที่รวบรวมจากรายงาน
+    incident_id SERIAL PRIMARY KEY,
+    -- รหัสประเภทเหตุการณ์สุดท้ายที่ยืนยันแล้ว
+    final_type_id INT REFERENCES tb_incident_types(type_id) ON DELETE SET NULL,
+    -- หัวข้อสรุปที่ใช้แสดงชื่อเหตุการณ์
+    title VARCHAR(255) NOT NULL,
+    -- รายละเอียดสรุปของเหตุการณ์
+    description TEXT,
+    -- พิกัดจุดศูนย์กลางของเหตุการณ์ที่ใช้แสดงบนแผนที่
+    incident_location GEOMETRY(Point, 4326) NOT NULL,
+    -- รูปแบบที่ใช้แสดงเหตุการณ์บนแผนที่
+    display_mode VARCHAR(20) NOT NULL DEFAULT 'marker',
+    -- รัศมีพื้นที่ของเหตุการณ์หน่วยเมตร
+    radius_m INTEGER,
+    -- ระดับความรุนแรงของเหตุการณ์
+    severity VARCHAR(20) NOT NULL DEFAULT 'unrated',
+    -- คะแนนความน่าเชื่อถือของเหตุการณ์ ตั้งแต่ 0 ถึง 100
+    confidence_score NUMERIC(5, 2) NOT NULL DEFAULT 0,
+    -- สถานะการตรวจสอบความถูกต้องของเหตุการณ์
+    verification_status VARCHAR(20) NOT NULL DEFAULT 'unverified',
+    -- สถานะปัจจุบันของเหตุการณ์ เช่น กำลังเกิด แก้ไขแล้ว หรือปิดเรื่อง
+    incident_status VARCHAR(20) NOT NULL DEFAULT 'active',
+    -- จำนวนรายงานที่เชื่อมโยงกับเหตุการณ์นี้
+    report_count INTEGER NOT NULL DEFAULT 0,
+    -- วันที่และเวลาที่ได้รับรายงานแรกของเหตุการณ์
+    first_reported_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    -- วันที่และเวลาที่ได้รับรายงานล่าสุดของเหตุการณ์
+    last_reported_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    -- วันที่และเวลาที่สร้างเหตุการณ์หลัก
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    -- วันที่และเวลาที่แก้ไขเหตุการณ์หลักล่าสุด
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_incident_mode CHECK (display_mode IN ('marker', 'nearby', 'area')),
+    CONSTRAINT chk_incident_radius CHECK ((display_mode = 'marker' AND radius_m IS NULL) OR (display_mode IN ('nearby', 'area') AND radius_m > 0)),
+    CONSTRAINT chk_incident_severity CHECK (severity IN ('unrated', 'low', 'medium', 'high', 'critical')),
+    CONSTRAINT chk_incident_confidence CHECK (confidence_score BETWEEN 0 AND 100),
+    CONSTRAINT chk_incident_verification CHECK (verification_status IN ('unverified', 'verified')),
+    CONSTRAINT chk_incident_status CHECK (incident_status IN ('active', 'resolved', 'closed')),
+    CONSTRAINT chk_incident_count CHECK (report_count >= 0)
+);
+
+-- รายงานข้อมูลดิบที่ผู้ใช้ในชุมชนส่งเข้ามาในแต่ละครั้ง
+CREATE TABLE IF NOT EXISTS tb_incident_reports (
+    -- รหัสรายงาน ใช้ระบุรายงานแต่ละรายการที่ผู้ใช้ส่ง
+    report_id SERIAL PRIMARY KEY,
+    -- รหัสผู้ใช้ที่ส่งรายงาน โดยเว้นว่างได้หากผู้ใช้ถูกลบ
+    user_id INT REFERENCES tb_users(id) ON DELETE SET NULL,
+    -- รหัสเหตุการณ์หลักที่รายงานนี้เชื่อมโยง โดยเว้นว่างได้ระหว่างรอจับคู่
+    incident_id INT REFERENCES tb_incidents(incident_id) ON DELETE SET NULL,
+    -- ข้อความรายละเอียดเหตุการณ์ที่ผู้ใช้รายงาน
+    description TEXT NOT NULL,
+    -- รหัสประเภทเหตุการณ์ที่ผู้ใช้เลือกเอง
+    user_selected_type_id INT REFERENCES tb_incident_types(type_id) ON DELETE SET NULL,
+    -- รหัสประเภทเหตุการณ์ที่ระบบแนะนำจากข้อความรายงาน
+    system_suggested_type_id INT REFERENCES tb_incident_types(type_id) ON DELETE SET NULL,
+    -- รหัสประเภทเหตุการณ์สุดท้ายที่ระบบหรือผู้ดูแลยืนยันให้รายงาน
+    final_type_id INT REFERENCES tb_incident_types(type_id) ON DELETE SET NULL,
+    -- ประเภทเหตุการณ์ที่ผู้ใช้พิมพ์เองเมื่อไม่มีประเภทมาตรฐาน
+    custom_type VARCHAR(150),
+    -- สถานะของการจัดประเภทเหตุการณ์ในรายงาน
+    type_status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    -- พิกัดจุดเกิดเหตุที่ผู้ใช้ระบุ
+    incident_location GEOMETRY(Point, 4326) NOT NULL,
+    -- พิกัดของผู้รายงานขณะส่งรายงาน ใช้ตรวจสอบภายใน
+    reporter_location GEOMETRY(Point, 4326),
+    -- ระยะห่างระหว่างผู้รายงานกับจุดเกิดเหตุ หน่วยเมตร
+    distance_from_reporter NUMERIC(10, 2),
+    -- สถานะการรับ ตรวจสอบ และเชื่อมโยงรายงาน
+    report_status VARCHAR(20) NOT NULL DEFAULT 'submitted',
+    -- สถานะระบุว่ารายงานนี้มีความผิดปกติหรือน่าสงสัย
+    is_suspicious BOOLEAN NOT NULL DEFAULT FALSE,
+    -- วันที่และเวลาที่ผู้ใช้ส่งรายงาน
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    -- วันที่และเวลาที่แก้ไขรายงานล่าสุด
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_report_type_status CHECK (type_status IN ('confirmed', 'pending', 'conflict', 'pending_review')),
+    CONSTRAINT chk_report_status CHECK (report_status IN ('submitted', 'pending', 'linked', 'suspicious', 'rejected')),
+    CONSTRAINT chk_report_distance CHECK (distance_from_reporter IS NULL OR distance_from_reporter >= 0)
+);
+
+-- รูปภาพหรือวิดีโอที่แนบกับรายงานหนึ่งรายการ
+CREATE TABLE IF NOT EXISTS tb_incident_media (
+    -- รหัสไฟล์แนบ ใช้ระบุรูปภาพหรือวิดีโอแต่ละรายการ
+    media_id SERIAL PRIMARY KEY,
+    -- รหัสรายงานเจ้าของไฟล์แนบ
+    report_id INT NOT NULL REFERENCES tb_incident_reports(report_id) ON DELETE CASCADE,
+    -- ชนิดของไฟล์แนบ ว่าเป็นรูปภาพหรือวิดีโอ
+    media_type VARCHAR(20) NOT NULL,
+    -- ที่อยู่ไฟล์แนบในระบบจัดเก็บไฟล์
+    media_url TEXT NOT NULL,
+    -- วันที่และเวลาที่เพิ่มไฟล์แนบ
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_media_type CHECK (media_type IN ('image', 'video'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_types_category ON tb_incident_types(category_id);
+CREATE INDEX IF NOT EXISTS idx_keywords_active ON tb_incident_keywords(keyword) WHERE is_active;
+CREATE INDEX IF NOT EXISTS idx_main_incidents_location ON tb_incidents USING GIST (incident_location);
+CREATE INDEX IF NOT EXISTS idx_incidents_active ON tb_incidents(incident_status, last_reported_at DESC) WHERE incident_status = 'active';
+CREATE INDEX IF NOT EXISTS idx_reports_location ON tb_incident_reports USING GIST (incident_location);
+CREATE INDEX IF NOT EXISTS idx_reports_incident ON tb_incident_reports(incident_id);
+CREATE INDEX IF NOT EXISTS idx_media_report ON tb_incident_media(report_id);
+
+INSERT INTO tb_incident_categories (category_code, category_name, icon_name, sort_order) VALUES
+    ('natural_disaster', 'ภัยธรรมชาติ', 'cloud-rain', 1),
+    ('accident', 'อุบัติเหตุและการจราจร', 'car-front', 2),
+    ('safety', 'ความปลอดภัยและเหตุฉุกเฉิน', 'shield-alert', 3),
+    ('infrastructure', 'สาธารณูปโภคและโครงสร้างพื้นฐาน', 'construction', 4),
+    ('environment', 'สิ่งแวดล้อมและมลพิษ', 'leaf', 5),
+    ('community', 'เหตุในชุมชน', 'users', 6)
+ON CONFLICT (category_code) DO NOTHING;
+
+-- ประเภทเหตุการณ์เริ่มต้นสำหรับรุ่นแรก; รัศมีเป็นค่าโดยประมาณ ไม่ใช่ขอบเขตภัยจริง
+INSERT INTO tb_incident_types (category_id, type_code, type_name, icon_name, marker_color, display_mode, default_radius_m, sort_order)
+SELECT category.category_id, seed.type_code, seed.type_name, seed.icon_name, seed.marker_color, seed.display_mode, seed.default_radius_m, seed.sort_order
+FROM (
+    VALUES
+      ('natural_disaster', 'flood', 'น้ำท่วม', 'waves', '#1479EF', 'area', 3000, 1),
+      ('natural_disaster', 'flash_flood', 'น้ำป่าไหลหลาก', 'waves-arrow-up', '#1479EF', 'area', 3000, 2),
+      ('natural_disaster', 'storm', 'พายุ', 'cloud-lightning', '#6D5DFB', 'area', 3000, 3),
+      ('natural_disaster', 'wildfire', 'ไฟป่า', 'flame', '#E8333C', 'area', 5000, 4),
+      ('natural_disaster', 'earthquake', 'แผ่นดินไหว', 'activity', '#F47B22', 'area', 3000, 5),
+      ('natural_disaster', 'tsunami', 'สึนามิ', 'waves', '#1479EF', 'area', 5000, 6),
+      ('natural_disaster', 'landslide', 'ดินถล่ม', 'mountain', '#A65B24', 'area', 1000, 7),
+      ('natural_disaster', 'drought', 'ภัยแล้ง', 'sun', '#F0B429', 'area', 3000, 8),
+      ('accident', 'traffic_accident', 'รถชน', 'car-front', '#F47B22', 'nearby', 500, 1),
+      ('accident', 'vehicle_rollover', 'รถคว่ำ', 'car-front', '#F47B22', 'nearby', 500, 2),
+      ('accident', 'vehicle_obstruction', 'รถเสียกีดขวาง', 'car-front', '#F0B429', 'nearby', 300, 3),
+      ('accident', 'road_obstruction', 'ถนนถูกกีดขวาง', 'construction', '#F0B429', 'nearby', 300, 4),
+      ('accident', 'other_road_accident', 'อุบัติเหตุทางถนนอื่น ๆ', 'triangle-alert', '#F47B22', 'nearby', 500, 5),
+      ('safety', 'building_fire', 'ไฟไหม้อาคาร', 'flame', '#E8333C', 'nearby', 1000, 1),
+      ('safety', 'conflict', 'เหตุทะเลาะวิวาท', 'shield-alert', '#E8333C', 'nearby', 300, 2),
+      ('safety', 'violent_incident', 'เหตุรุนแรง', 'shield-alert', '#E8333C', 'nearby', 500, 3),
+      ('safety', 'missing_person', 'บุคคลสูญหาย', 'search', '#6D5DFB', 'nearby', 2000, 4),
+      ('safety', 'suspicious_object', 'วัตถุต้องสงสัย', 'triangle-alert', '#E8333C', 'nearby', 500, 5),
+      ('safety', 'other_fire', 'เหตุไฟไหม้อื่น ๆ', 'flame', '#E8333C', 'nearby', 1000, 6),
+      ('infrastructure', 'power_outage', 'ไฟฟ้าดับ', 'zap-off', '#F0B429', 'nearby', 500, 1),
+      ('infrastructure', 'fallen_pole', 'เสาไฟล้ม', 'utility-pole', '#F47B22', 'nearby', 200, 2),
+      ('infrastructure', 'broken_power_line', 'สายไฟขาด', 'zap', '#E8333C', 'nearby', 200, 3),
+      ('infrastructure', 'water_pipe_break', 'ท่อน้ำแตก', 'droplets', '#1479EF', 'nearby', 200, 4),
+      ('infrastructure', 'water_supply_outage', 'น้ำประปาขัดข้อง', 'droplet-off', '#1479EF', 'nearby', 500, 5),
+      ('infrastructure', 'road_damage', 'ถนนชำรุด', 'construction', '#F0B429', 'marker', NULL, 6),
+      ('infrastructure', 'bridge_damage', 'สะพานเสียหาย', 'construction', '#F47B22', 'nearby', 300, 7),
+      ('infrastructure', 'building_collapse', 'อาคารเสียหาย / ถล่ม', 'building-2', '#E8333C', 'nearby', 1000, 8),
+      ('environment', 'pm25', 'PM2.5 / ฝุ่น', 'wind', '#8D99AE', 'area', 3000, 1),
+      ('environment', 'abnormal_smoke', 'ควันผิดปกติ', 'cloud', '#8D99AE', 'nearby', 500, 2),
+      ('environment', 'air_pollution', 'มลพิษทางอากาศ', 'wind', '#8D99AE', 'area', 3000, 3),
+      ('environment', 'wastewater', 'น้ำเสีย', 'waves', '#1479EF', 'nearby', 500, 4),
+      ('environment', 'chemical_odor', 'กลิ่นสารเคมี', 'flask-conical', '#E8333C', 'nearby', 500, 5),
+      ('environment', 'chemical_leak', 'สารเคมีรั่วไหล', 'flask-conical', '#E8333C', 'nearby', 1000, 6),
+      ('environment', 'waste', 'ขยะ / ของเสีย', 'trash-2', '#8D99AE', 'marker', NULL, 7),
+      ('community', 'missing_pet', 'สัตว์เลี้ยงหาย', 'paw-print', '#6D5DFB', 'nearby', 1000, 1),
+      ('community', 'found_pet', 'พบสัตว์เลี้ยง', 'paw-print', '#49B96E', 'marker', NULL, 2),
+      ('community', 'lost_item', 'ของหาย', 'package-search', '#6D5DFB', 'marker', NULL, 3),
+      ('community', 'found_item', 'พบของ', 'package-check', '#49B96E', 'marker', NULL, 4),
+      ('community', 'dangerous_animal', 'สัตว์อันตราย', 'paw-print', '#E8333C', 'nearby', 500, 5),
+      ('community', 'public_obstruction', 'สิ่งกีดขวางพื้นที่สาธารณะ', 'construction', '#F0B429', 'marker', NULL, 6)
+) AS seed(category_code, type_code, type_name, icon_name, marker_color, display_mode, default_radius_m, sort_order)
+JOIN tb_incident_categories category ON category.category_code = seed.category_code
+ON CONFLICT (type_code) DO NOTHING;
+
+-- คำสำคัญเริ่มต้นสำหรับการจับคู่ข้อความแบบกำหนดผลลัพธ์ได้ในรุ่นแรก
+INSERT INTO tb_incident_keywords (type_id, keyword)
+SELECT incident_type.type_id, seed.keyword
+FROM (
+    VALUES
+      ('flood', 'น้ำท่วม'), ('flood', 'น้ำขัง'), ('flood', 'น้ำล้น'), ('flood', 'น้ำเอ่อ'),
+      ('flash_flood', 'น้ำป่า'), ('flash_flood', 'น้ำป่าไหลหลาก'),
+      ('wildfire', 'ไฟป่า'), ('building_fire', 'ไฟไหม้บ้าน'), ('building_fire', 'ไฟไหม้อาคาร'), ('building_fire', 'เพลิงไหม้'), ('building_fire', 'ควันไฟ'),
+      ('traffic_accident', 'รถชน'), ('traffic_accident', 'รถชนกัน'), ('traffic_accident', 'เฉี่ยวชน'), ('vehicle_rollover', 'รถคว่ำ'), ('traffic_accident', 'มอไซค์ล้ม'),
+      ('pm25', 'PM2.5'), ('pm25', 'ฝุ่น'), ('air_pollution', 'มลพิษทางอากาศ'),
+      ('power_outage', 'ไฟฟ้าดับ'), ('broken_power_line', 'สายไฟขาด'),
+      ('missing_pet', 'หมาหาย'), ('missing_pet', 'สัตว์เลี้ยงหาย'), ('lost_item', 'ของหาย')
+) AS seed(type_code, keyword)
+JOIN tb_incident_types incident_type ON incident_type.type_code = seed.type_code
+ON CONFLICT (type_id, keyword) DO NOTHING;

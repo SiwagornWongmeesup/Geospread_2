@@ -21,6 +21,7 @@ GeoSpread ช่วยให้ผู้ใช้ทราบถึงเหต�
 | [10_AI_CONTEXT.md](./10_AI_CONTEXT.md) | ข้อมูลบริบท ขอบเขต และหน้าที่สำหรับ AI Developer |
 | [11_Backend_Folder_Structure.md](./11_Backend_Folder_Structure.md) | โครงสร้างโฟลเดอร์ Backend (3-Tier Architecture) |
 | [12_Frontend_Folder_Structure.md](./12_Frontend_Folder_Structure.md) | โครงสร้างโฟลเดอร์ Frontend และการแยก Desktop/Mobile Component |
+| [13_Incident_Reporting_Concept.md](./13_Incident_Reporting_Concept.md) | แนวคิดการรับรายงานแบบยืดหยุ่น การจัดประเภท และกติกาแผนที่ |
 | [CHANGELOG.md](./CHANGELOG.md) | บันทึกการเปลี่ยนแปลง (Version History) |
 
 ---

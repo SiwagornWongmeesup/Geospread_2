@@ -25,8 +25,8 @@
 
 | รหัสโมดูล | หน้าที่การทำงาน | ข้อมูลนำเข้า (Input) | ผลลัพธ์ (Output) | ความสำคัญ |
 |---|---|---|---|---|
-| **AI-01 Event Classification** | จำแนกประเภทของ Incident (รายงานเหตุการณ์) | ชื่อ (title), คำอธิบาย (description), รูปภาพ (image) | หมวดหมู่เหตุการณ์ (category) + ค่าความเชื่อมั่น (confidence) | สูง |
-| **AI-02 Severity Assistant** | ประเมินความรุนแรงของเหตุการณ์ในเบื้องต้น | ข้อมูลของ Incident ทั้งหมด | คำแนะนำระดับความรุนแรง (severity suggestion) + confidence | สูง |
+| **AI-01 Event Classification** | เสนอประเภทมาตรฐานของ Incident โดยไม่บังคับผู้ใช้ | ข้อความเหตุการณ์, รูปภาพ, ตำแหน่ง | suggested category + classification confidence | สูง |
+| **AI-02 Severity Assistant** | ประเมินความรุนแรงภายหลัง | ข้อมูลผลกระทบ, รายงานร่วม, การยืนยัน, สื่อ, ตำแหน่ง | severity suggestion + confidence | สูง |
 | **AI-03 Duplicate Detection** | ตรวจจับว่า Incident ใหม่เป็นเหตุการณ์เดียวกับที่มีอยู่แล้วหรือไม่ | สถานที่ (location) + เวลา (time) + ข้อความ (text) | เหตุการณ์ที่น่าจะซ้ำซ้อน (possible matches) | สูง |
 | **AI-04 Event Clustering** | จัดกลุ่ม Incident หลายๆ อันที่เกี่ยวข้องกันให้เป็น 1 Event | Incident + location + time | เสนอโครงร่าง Event ใหม่ (event candidate) | สูง |
 | **AI-05 Priority Ranking** | ช่วยจัดลำดับความสำคัญของเหตุการณ์เพื่อแสดงในฟีด | ความรุนแรง (severity) + ระยะทาง (distance) + จำนวนรายงาน + การยืนยัน + ความเคลื่อนไหว | คะแนนความสำคัญ (priority score) | สูง |
@@ -60,3 +60,11 @@
 6. เผยแพร่ Incident/Event เข้าสู่ฟีดพร้อมแสดงสถานะการยืนยัน (Verification Status)
 7. AI ช่วยเขียนสรุป Timeline และประเมินเพื่อแนะนำการยิงแจ้งเตือน (Notification) หาผู้ใช้ที่เกี่ยวข้อง
 8. เมื่อมีการแจ้งลบ (Report content) จากชุมชน → AI ช่วยจัดกลุ่มและคัดกรอง → เพื่อให้ Admin ตัดสินใจขั้นสุดท้าย
+
+### 4.1 กติกาสำหรับการรับรายงานแบบยืดหยุ่น
+
+- ระยะแรกใช้ keyword matching แบบ deterministic เพื่อเสนอประเภทจากข้อความ เช่น รถชน → อุบัติเหตุทางถนน; AI เป็นความสามารถเสริมภายหลัง
+- คำแนะนำประเภทไม่ใช่การบังคับ ผู้ใช้ต้องส่ง Custom Report Type ได้เมื่อระบบยังไม่รู้จักเหตุ
+- classification confidence คือความมั่นใจว่าข้อความเข้ากับประเภทที่เสนอ ไม่ใช่ Credibility ของเหตุการณ์
+- Credibility และ Severity เป็นคนละค่า; AI ห้ามใช้ผล classification เพียงอย่างเดียวประกาศว่าเหตุเกิดขึ้นจริงหรือรุนแรง
+- Map Display Mode และ Impact Radius มาจากนโยบายของประเภทมาตรฐาน ไม่ได้มาจาก Severity ที่ผู้ใช้เลือก

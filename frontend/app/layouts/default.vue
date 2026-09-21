@@ -40,9 +40,9 @@ const toggleSidebar = () => {
 
 <style scoped>
 .desktop-shell {
-  height: 100dvh;
   display: flex;
   flex-direction: column;
+  height: 100vh;
   overflow: hidden;
   background-color: #f1f5f9;
 }
@@ -89,8 +89,13 @@ const toggleSidebar = () => {
 }
 
 @media (max-width: 48rem) {
-  .desktop-shell__body {
-    --sidebar-width: 5rem;
+  .desktop-shell__body,
+  .desktop-shell__body--with-right-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .desktop-shell__body > :deep(.app-sidebar) {
+    display: none;
   }
 }
 </style>
