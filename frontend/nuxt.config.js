@@ -8,7 +8,8 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      mapboxToken: process.env.NUXT_PUBLIC_MAPBOX_ACCESS_TOKEN || ''
+      mapboxToken: process.env.NUXT_PUBLIC_MAPBOX_ACCESS_TOKEN || '',
+      apiBase: process.env.NUXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
     }
   }
 })

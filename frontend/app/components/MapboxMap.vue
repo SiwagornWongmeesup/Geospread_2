@@ -14,7 +14,8 @@ let map = null
 // Props for map configuration
 const props = defineProps({
   center: { type: Array, default: () => [100.5018, 13.7563] },
-  zoom: { type: Number, default: 10 }
+  zoom: { type: Number, default: 10 },
+  showGeolocateControl: { type: Boolean, default: true },
 })
 
 onMounted(() => {
@@ -37,15 +38,17 @@ onMounted(() => {
     map.addControl(new mapboxgl.NavigationControl(), 'top-right')
 
     // Add user location tracking control
-    map.addControl(
-      new mapboxgl.GeolocateControl({
-        positionOptions: {
-          enableHighAccuracy: true
-        },
-        trackUserLocation: true,
-        showUserHeading: true
-      })
-    )
+    if (props.showGeolocateControl) {
+      map.addControl(
+        new mapboxgl.GeolocateControl({
+          positionOptions: {
+            enableHighAccuracy: true
+          },
+          trackUserLocation: true,
+          showUserHeading: true
+        })
+      )
+    }
   }
 })
 

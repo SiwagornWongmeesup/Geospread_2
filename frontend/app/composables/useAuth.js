@@ -14,8 +14,14 @@ export const useAuth = () => {
     return cookie.value ?? null
   }
 
+  // รองรับ session แบบเดิมที่ token เคยถูกเก็บรวมอยู่ใน cookie user ด้วย
+  const getToken = () => {
+    const tokenCookie = useCookie('auth_token')
+    return tokenCookie.value ?? getUser()?.token ?? null
+  }
+
   // ตรวจว่า login อยู่หรือไม่
-  const isLoggedIn = computed(() => !!getUser())
+  const isLoggedIn = computed(() => !!getToken())
 
   // Login
   const login = async (form) => {
@@ -29,9 +35,11 @@ export const useAuth = () => {
         credentials: 'include'
       })
 
-      // เก็บ user ลง cookie (หมดอายุ 1 วัน)
+      // แยกข้อมูลที่แสดงบน UI ออกจาก JWT ที่ใช้เรียก API
       const userCookie = useCookie('user', { maxAge: 60 * 60 * 24 })
-      userCookie.value = res.data
+      userCookie.value = { user: res.data.user }
+      const tokenCookie = useCookie('auth_token', { maxAge: 60 * 60 * 24 })
+      tokenCookie.value = res.data.token
 
       return true
     } catch (err) {
@@ -66,6 +74,8 @@ export const useAuth = () => {
   const logout = () => {
     const userCookie = useCookie('user')
     userCookie.value = null
+    const tokenCookie = useCookie('auth_token')
+    tokenCookie.value = null
     navigateTo('/login')
   }
 
@@ -74,6 +84,7 @@ export const useAuth = () => {
     error,
     isLoggedIn,
     getUser,
+    getToken,
     login,
     register,
     logout

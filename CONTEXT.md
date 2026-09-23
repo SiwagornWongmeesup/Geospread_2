@@ -40,13 +40,17 @@ _Avoid_: Incident Attachment เมื่อหมายถึงไฟล์ข
 ข้อความอิสระที่ Community User ใช้อธิบายว่าเห็นอะไรหรือเกิดอะไรขึ้นใน Incident Report
 _Avoid_: Fixed Category, Severity Input
 
-**Suggested Category**:
-ประเภทมาตรฐานที่ระบบเสนอจาก Reported Observation และผู้ใช้เลือกยอมรับหรือข้ามได้
-_Avoid_: Mandatory Category, Final Classification
+**Suggested Incident Type**:
+Incident Type ที่ระบบจัดอันดับจาก Reported Observation เพื่อช่วยให้ Community User เลือกได้เร็วขึ้น; เป็นเพียงคำแนะนำและไม่ถือเป็น Type ที่ผู้ใช้เลือกจนกว่าผู้ใช้จะกดยืนยันเอง
+_Avoid_: Suggested Category, Mandatory Category, Final Classification
 
 **Custom Report Type**:
-ประเภทที่ Community User ระบุเองเมื่อไม่มี Suggested Category ที่ตรงกับสิ่งที่พบ
+ประเภทที่ Community User ระบุเองเมื่อไม่มี Suggested Incident Type ที่ตรงกับสิ่งที่พบ
 _Avoid_: Invalid Report, Unsupported Report
+
+**Unclassified Incident Report**:
+Incident Report ที่ผู้ใช้ยังไม่ได้เลือก Incident Type มาตรฐาน แม้ระบบอาจมี Suggested Incident Type อยู่; รายงานยังถูกส่งได้และเริ่มต้นด้วยสถานะรอตรวจสอบ
+_Avoid_: Invalid Report, Auto-selected Type
 
 **Map Display Mode**:
 กติกาที่กำหนดการแสดง Incident บนแผนที่ตามประเภทมาตรฐาน เช่น Marker หรือ Icon พร้อม Impact Radius

@@ -13,6 +13,11 @@ const { isMobile } = useResponsiveView()
 // Auth Logic จาก Composable
 const { login, loading, error } = useAuth()
 const router = useRouter()
+const route = useRoute()
+const redirectAfterLogin = () => {
+  const redirect = route.query.redirect
+  return typeof redirect === 'string' && redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/'
+}
 
 const form = ref({
   email: '',
@@ -21,16 +26,16 @@ const form = ref({
 
 // ถ้า login อยู่แล้ว redirect ไปหน้าแรก
 onMounted(() => {
-  const { getUser } = useAuth()
-  if (getUser()) {
-    router.replace('/')
+  const { getToken } = useAuth()
+  if (getToken()) {
+    router.replace(redirectAfterLogin())
   }
 })
 
 const handleLogin = async () => {
   const success = await login(form.value)
   if (success) {
-    router.replace('/')
+    router.replace(redirectAfterLogin())
   }
 }
 

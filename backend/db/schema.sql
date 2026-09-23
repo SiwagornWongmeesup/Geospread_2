@@ -265,12 +265,34 @@ SELECT incident_type.type_id, seed.keyword
 FROM (
     VALUES
       ('flood', 'น้ำท่วม'), ('flood', 'น้ำขัง'), ('flood', 'น้ำล้น'), ('flood', 'น้ำเอ่อ'),
-      ('flash_flood', 'น้ำป่า'), ('flash_flood', 'น้ำป่าไหลหลาก'),
-      ('wildfire', 'ไฟป่า'), ('building_fire', 'ไฟไหม้บ้าน'), ('building_fire', 'ไฟไหม้อาคาร'), ('building_fire', 'เพลิงไหม้'), ('building_fire', 'ควันไฟ'),
-      ('traffic_accident', 'รถชน'), ('traffic_accident', 'รถชนกัน'), ('traffic_accident', 'เฉี่ยวชน'), ('vehicle_rollover', 'รถคว่ำ'), ('traffic_accident', 'มอไซค์ล้ม'),
-      ('pm25', 'PM2.5'), ('pm25', 'ฝุ่น'), ('air_pollution', 'มลพิษทางอากาศ'),
-      ('power_outage', 'ไฟฟ้าดับ'), ('broken_power_line', 'สายไฟขาด'),
-      ('missing_pet', 'หมาหาย'), ('missing_pet', 'สัตว์เลี้ยงหาย'), ('lost_item', 'ของหาย')
+      ('flash_flood', 'น้ำป่า'), ('flash_flood', 'น้ำป่าไหลหลาก'), ('flash_flood', 'น้ำหลาก'),
+      ('storm', 'พายุ'), ('storm', 'ลมแรง'), ('storm', 'ฝนหนัก'),
+      ('wildfire', 'ไฟป่า'), ('wildfire', 'ไฟลาม'),
+      ('earthquake', 'แผ่นดินไหว'), ('earthquake', 'แรงสั่นสะเทือน'),
+      ('tsunami', 'สึนามิ'), ('tsunami', 'คลื่นยักษ์'),
+      ('landslide', 'ดินถล่ม'), ('landslide', 'ดินสไลด์'), ('landslide', 'โคลนถล่ม'),
+      ('drought', 'ภัยแล้ง'), ('drought', 'ขาดน้ำ'),
+      ('building_fire', 'ไฟไหม้'), ('building_fire', 'ไฟไหม้บ้าน'), ('building_fire', 'ไฟไหม้อาคาร'), ('building_fire', 'เพลิงไหม้'),
+      ('traffic_accident', 'รถชน'), ('traffic_accident', 'รถชนกัน'), ('traffic_accident', 'อุบัติเหตุ'), ('traffic_accident', 'เฉี่ยวชน'), ('traffic_accident', 'มอเตอร์ไซค์ล้ม'),
+      ('vehicle_rollover', 'รถคว่ำ'), ('vehicle_obstruction', 'รถเสีย'), ('vehicle_obstruction', 'รถกีดขวาง'),
+      ('road_damage', 'ถนนทรุด'), ('road_damage', 'ถนนชำรุด'), ('road_damage', 'ถนนพัง'), ('road_damage', 'หลุม'),
+      ('road_obstruction', 'ถนนกีดขวาง'), ('road_obstruction', 'กีดขวาง'), ('road_obstruction', 'ปิดถนน'),
+      ('building_collapse', 'อาคารถล่ม'), ('building_collapse', 'ตึกถล่ม'),
+      ('violent_incident', 'เหตุรุนแรง'), ('violent_incident', 'ทะเลาะวิวาท'), ('violent_incident', 'ทำร้าย'),
+      ('missing_person', 'คนหาย'), ('missing_person', 'เด็กหาย'),
+      ('suspicious_object', 'วัตถุต้องสงสัย'), ('suspicious_object', 'คนต้องสงสัย'),
+      ('power_outage', 'ไฟฟ้าดับ'), ('power_outage', 'ไฟดับ'), ('power_outage', 'ไฟไม่ติด'),
+      ('fallen_pole', 'เสาไฟล้ม'), ('broken_power_line', 'สายไฟขาด'), ('broken_power_line', 'ไฟฟ้ารั่ว'),
+      ('water_pipe_break', 'ท่อน้ำแตก'), ('water_pipe_break', 'ท่อประปารั่ว'),
+      ('water_supply_outage', 'น้ำประปาไม่ไหล'), ('water_supply_outage', 'น้ำไม่ไหล'), ('water_supply_outage', 'ประปาขัดข้อง'),
+      ('pm25', 'PM2.5'), ('pm25', 'ฝุ่น'), ('pm25', 'หมอกควัน'),
+      ('abnormal_smoke', 'ควันผิดปกติ'), ('air_pollution', 'มลพิษอากาศ'), ('air_pollution', 'อากาศเสีย'),
+      ('wastewater', 'น้ำเสีย'), ('wastewater', 'น้ำเน่าเสีย'),
+      ('chemical_odor', 'กลิ่นสารเคมี'), ('chemical_odor', 'กลิ่นแก๊ส'), ('chemical_odor', 'แก๊สรั่ว'),
+      ('chemical_leak', 'สารเคมีรั่ว'), ('chemical_leak', 'สารเคมีหก'),
+      ('waste', 'ขยะกอง'), ('waste', 'ขยะล้น'),
+      ('missing_pet', 'หมาหาย'), ('missing_pet', 'แมวหาย'), ('missing_pet', 'สัตว์เลี้ยงหาย'),
+      ('lost_item', 'ของหาย'), ('lost_item', 'ทำหาย'), ('dangerous_animal', 'สัตว์อันตราย'), ('dangerous_animal', 'งู')
 ) AS seed(type_code, keyword)
 JOIN tb_incident_types incident_type ON incident_type.type_code = seed.type_code
 ON CONFLICT (type_id, keyword) DO NOTHING;

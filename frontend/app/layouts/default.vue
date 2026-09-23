@@ -78,7 +78,7 @@ const toggleSidebar = () => {
   overflow: auto;
 }
 
-@media (max-width: 70rem) {
+@media (max-width: 58rem) {
   .desktop-shell__body--with-right-panel {
     grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
   }
