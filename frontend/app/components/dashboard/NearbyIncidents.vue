@@ -10,7 +10,11 @@
       </NuxtLink>
     </div>
 
-    <div class="nearby-incidents__list">
+    <p v-if="isLoading" class="nearby-incidents__state">กำลังโหลดเหตุการณ์บนแผนที่...</p>
+    <p v-else-if="errorMessage" class="nearby-incidents__state nearby-incidents__state--error">{{ errorMessage }}</p>
+    <p v-else-if="!incidents.length" class="nearby-incidents__state">ยังไม่มีเหตุการณ์ที่แสดงบนแผนที่</p>
+
+    <div v-else class="nearby-incidents__list">
       <button
         v-for="incident in incidents"
         :key="incident.id"
@@ -20,7 +24,9 @@
         @click="$emit('select', incident)"
       >
         <div class="incident-card__visual" :class="`incident-card__visual--${incident.tone}`">
-          <span class="incident-card__visual-ring" aria-hidden="true" />
+          <span class="incident-card__icon-wrap" aria-hidden="true">
+            <img class="incident-card__icon" :src="incident.iconUrl || '/Alert.svg'" alt="">
+          </span>
           <span class="incident-card__badge">{{ incident.category }}</span>
         </div>
         <div class="incident-card__body">
@@ -54,28 +60,21 @@ defineProps({
     type: String,
     default: null,
   },
+  incidents: {
+    type: Array,
+    default: () => [],
+  },
+  isLoading: {
+    type: Boolean,
+    default: false,
+  },
+  errorMessage: {
+    type: String,
+    default: null,
+  },
 })
 
 defineEmits(['select'])
-
-const incidents = [
-  {
-    id: 'flooding-mae-rim', category: 'น้ำท่วม', title: 'ฝนตกหนัก น้ำเริ่มท่วมถนน', location: 'อำเภอแม่ริม, เชียงใหม่', distance: '1.2 กม.', time: '6 นาทีที่แล้ว', tone: 'blue',
-    safetySteps: ['หลีกเลี่ยงเส้นทางที่มีน้ำท่วมขัง', 'ย้ายของจำเป็นขึ้นที่สูง', 'ติดตามประกาศจากหน่วยงานท้องถิ่น'],
-  },
-  {
-    id: 'wildfire-doi-suthep', category: 'ไฟป่า', title: 'พบกลุ่มควันใกล้ดอยสุเทพ', location: 'สุเทพ, เชียงใหม่', distance: '2.3 กม.', time: '28 นาทีที่แล้ว', tone: 'red',
-    safetySteps: ['หลีกเลี่ยงพื้นที่ที่มีควันหนาแน่น', 'ปิดประตูหน้าต่างเพื่อลดฝุ่นควัน', 'สวมหน้ากากเมื่อต้องออกนอกอาคาร'],
-  },
-  {
-    id: 'accident-superhighway', category: 'อุบัติเหตุ', title: 'รถชนบนถนนซูเปอร์ไฮเวย์', location: 'เมืองเชียงใหม่', distance: '4.1 กม.', time: '1 ชั่วโมงที่แล้ว', tone: 'orange',
-    safetySteps: ['ชะลอความเร็วเมื่อเข้าใกล้จุดเกิดเหตุ', 'เปิดทางให้รถฉุกเฉิน', 'เลือกเส้นทางสำรองหากทำได้'],
-  },
-  {
-    id: 'road-closure-san-sai', category: 'ปิดถนน', title: 'ต้นไม้ล้มกีดขวางเส้นทาง', location: 'สันทราย, เชียงใหม่', distance: '5.6 กม.', time: '2 ชั่วโมงที่แล้ว', tone: 'green',
-    safetySteps: ['อย่าเข้าใกล้ต้นไม้หรือสายไฟที่ล้ม', 'ใช้เส้นทางเลี่ยงตามคำแนะนำ', 'แจ้งเจ้าหน้าที่หากพบอันตรายเพิ่มเติม'],
-  },
-]
 </script>
 
 <style scoped>
@@ -123,6 +122,23 @@ const incidents = [
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.75rem;
+}
+
+.nearby-incidents__state {
+  margin: 0;
+  padding: 0.9rem;
+  border: 1px dashed #cdd9e8;
+  border-radius: 0.75rem;
+  background: #f8fbff;
+  color: #5d6f89;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.nearby-incidents__state--error {
+  border-color: #fecaca;
+  background: #fff7f7;
+  color: #b91c1c;
 }
 
 .incident-card {
@@ -192,15 +208,30 @@ const incidents = [
   background: #23a66c;
 }
 
-.incident-card__visual-ring {
+.incident-card__visual--gray {
+  background: #64748b;
+}
+
+.incident-card__icon-wrap {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 2.2rem;
-  height: 2.2rem;
+  z-index: 1;
+  display: grid;
+  width: 2.9rem;
+  height: 2.9rem;
+  place-items: center;
   border: 3px solid rgb(255 255 255 / 78%);
   border-radius: 50%;
+  background: rgb(255 255 255 / 18%);
   transform: translate(-50%, -50%);
+}
+
+.incident-card__icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
 }
 
 .incident-card__badge {
@@ -250,6 +281,10 @@ const incidents = [
 
 .incident-card__category--green {
   color: #138653;
+}
+
+.incident-card__category--gray {
+  color: #64748b;
 }
 
 .incident-card h3 {

@@ -18,14 +18,16 @@
           <p>{{ suggestionNote }}</p>
         </div>
         <button ref="moreTypesButton" type="button" class="more-types-button" @click="openTypePicker">
-          เลือกประเภทอื่น
+          ดูเพิ่มเติม
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13m-5-5 5 5-5 5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" /></svg>
         </button>
       </header>
 
-      <div v-if="suggestedTypes.length" class="suggested-type-grid" role="group" aria-label="ประเภทเหตุการณ์ที่ระบบแนะนำ">
-        <button v-for="incidentType in suggestedTypes" :key="incidentType.id" type="button" class="suggested-type" :class="{ 'suggested-type--selected': userSelectedTypeId === incidentType.id }" :aria-pressed="userSelectedTypeId === incidentType.id" @click="selectIncidentType(incidentType)">
-          <svg class="suggested-type__icon" viewBox="0 0 24 24" aria-hidden="true" :style="{ color: iconColor(incidentType) }"><path :d="iconPath(incidentType.icon)" fill="currentColor" /></svg>
+      <div v-if="visibleIncidentTypes.length" class="suggested-type-grid" role="group" aria-label="ประเภทเหตุการณ์ที่เลือกได้อย่างรวดเร็ว">
+        <button v-for="incidentType in visibleIncidentTypes" :key="incidentType.id" type="button" class="suggested-type" :class="{ 'suggested-type--selected': userSelectedTypeId === incidentType.id }" :aria-pressed="userSelectedTypeId === incidentType.id" @click="selectIncidentType(incidentType)">
+          <span class="suggested-type__icon" :style="{ backgroundColor: iconColor(incidentType) }" aria-hidden="true">
+            <img :src="incidentType.iconUrl || '/Alert.svg'" alt="">
+          </span>
           <span>{{ incidentType.label }}</span>
           <svg v-if="userSelectedTypeId === incidentType.id" class="suggested-type__check" viewBox="0 0 24 24" aria-label="เลือกแล้ว"><path d="m7.5 12.5 3 3 6-7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.3" /></svg>
         </button>
@@ -75,20 +77,24 @@
         <div v-if="filteredTypeGroups.length" class="type-picker-groups">
           <section v-for="group in filteredTypeGroups" :key="group.id" class="type-picker-group" :aria-labelledby="`type-group-${group.id}`">
             <header class="type-picker-group__heading">
-              <svg viewBox="0 0 24 24" aria-hidden="true" :style="{ color: groupColor(group.id) }"><path :d="iconPath(group.icon)" fill="currentColor" /></svg>
+              <span class="type-picker-group__icon" :style="{ backgroundColor: groupColor(group.id) }" aria-hidden="true">
+                <img :src="group.iconUrl || '/Alert.svg'" alt="">
+              </span>
               <h3 :id="`type-group-${group.id}`">{{ group.label }}</h3>
-              <span>{{ group.types.length }} ประเภท</span>
+              <span class="type-picker-group__count">{{ group.types.length }} ประเภท</span>
             </header>
             <div class="type-picker-grid">
               <button v-for="incidentType in group.types" :key="incidentType.id" type="button" class="type-picker-option" :class="{ 'type-picker-option--selected': userSelectedTypeId === incidentType.id }" :aria-pressed="userSelectedTypeId === incidentType.id" @click="selectIncidentType(incidentType, true)">
-                <svg viewBox="0 0 24 24" aria-hidden="true" :style="{ color: iconColor(incidentType) }"><path :d="iconPath(incidentType.icon)" fill="currentColor" /></svg>
+                <span class="type-picker-option__icon" :style="{ backgroundColor: iconColor(incidentType) }" aria-hidden="true">
+                  <img :src="incidentType.iconUrl || '/Alert.svg'" alt="">
+                </span>
                 <span>{{ incidentType.label }}</span>
                 <svg v-if="userSelectedTypeId === incidentType.id" class="type-picker-option__check" viewBox="0 0 24 24" aria-label="เลือกแล้ว"><path d="m7.5 12.5 3 3 6-7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.3" /></svg>
               </button>
             </div>
           </section>
         </div>
-        <p v-else-if="isLoadingCatalog" class="type-picker-empty">กำลังโหลดหมวดหมู่และประเภทเหตุการณ์…</p>
+        <p v-else-if="isLoadingTypeCache" class="type-picker-empty">กำลังโหลดหมวดหมู่และประเภทเหตุการณ์…</p>
         <p v-else-if="catalogLoadError" class="type-picker-empty">ยังโหลดประเภทเหตุการณ์จากระบบไม่ได้ ลองเปิดใหม่อีกครั้งได้เลย</p>
         <p v-else class="type-picker-empty">ไม่พบประเภทเหตุการณ์ที่ค้นหา ลองใช้คำที่สั้นลงหรือพิมพ์รายละเอียดในรายงานแทน</p>
 
@@ -99,11 +105,24 @@
       </section>
     </div>
   </Teleport>
+
+  <Teleport to="body">
+    <div v-if="isTypeConflictDialogOpen" class="incident-type-modal-backdrop" @click.self="closeTypeConflictDialog">
+      <section class="incident-type-modal type-conflict-modal" role="dialog" aria-modal="true" aria-labelledby="type-conflict-title" @keydown.esc="closeTypeConflictDialog">
+        <h2 id="type-conflict-title">ประเภทที่คุณเลือกอาจไม่ตรงกับรายละเอียดที่พิมพ์</h2>
+        <p>ระบบแนะนำ: <strong>{{ detectedSuggestion?.label }}</strong><br>คุณเลือก: <strong>{{ userSelectedType?.label }}</strong></p>
+        <div class="type-conflict-modal__actions">
+          <button type="button" class="button button--secondary" @click="changeToSuggestedType">เปลี่ยนเป็น {{ detectedSuggestion?.label }}</button>
+          <button type="button" class="button button--primary" @click="confirmSelectedTypeDespiteConflict">ยืนยันใช้ {{ userSelectedType?.label }}</button>
+        </div>
+      </section>
+    </div>
+  </Teleport>
 </template>
 
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { getRecommendedIncidentTypes, toDisplayIncidentCategory } from '~/composables/useReportIncident'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { getRecommendedIncidentTypes, toDisplayIncidentCategory, toDisplayKeywordType } from '~/composables/useReportIncident'
 
 const {
   userSelectedTypeId,
@@ -123,11 +142,12 @@ const isTypePickerOpen = ref(false)
 const typeSearch = ref('')
 const typePickerSearch = ref(null)
 const moreTypesButton = ref(null)
-const suggestedTypesFromApi = ref([])
-const isLoadingSuggestions = ref(false)
+const keywordTypeCache = ref([])
 const incidentTypeGroups = ref([])
-const isLoadingCatalog = ref(false)
+const isLoadingTypeCache = ref(false)
 const catalogLoadError = ref(false)
+const isTypeConflictDialogOpen = ref(false)
+const allowTypeConflict = ref(false)
 const config = useRuntimeConfig()
 // Nuxt dev server ที่เปิดก่อนเพิ่ม runtime config ยังไม่มี apiBase จึงต้องมีค่า fallback
 const apiBase = config.public.apiBase || 'http://localhost:5000'
@@ -135,13 +155,19 @@ const { getToken, isLoggedIn } = useAuth()
 const maxMediaFiles = 5
 const maxMediaFileSizeBytes = 20 * 1024 * 1024
 const needsLogin = ref(false)
-let suggestionTimer
-let latestSuggestionRequest = 0
-const suggestedTypes = computed(() => getRecommendedIncidentTypes(
-  suggestedTypesFromApi.value,
-  userSelectedType.value,
+const recommendedTypes = computed(() => getRecommendedIncidentTypes(details.value, keywordTypeCache.value))
+const detectedSuggestion = computed(() => recommendedTypes.value[0] ?? null)
+const visibleIncidentTypes = computed(() => {
+  // ก่อนพิมพ์ข้อความจะไม่แสดง Type ทั้งหมด: ผู้ใช้เห็นเฉพาะคำแนะนำจาก keyword
+  // หรือ Type ที่ตนเลือกเองจาก modal เท่านั้น
+  const prioritized = [userSelectedType.value, ...recommendedTypes.value].filter(Boolean)
+  return [...new Map(prioritized.map((type) => [type.id, type])).values()]
+})
+const hasTypeConflict = computed(() => Boolean(
+  userSelectedType.value?.databaseTypeId
+  && detectedSuggestion.value?.databaseTypeId
+  && userSelectedType.value.databaseTypeId !== detectedSuggestion.value.databaseTypeId,
 ))
-const detectedSuggestion = computed(() => getRecommendedIncidentTypes(suggestedTypesFromApi.value)[0] ?? null)
 const selectedMediaLabel = computed(() => {
   if (!selectedFiles.value.length) return 'เลือกรูปภาพหรือวิดีโอ'
   if (selectedFiles.value.length === 1) return selectedFiles.value[0].name
@@ -149,8 +175,10 @@ const selectedMediaLabel = computed(() => {
 })
 const suggestionNote = computed(() => {
   if (userSelectedType.value) return `เลือกประเภท “${userSelectedType.value.label}” แล้ว กดอีกครั้งเพื่อยกเลิก หรือเลือกประเภทอื่นได้`
-  if (isLoadingSuggestions.value) return 'กำลังหาประเภทที่เกี่ยวข้องจากรายละเอียดที่พิมพ์…'
+  if (details.value.trim().length < 2) return 'พิมพ์รายละเอียดก่อน ระบบจะแนะนำ Type ที่เกี่ยวข้องให้ หรือกดดูเพิ่มเติมได้'
+  if (isLoadingTypeCache.value) return 'กำลังเตรียมคำแนะนำประเภทเหตุการณ์…'
   if (detectedSuggestion.value) return `ระบบคาดว่าอาจเป็น “${detectedSuggestion.value.label}” เลือกได้ถ้าตรง ไม่เลือกก็ส่งรายงานได้`
+  if (catalogLoadError.value) return 'ยังโหลดคำแนะนำจากระบบไม่ได้ แต่คุณยังพิมพ์และส่งรายงานได้ตามปกติ'
   return 'ระบุ Type ได้เมื่อช่วยให้ตรงกับสิ่งที่พบ ไม่เลือกก็ส่งรายงานได้'
 })
 const normalizedSearch = computed(() => typeSearch.value.trim().toLocaleLowerCase())
@@ -163,90 +191,31 @@ const filteredTypeGroups = computed(() => incidentTypeGroups.value
   }))
   .filter((group) => group.types.length))
 
-const fetchIncidentCatalog = async () => {
-  isLoadingCatalog.value = true
+// โหลด Database snapshot เพียงครั้งเดียวเมื่อเปิดหน้า แล้วใช้ keywordTypeCache ระหว่างพิมพ์
+const fetchReportTypeCache = async () => {
+  isLoadingTypeCache.value = true
   catalogLoadError.value = false
 
   try {
-    const response = await $fetch(`${apiBase}/incidents/catalog`)
-    incidentTypeGroups.value = (response.data ?? []).map(toDisplayIncidentCategory)
+    const response = await $fetch(`${apiBase}/incidents/report-type-cache`)
+    incidentTypeGroups.value = (response.data?.categories ?? []).map(toDisplayIncidentCategory)
+    keywordTypeCache.value = (response.data?.keywords ?? []).map(toDisplayKeywordType)
   } catch {
     incidentTypeGroups.value = []
+    keywordTypeCache.value = []
     catalogLoadError.value = true
   } finally {
-    isLoadingCatalog.value = false
+    isLoadingTypeCache.value = false
   }
 }
 
-const fetchSuggestedTypes = async (description) => {
-  const requestId = ++latestSuggestionRequest
-  const trimmedDescription = description.trim()
-
-  if (trimmedDescription.length < 2) {
-    suggestedTypesFromApi.value = []
-    isLoadingSuggestions.value = false
-    return
-  }
-
-  isLoadingSuggestions.value = true
-
-  try {
-    const response = await $fetch(`${apiBase}/incidents/suggestions`, {
-      query: { description: trimmedDescription, limit: 2 },
-    })
-
-    if (requestId === latestSuggestionRequest) {
-      suggestedTypesFromApi.value = response.data ?? []
-    }
-  } catch {
-    // คำแนะนำล้มเหลวได้โดยไม่กระทบการพิมพ์หรือการส่งรายงาน
-    if (requestId === latestSuggestionRequest) suggestedTypesFromApi.value = []
-  } finally {
-    if (requestId === latestSuggestionRequest) isLoadingSuggestions.value = false
-  }
-}
-
-watch(details, (description) => {
-  clearTimeout(suggestionTimer)
-
-  if (description.trim().length < 2) {
-    void fetchSuggestedTypes(description)
-    return
-  }
-
-  suggestionTimer = setTimeout(() => {
-    void fetchSuggestedTypes(description)
-  }, 350)
+watch(details, () => {
+  allowTypeConflict.value = false
 })
 
-onBeforeUnmount(() => clearTimeout(suggestionTimer))
 onMounted(() => {
-  void fetchIncidentCatalog()
+  void fetchReportTypeCache()
 })
-
-const iconPaths = {
-  flood: 'M3 16c1.7 0 1.7-1.7 3.4-1.7S8.1 16 9.8 16s1.7-1.7 3.4-1.7 1.7 1.7 3.4 1.7 1.7-1.7 3.4-1.7v2.2c-1.7 0-1.7 1.7-3.4 1.7s-1.7-1.7-3.4-1.7-1.7 1.7-3.4 1.7-1.7-1.7-3.4-1.7S4.7 20 3 20v-4Zm1-4.5c1.7-4.3 5.2-6.5 10.5-6.5 3.1 0 5.3.9 6.5 2.6-3.4-.5-5.7.1-7.1 1.8-1.8-1.1-3.7-.9-5.8.6-1 .7-2.4 1.2-4.1 1.5Z',
-  storm: 'M6.2 18h9.6a4.2 4.2 0 0 0 .7-8.34A5.2 5.2 0 0 0 6.1 11.1 3.5 3.5 0 0 0 6.2 18Zm5.1-6.2h2.2l-1 2.2H14l-3.4 5 .9-3H10l1.3-4.2Z',
-  drought: 'M12 2a1 1 0 0 1 1 1v1.3l1.7-1a1 1 0 1 1 1 1.7l-1.7 1H16a1 1 0 1 1 0 2h-2.3l1.7 1a1 1 0 1 1-1 1.7L12.7 9.7V12a1 1 0 1 1-2 0V9.7L9 10.7a1 1 0 1 1-1-1.7l1.7-1H7.4a1 1 0 1 1 0-2h2.3L8 5a1 1 0 1 1 1-1.7l1.7 1V3a1 1 0 0 1 1-1Zm0 9a6 6 0 1 1 0 12 6 6 0 0 1 0-12Z',
-  fire: 'M13.6 2.5c.2 3.4-2.6 4.7-3.2 7.4-.2.9 0 1.9.6 2.7-2.8-.4-4.2-2.7-3.7-5.3-2.7 2-4.3 5.1-4.3 8.1A9 9 0 1 0 20 11.2c-1.3-3.8-4.8-5.8-6.4-8.7Zm-1.7 18a3.4 3.4 0 0 1-3.3-4.2c.3-1.5 1.4-2.4 2.4-3.5.5 1.2 1.7 1.8 1.7 3.4 0 .9.5 1.7 1.1 2.2a3.4 3.4 0 0 1-1.9 2.1Z',
-  tsunami: 'M3 16c1.7 0 1.7-1.7 3.4-1.7S8.1 16 9.8 16s1.7-1.7 3.4-1.7 1.7 1.7 3.4 1.7 1.7-1.7 3.4-1.7v2.2c-1.7 0-1.7 1.7-3.4 1.7s-1.7-1.7-3.4-1.7-1.7 1.7-3.4 1.7-1.7-1.7-3.4-1.7S4.7 20 3 20v-4Z',
-  earthquake: 'M5 3h14v7l-2-1.4V14h-2v-3.9l-3-2.1-3 2.1V14H7V8.6L5 10V3Zm5 11h4v7h-4v-7Zm-5 2h3v5H5v-5Zm11 0h3v5h-3v-5Z',
-  car: 'M5.1 11 6.7 6.5A2 2 0 0 1 8.6 5h6.8a2 2 0 0 1 1.9 1.5l1.6 4.5A2.5 2.5 0 0 1 21 13.5V17a1 1 0 0 1-1 1h-1v1a1 1 0 0 1-2 0v-1H7v1a1 1 0 0 1-2 0v-1H4a1 1 0 0 1-1-1v-3.5A2.5 2.5 0 0 1 5.1 11Zm2.2-4L6.2 10h11.6l-1.1-3H7.3ZM6.5 15a1.25 1.25 0 1 0 0-2.5 1.25 1.25 0 0 0 0 2.5Zm11 0a1.25 1.25 0 1 0 0-2.5 1.25 1.25 0 0 0 0 2.5Z',
-  wrench: 'M14.8 4.1a4 4 0 0 0-5 5L3.4 15.5a2 2 0 1 0 2.8 2.8l6.4-6.4a4 4 0 0 0 5-5l-2.5 2.5-2.8-.7-.7-2.8 2.4-2.4Z',
-  road: 'M7 3h10l2 18h-4l-1-7h-4l-1 7H5L7 3Zm4 4v3h2V7h-2Z',
-  barrier: 'M3 17h18v3H3v-3Zm2-8h14v6H5V9Zm3 1.5v3h2.5v-3H8Zm5.5 0v3H16v-3h-2.5Z',
-  shield: 'M12 2 20 5v6c0 5-3.3 9.3-8 11-4.7-1.7-8-6-8-11V5l8-3Z',
-  warning: 'M12 3 2 20h20L12 3Zm1 13h-2v-5h2v5Zm0 2h-2v-1.5h2V18Z',
-  search: 'm20 20-4.2-4.2m1.2-4.8a6 6 0 1 1-12 0 6 6 0 0 1 12 0Z',
-  person: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8c.6-4 3-6 7-6s6.4 2 7 6H5Z',
-  paw: 'M8.5 10.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm7 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM5 14a1.8 1.8 0 1 0 0-3.6A1.8 1.8 0 0 0 5 14Zm14 0a1.8 1.8 0 1 0 0-3.6A1.8 1.8 0 0 0 19 14Zm-7 0c-3.3 0-5.5 4-3.8 6.1.9 1.1 2.3.6 3.8.6s2.9.5 3.8-.6C17.5 18 15.3 14 12 14Z',
-  wind: 'M4 8h9a2 2 0 1 0-2-2m-7 6h13a2 2 0 1 1-2 2m-11 2h7a2 2 0 1 1-2 2',
-  bolt: 'm13 2-9 12h7l-1 8 9-12h-7l1-8Z',
-  drop: 'M12 2s6 6.6 6 11a6 6 0 0 1-12 0c0-4.4 6-11 6-11Z',
-  sprout: 'M12 21v-8m0 4c-4.6 0-7-2.5-7-7 4.6 0 7 2.5 7 7Zm0-4c0-4.6 2.5-7 7-7 0 4.6-2.5 7-7 7Z',
-  leaf: 'M20 4C10 4 4 9.5 4 17c3.9 0 6.6-1.1 8.5-3.4L12 21l2-7.6C17.7 11.2 20 8.1 20 4Z',
-}
-
 const iconColorByType = {
   flood: '#1479ef', storm: '#6d5dfb', drought: '#f0b429', wildfire: '#e8333c', tsunami: '#1479ef', earthquake: '#e8333c',
   traffic_accident: '#1479ef', vehicle_obstruction: '#596b8a', road_damage: '#53678a', road_obstruction: '#e8333c', building_fire: '#e84431',
@@ -254,18 +223,11 @@ const iconColorByType = {
   pm25: '#67809f', chemical_odor: '#14a6a2', power_outage: '#f0a72c', water_supply_outage: '#1479ef',
 }
 
-const iconAliases = {
-  'activity': 'earthquake', 'building-2': 'earthquake', 'car-front': 'car', 'cloud': 'wind', 'cloud-lightning': 'storm',
-  'cloud-rain': 'storm', 'construction': 'road', 'droplet-off': 'drop', 'droplets': 'drop', 'flame': 'fire',
-  'flask-conical': 'warning', 'mountain': 'earthquake', 'package-check': 'search', 'package-search': 'search',
-  'paw-print': 'paw', 'shield-alert': 'shield', 'sun': 'drought', 'trash-2': 'barrier', 'triangle-alert': 'warning',
-  'utility-pole': 'bolt', 'waves': 'flood', 'waves-arrow-up': 'flood', 'zap': 'bolt', 'zap-off': 'bolt',
-}
-const iconPath = (icon) => iconPaths[iconAliases[icon] ?? icon] ?? iconPaths.warning
 const iconColor = (incidentType) => incidentType.markerColor ?? iconColorByType[incidentType.id] ?? '#1479ef'
 const groupColor = (categoryCode) => ['natural_disaster', 'environment'].includes(categoryCode) ? '#2ca86a' : '#1479ef'
 
 const selectIncidentType = (incidentType, closePicker = false) => {
+  allowTypeConflict.value = false
   selectUserSelectedType(incidentType)
   if (closePicker) closeTypePicker()
 }
@@ -279,6 +241,19 @@ const closeTypePicker = async () => {
   isTypePickerOpen.value = false
   await nextTick()
   moreTypesButton.value?.focus()
+}
+const closeTypeConflictDialog = () => {
+  isTypeConflictDialogOpen.value = false
+}
+const changeToSuggestedType = () => {
+  if (detectedSuggestion.value) selectUserSelectedType(detectedSuggestion.value)
+  allowTypeConflict.value = false
+  closeTypeConflictDialog()
+}
+const confirmSelectedTypeDespiteConflict = () => {
+  allowTypeConflict.value = true
+  closeTypeConflictDialog()
+  void submitReport()
 }
 const selectFiles = (event) => {
   const files = Array.from(event.target.files ?? [])
@@ -317,6 +292,11 @@ const submitReport = async () => {
     return
   }
 
+  if (hasTypeConflict.value && !allowTypeConflict.value) {
+    isTypeConflictDialogOpen.value = true
+    return
+  }
+
   const formData = new FormData()
   formData.append('description', details.value.trim())
   formData.append('lat', String(incidentLocation.value.lat))
@@ -351,7 +331,7 @@ const submitReport = async () => {
     selectedFiles.value = []
     if (fileInput.value) fileInput.value.value = ''
     clearUserSelectedType()
-    suggestedTypesFromApi.value = []
+    allowTypeConflict.value = false
   } catch (error) {
     if (error?.statusCode === 401) {
       showLoginPrompt('เซสชันหมดอายุ กรุณาเข้าสู่ระบบอีกครั้งก่อนส่งรายงาน')
@@ -532,9 +512,20 @@ const submitReport = async () => {
 }
 
 .suggested-type__icon {
+  display: grid;
   width: 2rem;
   height: 2rem;
   flex: 0 0 auto;
+  place-items: center;
+  border-radius: 999px;
+  box-shadow: 0 0 0 4px rgb(20 121 239 / 8%);
+}
+
+.suggested-type__icon img {
+  width: 1.18rem;
+  height: 1.18rem;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
 }
 
 .suggested-type:hover {
@@ -744,6 +735,23 @@ const submitReport = async () => {
   line-height: 1.2;
 }
 
+.type-conflict-modal {
+  width: min(100%, 34rem);
+}
+
+.type-conflict-modal > p {
+  margin: 0.8rem 0 0;
+  color: #60718c;
+  line-height: 1.55;
+}
+
+.type-conflict-modal__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-top: 1.35rem;
+}
+
 .incident-type-modal__header p {
   margin: 0.35rem 0 0;
   color: #60718c;
@@ -839,10 +847,20 @@ const submitReport = async () => {
   margin-bottom: 0.55rem;
 }
 
-.type-picker-group__heading svg {
+.type-picker-group__icon {
+  display: grid;
   width: 1.9rem;
   height: 1.9rem;
   flex: 0 0 auto;
+  place-items: center;
+  border-radius: 999px;
+}
+
+.type-picker-group__icon img {
+  width: 1.08rem;
+  height: 1.08rem;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
 }
 
 .type-picker-group h3 {
@@ -851,7 +869,7 @@ const submitReport = async () => {
   font-size: 1rem;
 }
 
-.type-picker-group__heading span {
+.type-picker-group__count {
   padding: 0.2rem 0.55rem;
   border-radius: 999px;
   background: #f0f4f9;
@@ -886,10 +904,20 @@ const submitReport = async () => {
   transition: border-color 160ms ease, background 160ms ease;
 }
 
-.type-picker-option > svg:first-child {
-  width: 1.35rem;
-  height: 1.35rem;
+.type-picker-option__icon {
+  display: grid;
+  width: 1.55rem;
+  height: 1.55rem;
   flex: 0 0 auto;
+  place-items: center;
+  border-radius: 999px;
+}
+
+.type-picker-option__icon img {
+  width: 0.95rem;
+  height: 0.95rem;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
 }
 
 .type-picker-option:hover {
@@ -984,6 +1012,10 @@ const submitReport = async () => {
     width: 1.65rem;
     height: 1.65rem;
   }
+  .suggested-type__icon img {
+    width: 1rem;
+    height: 1rem;
+  }
   .incident-type-modal-backdrop {
     padding: 0.7rem;
   }
@@ -1002,6 +1034,10 @@ const submitReport = async () => {
   .type-picker-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     padding-left: 0;
+  }
+
+  .type-conflict-modal__actions {
+    grid-template-columns: 1fr;
   }
 }
 

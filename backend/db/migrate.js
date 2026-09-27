@@ -66,7 +66,7 @@ async function migrateLegacyIncidents(client) {
     ON CONFLICT (incident_id) DO NOTHING
   `);
 
-  // ย้ายแต่ละแถวเดิมเป็น Report และคง category เดิมเป็น custom_type เพื่อรอจับคู่ Type ภายหลัง
+  // ย้ายแต่ละแถวเดิมเป็น Report รอตรวจสอบ โดยไม่บังคับ Type ใหม่ให้ข้อมูลเก่า
   await client.query(`
     INSERT INTO tb_incident_reports (
       user_id, incident_id, description, custom_type, type_status, incident_location,
@@ -77,9 +77,9 @@ async function migrateLegacyIncidents(client) {
       id,
       COALESCE(NULLIF(description, ''), 'รายงานเดิมที่ไม่มีรายละเอียด'),
       NULLIF(category, ''),
-      'pending_review',
+      'pending',
       location,
-      CASE WHEN status = 'rejected' THEN 'rejected' ELSE 'linked' END,
+      CASE WHEN status = 'rejected' THEN 'rejected' ELSE 'pending' END,
       FALSE,
       COALESCE(created_at, CURRENT_TIMESTAMP),
       COALESCE(updated_at, created_at, CURRENT_TIMESTAMP)

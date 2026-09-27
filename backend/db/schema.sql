@@ -69,6 +69,8 @@ CREATE TABLE IF NOT EXISTS tb_incident_types (
     default_radius_m INTEGER,
     -- สถานะว่าเปิดให้ผู้ใช้เลือกประเภทนี้หรือไม่
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    -- แสดงเป็นทางลัดในส่วนเหตุการณ์ที่พบบ่อยหรือไม่
+    is_quick BOOLEAN NOT NULL DEFAULT FALSE,
     -- ลำดับที่ใช้จัดเรียงประเภทเหตุการณ์บนหน้าจอ
     sort_order INT NOT NULL DEFAULT 0,
     -- วันที่และเวลาที่สร้างประเภทเหตุการณ์
@@ -100,7 +102,7 @@ CREATE TABLE IF NOT EXISTS tb_incident_keywords (
 CREATE TABLE IF NOT EXISTS tb_incidents (
     -- รหัสเหตุการณ์หลัก ใช้ระบุเหตุการณ์ที่รวบรวมจากรายงาน
     incident_id SERIAL PRIMARY KEY,
-    -- รหัสประเภทเหตุการณ์สุดท้ายที่ยืนยันแล้ว
+    -- รหัสประเภทเหตุการณ์ปัจจุบันที่ใช้แสดงผล และผู้ดูแลอาจปรับได้ภายหลัง
     final_type_id INT REFERENCES tb_incident_types(type_id) ON DELETE SET NULL,
     -- หัวข้อสรุปที่ใช้แสดงชื่อเหตุการณ์
     title VARCHAR(255) NOT NULL,
@@ -120,6 +122,8 @@ CREATE TABLE IF NOT EXISTS tb_incidents (
     verification_status VARCHAR(20) NOT NULL DEFAULT 'unverified',
     -- สถานะปัจจุบันของเหตุการณ์ เช่น กำลังเกิด แก้ไขแล้ว หรือปิดเรื่อง
     incident_status VARCHAR(20) NOT NULL DEFAULT 'active',
+    -- Incident ปลายทางเมื่อเหตุนี้ถูกรวมเข้ากับเหตุอื่นแล้ว
+    merged_into_incident_id INT REFERENCES tb_incidents(incident_id) ON DELETE SET NULL,
     -- จำนวนรายงานที่เชื่อมโยงกับเหตุการณ์นี้
     report_count INTEGER NOT NULL DEFAULT 0,
     -- วันที่และเวลาที่ได้รับรายงานแรกของเหตุการณ์
@@ -135,7 +139,7 @@ CREATE TABLE IF NOT EXISTS tb_incidents (
     CONSTRAINT chk_incident_severity CHECK (severity IN ('unrated', 'low', 'medium', 'high', 'critical')),
     CONSTRAINT chk_incident_confidence CHECK (confidence_score BETWEEN 0 AND 100),
     CONSTRAINT chk_incident_verification CHECK (verification_status IN ('unverified', 'verified')),
-    CONSTRAINT chk_incident_status CHECK (incident_status IN ('active', 'resolved', 'closed')),
+    CONSTRAINT chk_incident_status CHECK (incident_status IN ('active', 'resolved')),
     CONSTRAINT chk_incident_count CHECK (report_count >= 0)
 );
 
@@ -145,7 +149,9 @@ CREATE TABLE IF NOT EXISTS tb_incident_reports (
     report_id SERIAL PRIMARY KEY,
     -- รหัสผู้ใช้ที่ส่งรายงาน โดยเว้นว่างได้หากผู้ใช้ถูกลบ
     user_id INT REFERENCES tb_users(id) ON DELETE SET NULL,
-    -- รหัสเหตุการณ์หลักที่รายงานนี้เชื่อมโยง โดยเว้นว่างได้ระหว่างรอจับคู่
+    -- Trust Score ของผู้รายงานขณะส่ง เก็บไว้เพื่อประเมิน Credibility ย้อนหลัง
+    reporter_trust_score INT NOT NULL DEFAULT 100,
+    -- รหัสเหตุการณ์หลักที่รายงานนี้เชื่อมโยง
     incident_id INT REFERENCES tb_incidents(incident_id) ON DELETE SET NULL,
     -- ข้อความรายละเอียดเหตุการณ์ที่ผู้ใช้รายงาน
     description TEXT NOT NULL,
@@ -155,7 +161,7 @@ CREATE TABLE IF NOT EXISTS tb_incident_reports (
     system_suggested_type_id INT REFERENCES tb_incident_types(type_id) ON DELETE SET NULL,
     -- รหัสประเภทเหตุการณ์สุดท้ายที่ระบบหรือผู้ดูแลยืนยันให้รายงาน
     final_type_id INT REFERENCES tb_incident_types(type_id) ON DELETE SET NULL,
-    -- ประเภทเหตุการณ์ที่ผู้ใช้พิมพ์เองเมื่อไม่มีประเภทมาตรฐาน
+    -- เก็บข้อมูลเก่าจากระบบเดิมเท่านั้น; flow ปัจจุบันใช้ description เมื่อยังไม่เลือก Type
     custom_type VARCHAR(150),
     -- สถานะของการจัดประเภทเหตุการณ์ในรายงาน
     type_status VARCHAR(20) NOT NULL DEFAULT 'pending',
@@ -165,17 +171,61 @@ CREATE TABLE IF NOT EXISTS tb_incident_reports (
     reporter_location GEOMETRY(Point, 4326),
     -- ระยะห่างระหว่างผู้รายงานกับจุดเกิดเหตุ หน่วยเมตร
     distance_from_reporter NUMERIC(10, 2),
-    -- สถานะการรับ ตรวจสอบ และเชื่อมโยงรายงาน
-    report_status VARCHAR(20) NOT NULL DEFAULT 'submitted',
+    -- สถานะการตรวจสอบรายงาน แยกจาก incident_id และ Candidate
+    report_status VARCHAR(20) NOT NULL DEFAULT 'pending',
     -- สถานะระบุว่ารายงานนี้มีความผิดปกติหรือน่าสงสัย
     is_suspicious BOOLEAN NOT NULL DEFAULT FALSE,
     -- วันที่และเวลาที่ผู้ใช้ส่งรายงาน
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     -- วันที่และเวลาที่แก้ไขรายงานล่าสุด
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT chk_report_type_status CHECK (type_status IN ('confirmed', 'pending', 'conflict', 'pending_review')),
-    CONSTRAINT chk_report_status CHECK (report_status IN ('submitted', 'pending', 'linked', 'suspicious', 'rejected')),
+    CONSTRAINT chk_report_type_status CHECK (type_status IN ('confirmed', 'pending', 'conflict')),
+    CONSTRAINT chk_report_status CHECK (report_status IN ('pending', 'verified', 'rejected')),
     CONSTRAINT chk_report_distance CHECK (distance_from_reporter IS NULL OR distance_from_reporter >= 0)
+);
+
+-- Report ที่ยังไม่มี Type แต่ใกล้ Incident ที่มีอยู่ จึงรอ Administrator ตรวจสอบ
+CREATE TABLE IF NOT EXISTS tb_incident_report_candidates (
+    candidate_id SERIAL PRIMARY KEY,
+    -- Report ดิบที่ยังไม่ได้รวมเข้า Incident
+    report_id INT NOT NULL UNIQUE REFERENCES tb_incident_reports(report_id) ON DELETE CASCADE,
+    -- Incident ที่อยู่ใกล้ที่สุดและอาจเกี่ยวข้อง
+    target_incident_id INT NOT NULL REFERENCES tb_incidents(incident_id),
+    -- ระยะและเวลาที่ใช้เสนอ Candidate ให้ Administrator
+    distance_m NUMERIC(10, 2) NOT NULL,
+    time_difference_minutes NUMERIC(10, 2) NOT NULL,
+    -- pending, accepted หรือ rejected
+    candidate_status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    -- ผู้ดูแลที่ตัดสิน candidate และหมายเหตุประกอบ
+    decided_by INT REFERENCES tb_users(id) ON DELETE SET NULL,
+    decision_note TEXT,
+    decided_at TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_report_candidate_measurements CHECK (distance_m >= 0 AND time_difference_minutes >= 0),
+    CONSTRAINT chk_report_candidate_status CHECK (candidate_status IN ('pending', 'accepted', 'rejected'))
+);
+
+-- กลุ่ม Report ที่ไม่มี Type และอยู่ใกล้กัน เพื่อให้ Administrator ตรวจพร้อมกัน
+CREATE TABLE IF NOT EXISTS tb_incident_candidate_groups (
+    candidate_group_id SERIAL PRIMARY KEY,
+    -- Report แรกที่เป็นจุดอ้างอิงของกลุ่ม
+    anchor_report_id INT NOT NULL REFERENCES tb_incident_reports(report_id) ON DELETE RESTRICT,
+    candidate_status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    decided_by INT REFERENCES tb_users(id) ON DELETE SET NULL,
+    decision_note TEXT,
+    decided_at TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_candidate_group_status CHECK (candidate_status IN ('pending', 'accepted', 'rejected'))
+);
+
+-- สมาชิกของ Candidate Group ยังคงเป็น Report แยกกัน
+CREATE TABLE IF NOT EXISTS tb_incident_candidate_group_reports (
+    candidate_group_id INT NOT NULL REFERENCES tb_incident_candidate_groups(candidate_group_id) ON DELETE CASCADE,
+    report_id INT NOT NULL UNIQUE REFERENCES tb_incident_reports(report_id) ON DELETE CASCADE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (candidate_group_id, report_id)
 );
 
 -- รูปภาพหรือวิดีโอที่แนบกับรายงานหนึ่งรายการ
@@ -200,6 +250,12 @@ CREATE INDEX IF NOT EXISTS idx_incidents_active ON tb_incidents(incident_status,
 CREATE INDEX IF NOT EXISTS idx_reports_location ON tb_incident_reports USING GIST (incident_location);
 CREATE INDEX IF NOT EXISTS idx_reports_incident ON tb_incident_reports(incident_id);
 CREATE INDEX IF NOT EXISTS idx_media_report ON tb_incident_media(report_id);
+CREATE INDEX IF NOT EXISTS idx_report_candidates_pending_target
+    ON tb_incident_report_candidates(target_incident_id, created_at DESC)
+    WHERE candidate_status = 'pending';
+CREATE INDEX IF NOT EXISTS idx_candidate_groups_pending
+    ON tb_incident_candidate_groups(created_at DESC)
+    WHERE candidate_status = 'pending';
 
 INSERT INTO tb_incident_categories (category_code, category_name, icon_name, sort_order) VALUES
     ('natural_disaster', 'ภัยธรรมชาติ', 'cloud-rain', 1),
@@ -217,36 +273,36 @@ FROM (
     VALUES
       ('natural_disaster', 'flood', 'น้ำท่วม', 'waves', '#1479EF', 'area', 3000, 1),
       ('natural_disaster', 'flash_flood', 'น้ำป่าไหลหลาก', 'waves-arrow-up', '#1479EF', 'area', 3000, 2),
-      ('natural_disaster', 'storm', 'พายุ', 'cloud-lightning', '#6D5DFB', 'area', 3000, 3),
+      ('natural_disaster', 'storm', 'พายุ', 'cloud-lightning', '#6D5DFB', 'marker', NULL, 3),
       ('natural_disaster', 'wildfire', 'ไฟป่า', 'flame', '#E8333C', 'area', 5000, 4),
-      ('natural_disaster', 'earthquake', 'แผ่นดินไหว', 'activity', '#F47B22', 'area', 3000, 5),
-      ('natural_disaster', 'tsunami', 'สึนามิ', 'waves', '#1479EF', 'area', 5000, 6),
+      ('natural_disaster', 'earthquake', 'แผ่นดินไหว', 'activity', '#F47B22', 'marker', NULL, 5),
+      ('natural_disaster', 'tsunami', 'สึนามิ', 'waves', '#1479EF', 'marker', NULL, 6),
       ('natural_disaster', 'landslide', 'ดินถล่ม', 'mountain', '#A65B24', 'area', 1000, 7),
-      ('natural_disaster', 'drought', 'ภัยแล้ง', 'sun', '#F0B429', 'area', 3000, 8),
+      ('natural_disaster', 'drought', 'ภัยแล้ง', 'sun', '#F0B429', 'marker', NULL, 8),
       ('accident', 'traffic_accident', 'รถชน', 'car-front', '#F47B22', 'nearby', 500, 1),
       ('accident', 'vehicle_rollover', 'รถคว่ำ', 'car-front', '#F47B22', 'nearby', 500, 2),
       ('accident', 'vehicle_obstruction', 'รถเสียกีดขวาง', 'car-front', '#F0B429', 'nearby', 300, 3),
-      ('accident', 'road_obstruction', 'ถนนถูกกีดขวาง', 'construction', '#F0B429', 'nearby', 300, 4),
+      ('accident', 'road_obstruction', 'ถนนถูกกีดขวาง', 'construction', '#F0B429', 'nearby', 500, 4),
       ('accident', 'other_road_accident', 'อุบัติเหตุทางถนนอื่น ๆ', 'triangle-alert', '#F47B22', 'nearby', 500, 5),
-      ('safety', 'building_fire', 'ไฟไหม้อาคาร', 'flame', '#E8333C', 'nearby', 1000, 1),
+      ('safety', 'building_fire', 'ไฟไหม้อาคาร', 'flame', '#E8333C', 'nearby', 500, 1),
       ('safety', 'conflict', 'เหตุทะเลาะวิวาท', 'shield-alert', '#E8333C', 'nearby', 300, 2),
       ('safety', 'violent_incident', 'เหตุรุนแรง', 'shield-alert', '#E8333C', 'nearby', 500, 3),
       ('safety', 'missing_person', 'บุคคลสูญหาย', 'search', '#6D5DFB', 'nearby', 2000, 4),
       ('safety', 'suspicious_object', 'วัตถุต้องสงสัย', 'triangle-alert', '#E8333C', 'nearby', 500, 5),
       ('safety', 'other_fire', 'เหตุไฟไหม้อื่น ๆ', 'flame', '#E8333C', 'nearby', 1000, 6),
-      ('infrastructure', 'power_outage', 'ไฟฟ้าดับ', 'zap-off', '#F0B429', 'nearby', 500, 1),
+      ('infrastructure', 'power_outage', 'ไฟฟ้าดับ', 'zap-off', '#F0B429', 'marker', NULL, 1),
       ('infrastructure', 'fallen_pole', 'เสาไฟล้ม', 'utility-pole', '#F47B22', 'nearby', 200, 2),
       ('infrastructure', 'broken_power_line', 'สายไฟขาด', 'zap', '#E8333C', 'nearby', 200, 3),
       ('infrastructure', 'water_pipe_break', 'ท่อน้ำแตก', 'droplets', '#1479EF', 'nearby', 200, 4),
-      ('infrastructure', 'water_supply_outage', 'น้ำประปาขัดข้อง', 'droplet-off', '#1479EF', 'nearby', 500, 5),
+      ('infrastructure', 'water_supply_outage', 'น้ำประปาขัดข้อง', 'droplet-off', '#1479EF', 'marker', NULL, 5),
       ('infrastructure', 'road_damage', 'ถนนชำรุด', 'construction', '#F0B429', 'marker', NULL, 6),
-      ('infrastructure', 'bridge_damage', 'สะพานเสียหาย', 'construction', '#F47B22', 'nearby', 300, 7),
-      ('infrastructure', 'building_collapse', 'อาคารเสียหาย / ถล่ม', 'building-2', '#E8333C', 'nearby', 1000, 8),
-      ('environment', 'pm25', 'PM2.5 / ฝุ่น', 'wind', '#8D99AE', 'area', 3000, 1),
-      ('environment', 'abnormal_smoke', 'ควันผิดปกติ', 'cloud', '#8D99AE', 'nearby', 500, 2),
-      ('environment', 'air_pollution', 'มลพิษทางอากาศ', 'wind', '#8D99AE', 'area', 3000, 3),
+      ('infrastructure', 'bridge_damage', 'สะพานเสียหาย', 'construction', '#F47B22', 'nearby', 500, 7),
+      ('infrastructure', 'building_collapse', 'อาคารเสียหาย / ถล่ม', 'building-2', '#E8333C', 'nearby', 500, 8),
+      ('environment', 'pm25', 'PM2.5 / ฝุ่น', 'wind', '#8D99AE', 'marker', NULL, 1),
+      ('environment', 'abnormal_smoke', 'ควันผิดปกติ', 'cloud', '#8D99AE', 'nearby', 1000, 2),
+      ('environment', 'air_pollution', 'มลพิษทางอากาศ', 'wind', '#8D99AE', 'marker', NULL, 3),
       ('environment', 'wastewater', 'น้ำเสีย', 'waves', '#1479EF', 'nearby', 500, 4),
-      ('environment', 'chemical_odor', 'กลิ่นสารเคมี', 'flask-conical', '#E8333C', 'nearby', 500, 5),
+      ('environment', 'chemical_odor', 'กลิ่นสารเคมี', 'flask-conical', '#E8333C', 'nearby', 1000, 5),
       ('environment', 'chemical_leak', 'สารเคมีรั่วไหล', 'flask-conical', '#E8333C', 'nearby', 1000, 6),
       ('environment', 'waste', 'ขยะ / ของเสีย', 'trash-2', '#8D99AE', 'marker', NULL, 7),
       ('community', 'missing_pet', 'สัตว์เลี้ยงหาย', 'paw-print', '#6D5DFB', 'nearby', 1000, 1),
@@ -258,6 +314,10 @@ FROM (
 ) AS seed(category_code, type_code, type_name, icon_name, marker_color, display_mode, default_radius_m, sort_order)
 JOIN tb_incident_categories category ON category.category_code = seed.category_code
 ON CONFLICT (type_code) DO NOTHING;
+
+UPDATE tb_incident_types
+SET is_quick = TRUE
+WHERE type_code IN ('traffic_accident', 'building_fire', 'road_damage', 'pm25', 'violent_incident', 'flood');
 
 -- คำสำคัญเริ่มต้นสำหรับการจับคู่ข้อความแบบกำหนดผลลัพธ์ได้ในรุ่นแรก
 INSERT INTO tb_incident_keywords (type_id, keyword)

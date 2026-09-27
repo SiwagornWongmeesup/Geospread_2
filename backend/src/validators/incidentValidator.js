@@ -1,4 +1,4 @@
-const { body, query } = require('express-validator');
+const { body, param, query } = require('express-validator');
 const validateRequest = require('../middlewares/validateRequest');
 
 const suggestedTypesValidator = [
@@ -16,6 +16,9 @@ const suggestedTypesValidator = [
 
 // ไม่มี input จากผู้ใช้ แต่คงผ่าน validateRequest เพื่อให้ route ใช้มาตรฐานเดียวกัน
 const incidentCatalogValidator = [validateRequest];
+const reportTypeSuggestionCacheValidator = [validateRequest];
+const publicMapValidator = [validateRequest];
+const adminReviewQueueValidator = [validateRequest];
 
 const reportValidator = [
     body('description')
@@ -40,21 +43,77 @@ const reportValidator = [
         .isFloat({ min: -180, max: 180 }).withMessage('ลองจิจูดผู้รายงานไม่ถูกต้อง')
         .toFloat(),
 
-    body(['user_selected_type_id', 'system_suggested_type_id'])
+    body('user_selected_type_id')
         .optional({ values: 'falsy' })
         .isInt({ min: 1 }).withMessage('รหัสประเภทเหตุการณ์ไม่ถูกต้อง')
         .toInt(),
 
-    body('custom_type')
-        .optional({ values: 'falsy' })
-        .trim()
-        .isLength({ max: 150 }).withMessage('ประเภทเหตุการณ์ที่ระบุเองต้องไม่เกิน 150 ตัวอักษร'),
+    validateRequest,
+];
 
+const candidateDecisionValidator = [
+    param('candidateId')
+        .isInt({ min: 1 }).withMessage('รหัส Candidate ไม่ถูกต้อง')
+        .toInt(),
+    body('action')
+        .isIn(['accept', 'reject']).withMessage('การตัดสิน Candidate ไม่ถูกต้อง'),
+    validateRequest,
+];
+
+const candidateGroupDecisionValidator = [
+    param('candidateGroupId')
+        .isInt({ min: 1 }).withMessage('รหัส Candidate Group ไม่ถูกต้อง')
+        .toInt(),
+    body('action')
+        .isIn(['accept', 'reject']).withMessage('การตัดสิน Candidate Group ไม่ถูกต้อง'),
+    body('type_id')
+        .optional({ values: 'falsy' })
+        .isInt({ min: 1 }).withMessage('รหัส Type ไม่ถูกต้อง')
+        .toInt(),
+    body('target_incident_id')
+        .optional({ values: 'falsy' })
+        .isInt({ min: 1 }).withMessage('รหัส Incident เป้าหมายไม่ถูกต้อง')
+        .toInt(),
+    validateRequest,
+];
+
+const createIncidentFromPendingReportValidator = [
+    param('reportId')
+        .isInt({ min: 1 }).withMessage('รหัส Report ไม่ถูกต้อง')
+        .toInt(),
+    body('type_id')
+        .isInt({ min: 1 }).withMessage('Administrator ต้องเลือก Type')
+        .toInt(),
+    validateRequest,
+];
+
+const rejectStandalonePendingReportValidator = [
+    param('reportId')
+        .isInt({ min: 1 }).withMessage('รหัส Report ไม่ถูกต้อง')
+        .toInt(),
+    validateRequest,
+];
+
+const separateReportValidator = [
+    param('reportId')
+        .isInt({ min: 1 }).withMessage('รหัส Report ไม่ถูกต้อง')
+        .toInt(),
+    body('type_id')
+        .isInt({ min: 1 }).withMessage('Administrator ต้องเลือก Type')
+        .toInt(),
     validateRequest,
 ];
 
 module.exports = {
     suggestedTypesValidator,
     incidentCatalogValidator,
+    reportTypeSuggestionCacheValidator,
+    publicMapValidator,
+    adminReviewQueueValidator,
     reportValidator,
+    candidateDecisionValidator,
+    candidateGroupDecisionValidator,
+    createIncidentFromPendingReportValidator,
+    rejectStandalonePendingReportValidator,
+    separateReportValidator,
 };

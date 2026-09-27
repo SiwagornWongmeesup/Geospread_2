@@ -11,12 +11,13 @@ definePageMeta({ layout: false })
 const { isMobile } = useResponsiveView()
 
 // Auth Logic จาก Composable
-const { login, loading, error } = useAuth()
+const { login, loading, error, isAdmin } = useAuth()
 const router = useRouter()
 const route = useRoute()
 const redirectAfterLogin = () => {
   const redirect = route.query.redirect
-  return typeof redirect === 'string' && redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/'
+  if (typeof redirect === 'string' && redirect.startsWith('/') && !redirect.startsWith('//')) return redirect
+  return isAdmin.value ? '/admin' : '/'
 }
 
 const form = ref({

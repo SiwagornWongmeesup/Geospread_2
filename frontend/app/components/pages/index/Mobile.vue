@@ -17,9 +17,11 @@
     <!-- Full-Screen Map -->
     <div class="mobile-map-wrapper">
       <MapboxMap
-        :center="[100.5018, 13.7563]"
+        :center="mapCenter"
         :zoom="13"
+        :map-items="publicMapItems"
         class="mobile-map"
+        @select-item="selectIncident"
       />
     </div>
 
@@ -29,42 +31,39 @@
 
       <div class="bottom-sheet__header">
         <h2 class="bottom-sheet__title">เหตุการณ์ใกล้คุณ</h2>
-        <span class="bottom-sheet__count">4 รายการ</span>
+        <span class="bottom-sheet__count">{{ nearbyIncidentCards.length }} รายการ</span>
       </div>
 
       <div class="bottom-sheet__events">
-        <div class="mobile-event mobile-event--danger">
-          <div class="mobile-event__icon">🔥</div>
-          <div class="mobile-event__info">
-            <div class="mobile-event__type">เพลิงไหม้</div>
-            <div class="mobile-event__location">สีลม, กรุงเทพฯ • 0.8 กม.</div>
-          </div>
-          <div class="mobile-event__time">12 น.</div>
-        </div>
+        <p v-if="isLoadingMap" class="mobile-event-state">กำลังโหลดเหตุการณ์...</p>
+        <p v-else-if="mapError" class="mobile-event-state mobile-event-state--error">{{ mapError }}</p>
+        <p v-else-if="!nearbyIncidentCards.length" class="mobile-event-state">ยังไม่มีเหตุการณ์ที่แสดงบนแผนที่</p>
 
-        <div class="mobile-event mobile-event--warning">
-          <div class="mobile-event__icon">⚠️</div>
-          <div class="mobile-event__info">
-            <div class="mobile-event__type">อุทกภัย</div>
-            <div class="mobile-event__location">สุขุมวิท, กรุงเทพฯ • 1.2 กม.</div>
-          </div>
-          <div class="mobile-event__time">5 น.</div>
-        </div>
-
-        <div class="mobile-event mobile-event--info">
-          <div class="mobile-event__icon">🚧</div>
-          <div class="mobile-event__info">
-            <div class="mobile-event__type">ถนนปิด</div>
-            <div class="mobile-event__location">รัชดาฯ, กรุงเทพฯ • 2.1 กม.</div>
-          </div>
-          <div class="mobile-event__time">1 ชม.</div>
-        </div>
+        <template v-else>
+          <button
+            v-for="incident in nearbyIncidentCards"
+            :key="incident.id"
+            type="button"
+            class="mobile-event"
+            :class="[`mobile-event--${incident.tone}`, { 'mobile-event--selected': selectedIncident?.id === incident.id }]"
+            @click="selectIncident(incident)"
+          >
+            <div class="mobile-event__icon" :style="{ backgroundColor: incident.markerColor }">
+              <img :src="incident.iconUrl || '/Alert.svg'" alt="" aria-hidden="true">
+            </div>
+            <div class="mobile-event__info">
+              <div class="mobile-event__type">{{ incident.category }}</div>
+              <div class="mobile-event__location">{{ incident.location }} • {{ incident.distance }}</div>
+            </div>
+            <div class="mobile-event__time">{{ incident.time }}</div>
+          </button>
+        </template>
       </div>
 
       <!-- Report Button -->
-      <button class="mobile-report-btn">
+      <NuxtLink to="/report-incident" class="mobile-report-btn">
         + รายงานเหตุการณ์
-      </button>
+      </NuxtLink>
     </div>
 
   </div>
@@ -72,6 +71,19 @@
 
 <script setup>
 import MapboxMap from '~/components/MapboxMap.vue'
+
+const {
+  selectedIncident,
+  publicMapItems,
+  nearbyIncidentCards,
+  isLoadingMap,
+  mapError,
+  mapCenter,
+  selectIncident,
+  fetchPublicMapItems,
+} = useHomeDashboard()
+
+onMounted(fetchPublicMapItems)
 </script>
 
 <style scoped>
@@ -224,11 +236,15 @@ import MapboxMap from '~/components/MapboxMap.vue'
   display: flex;
   align-items: center;
   gap: 12px;
+  width: 100%;
   padding: 12px;
+  border: 0;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.04);
   border-left: 3px solid transparent;
+  color: inherit;
   cursor: pointer;
+  text-align: left;
   transition: background 0.2s;
 }
 
@@ -236,22 +252,60 @@ import MapboxMap from '~/components/MapboxMap.vue'
   background: rgba(255, 255, 255, 0.08);
 }
 
-.mobile-event--danger {
+.mobile-event--red {
   border-left-color: #ef4444;
 }
 
-.mobile-event--warning {
+.mobile-event--orange {
   border-left-color: #f59e0b;
 }
 
-.mobile-event--info {
+.mobile-event--blue {
   border-left-color: #3b82f6;
 }
 
+.mobile-event--green {
+  border-left-color: #22c55e;
+}
+
+.mobile-event--gray {
+  border-left-color: #64748b;
+}
+
+.mobile-event--selected {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.mobile-event-state {
+  margin: 0;
+  padding: 12px;
+  border: 1px dashed rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
+  color: #cbd5e1;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.mobile-event-state--error {
+  border-color: rgba(248, 113, 113, 0.4);
+  color: #fecaca;
+}
+
 .mobile-event__icon {
-  font-size: 22px;
   width: 36px;
-  text-align: center;
+  height: 36px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.08);
+}
+
+.mobile-event__icon img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
 }
 
 .mobile-event__info {
@@ -278,6 +332,7 @@ import MapboxMap from '~/components/MapboxMap.vue'
 /* ============================== Report Button ============================== */
 
 .mobile-report-btn {
+  display: block;
   width: 100%;
   padding: 14px;
   background: linear-gradient(135deg, #3b82f6, #6366f1);
@@ -286,6 +341,8 @@ import MapboxMap from '~/components/MapboxMap.vue'
   color: #ffffff;
   font-size: 15px;
   font-weight: 700;
+  text-align: center;
+  text-decoration: none;
   cursor: pointer;
   transition: opacity 0.2s;
 }

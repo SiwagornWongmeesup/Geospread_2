@@ -79,10 +79,18 @@ export const useAuth = () => {
     navigateTo('/login')
   }
 
+  // ตรวจว่าเป็น Admin หรือไม่
+  const isAdmin = computed(() => {
+    const u = getUser()
+    const userData = u?.user ?? u
+    return userData?.role === 'admin'
+  })
+
   return {
     loading,
     error,
     isLoggedIn,
+    isAdmin,
     getUser,
     getToken,
     login,

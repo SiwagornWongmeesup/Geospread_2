@@ -1,0 +1,3 @@
+# Simple incident matching and report candidates
+
+GeoSpread uses one configurable distance-and-time window for MVP matching. A Report auto-merges only when a Type has been confirmed and an active Incident of that same Type is within the window; reports without a confirmed Type become reviewable Report Candidates or Candidate Groups while remaining separate pending reports. When an Administrator confirms the Type later, matching uses the Report's original submitted time and location, then merges or creates an Incident by the same rule. This deliberately avoids scoring, expiry rules, AI classification, and automatic merging from a system suggestion, so uncertain community reports remain visible without being treated as one confirmed Incident.

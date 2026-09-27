@@ -4,6 +4,16 @@ const AppError = require('../utils/AppError');
 
 const isCoordinate = (value, min, max) => Number.isFinite(Number(value)) && Number(value) >= min && Number(value) <= max;
 
+const buildInitialIncidentData = ({ description, lat, lng, selectedType }) => ({
+    final_type_id: selectedType?.type_id ?? null,
+    title: selectedType ? `${selectedType.type_name} — รอตรวจสอบ` : 'เหตุการณ์รอตรวจสอบ',
+    description,
+    lat,
+    lng,
+    display_mode: selectedType?.display_mode ?? 'marker',
+    radius_m: selectedType?.display_mode === 'marker' ? null : selectedType?.default_radius_m ?? null,
+});
+
 // รับ Report แบบข้อความอิสระ; Type เป็นเพียงคำแนะนำและ Severity ประเมินภายหลัง
 const createIncident = async (incidentData) => {
     const {
@@ -13,7 +23,6 @@ const createIncident = async (incidentData) => {
         reporter_lat,
         reporter_lng,
         user_selected_type_id,
-        custom_type,
         media,
     } = incidentData;
 
@@ -44,10 +53,19 @@ const createIncident = async (incidentData) => {
         throw new AppError('พิกัดผู้รายงานไม่ถูกต้อง', 400);
     }
 
-    const selectedTypeId = user_selected_type_id ? Number(user_selected_type_id) : null;
-    if (selectedTypeId) {
-        const activeTypeIds = await incidentRepository.findActiveIncidentTypeIds([selectedTypeId]);
-        if (!activeTypeIds.includes(selectedTypeId)) {
+    const hasSelectedType = user_selected_type_id !== undefined
+        && user_selected_type_id !== null
+        && String(user_selected_type_id).trim() !== '';
+    const selectedTypeId = hasSelectedType ? Number(user_selected_type_id) : null;
+    let selectedType = null;
+
+    if (hasSelectedType) {
+        if (!Number.isInteger(selectedTypeId) || selectedTypeId <= 0) {
+            throw new AppError('ประเภทเหตุการณ์ที่เลือกไม่ถูกต้อง', 400);
+        }
+
+        selectedType = await incidentRepository.findActiveIncidentTypeById(selectedTypeId);
+        if (!selectedType) {
             throw new AppError('ประเภทเหตุการณ์ที่เลือกไม่พร้อมใช้งาน', 400);
         }
     }
@@ -57,6 +75,14 @@ const createIncident = async (incidentData) => {
         description: trimmedDescription,
         limit: 1,
     });
+    // คำแนะนำไม่ใช่ Type จริง แต่หากผู้ใช้เลือก Type ที่สวนทางกับคำแนะนำ ให้ส่งเข้าคิวตรวจแทนการรวมอัตโนมัติ
+    const hasTypeConflict = Boolean(
+        selectedType
+        && systemSuggestedType
+        && selectedType.type_id !== systemSuggestedType.type_id,
+    );
+    const typeStatus = hasTypeConflict ? 'conflict' : selectedType ? 'confirmed' : 'pending';
+    const finalTypeId = typeStatus === 'confirmed' ? selectedTypeId : null;
     const mediaFiles = Array.isArray(media) ? media : media ? [media] : [];
     const uploadedMedia = [];
 
@@ -65,15 +91,21 @@ const createIncident = async (incidentData) => {
             uploadedMedia.push(await incidentMediaService.uploadIncidentMedia(file));
         }
 
-        return await incidentRepository.createIncidentReportWithMedia({
+        return await incidentRepository.createIncidentReportWithMerge({
+            incidentData: buildInitialIncidentData({
+                description: trimmedDescription,
+                lat,
+                lng,
+                selectedType: typeStatus === 'confirmed' ? selectedType : null,
+            }),
             reportData: {
                 ...incidentData,
-                description: String(description).trim(),
+                description: trimmedDescription,
                 user_selected_type_id: selectedTypeId,
                 system_suggested_type_id: systemSuggestedType?.type_id ?? null,
-                // final_type เป็นการตัดสินของระบบหรือผู้ดูแลเท่านั้น ไม่รับจาก public request
-                final_type_id: selectedTypeId,
-                custom_type: custom_type ? String(custom_type).trim() : null,
+                // final_type ใช้เฉพาะ Type ที่ไม่ขัดกับคำแนะนำของระบบ; กรณี conflict รอ Administrator ยืนยัน
+                final_type_id: finalTypeId,
+                type_status: typeStatus,
             },
             media: uploadedMedia,
         });
@@ -103,8 +135,7 @@ const getSuggestedIncidentTypes = async ({ description, limit = 2 }) => {
     return incidentRepository.findSuggestedTypes(trimmedDescription, normalizedLimit);
 };
 
-const getIncidentTypeCatalog = async () => {
-    const rows = await incidentRepository.findActiveIncidentCatalogRows();
+const buildIncidentTypeCatalog = (rows) => {
     const categoriesById = new Map();
 
     for (const row of rows) {
@@ -124,6 +155,7 @@ const getIncidentTypeCatalog = async () => {
             type_name: row.type_name,
             icon_name: row.type_icon_name,
             marker_color: row.marker_color,
+            is_quick: row.is_quick,
             display_mode: row.display_mode,
             default_radius_m: row.default_radius_m,
         });
@@ -132,8 +164,121 @@ const getIncidentTypeCatalog = async () => {
     return [...categoriesById.values()];
 };
 
+const getIncidentTypeCatalog = async () => {
+    const rows = await incidentRepository.findActiveIncidentCatalogRows();
+    return buildIncidentTypeCatalog(rows);
+};
+
+// หน้า Report โหลดเพียงครั้งเดียว แล้วใช้ keywords ใน memory ระหว่างผู้ใช้กำลังพิมพ์
+const getReportTypeSuggestionCache = async () => {
+    const [catalogRows, keywordRows] = await Promise.all([
+        incidentRepository.findActiveIncidentCatalogRows(),
+        incidentRepository.findActiveIncidentKeywordRows(),
+    ]);
+
+    return {
+        categories: buildIncidentTypeCatalog(catalogRows),
+        keywords: keywordRows,
+    };
+};
+
+const getPublicMapItems = async () => incidentRepository.findPublicMapItems();
+
+const getAdminReviewQueue = async () => incidentRepository.findAdminReviewQueue();
+
+const getAdminSelectedType = async (typeId) => {
+    const normalizedTypeId = Number(typeId);
+    if (!Number.isInteger(normalizedTypeId) || normalizedTypeId <= 0) {
+        throw new AppError('Administrator ต้องเลือก Type ที่ถูกต้อง', 400);
+    }
+
+    const selectedType = await incidentRepository.findActiveIncidentTypeById(normalizedTypeId);
+    if (!selectedType) throw new AppError('Type ที่เลือกไม่พร้อมใช้งาน', 400);
+    return selectedType;
+};
+
+const normalizeReviewAction = (action) => {
+    if (action === 'accept') return 'accepted';
+    if (action === 'reject') return 'rejected';
+    throw new AppError('การตัดสิน Candidate ต้องเป็น accept หรือ reject', 400);
+};
+
+const reviewReportCandidate = async ({ candidateId, action, adminId }) => {
+    try {
+        return await incidentRepository.acceptOrRejectReportCandidate({
+            candidateId: Number(candidateId),
+            adminId,
+            action: normalizeReviewAction(action),
+        });
+    } catch (error) {
+        throw new AppError(error.message, 409);
+    }
+};
+
+const reviewCandidateGroup = async ({ candidateGroupId, action, typeId, targetIncidentId, adminId }) => {
+    const normalizedAction = normalizeReviewAction(action);
+    const selectedType = normalizedAction === 'accepted' ? await getAdminSelectedType(typeId) : null;
+
+    try {
+        return await incidentRepository.acceptOrRejectCandidateGroup({
+            candidateGroupId: Number(candidateGroupId),
+            adminId,
+            action: normalizedAction,
+            selectedType,
+            targetIncidentId: targetIncidentId ? Number(targetIncidentId) : null,
+        });
+    } catch (error) {
+        throw new AppError(error.message, 409);
+    }
+};
+
+const createIncidentFromPendingReport = async ({ reportId, typeId, adminId }) => {
+    const selectedType = await getAdminSelectedType(typeId);
+    try {
+        return await incidentRepository.createIncidentFromPendingReport({
+            reportId: Number(reportId),
+            adminId,
+            selectedType,
+        });
+    } catch (error) {
+        throw new AppError(error.message, 409);
+    }
+};
+
+const rejectStandalonePendingReport = async ({ reportId, adminId }) => {
+    try {
+        return await incidentRepository.rejectStandalonePendingReport({
+            reportId: Number(reportId),
+            adminId,
+        });
+    } catch (error) {
+        throw new AppError(error.message, 409);
+    }
+};
+
+const separateReportFromIncident = async ({ reportId, typeId, adminId }) => {
+    const selectedType = await getAdminSelectedType(typeId);
+    try {
+        return await incidentRepository.separateReportFromIncident({
+            reportId: Number(reportId),
+            adminId,
+            selectedType,
+        });
+    } catch (error) {
+        throw new AppError(error.message, 409);
+    }
+};
+
 module.exports = {
     createIncident,
     getSuggestedIncidentTypes,
     getIncidentTypeCatalog,
+    getReportTypeSuggestionCache,
+    getPublicMapItems,
+    getAdminReviewQueue,
+    reviewReportCandidate,
+    reviewCandidateGroup,
+    createIncidentFromPendingReport,
+    rejectStandalonePendingReport,
+    separateReportFromIncident,
 };

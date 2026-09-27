@@ -2,18 +2,26 @@
   <div class="desktop-home">
     <section class="desktop-home__map" aria-label="แผนที่เหตุการณ์">
       <MapboxMap
-        :center="[98.9853, 18.7883]"
+        :center="mapCenter"
         :zoom="11"
+        :map-items="publicMapItems"
         class="desktop-home__map-canvas"
+        @select-item="selectIncident"
       />
       <div class="desktop-home__map-label">
         <span class="desktop-home__map-pulse" aria-hidden="true" />
-        พื้นที่เชียงใหม่
+        แผนที่เหตุการณ์ชุมชน
+      </div>
+      <div v-if="mapError" class="desktop-home__map-status">
+        {{ mapError }}
       </div>
     </section>
 
     <NearbyIncidents
       :selected-incident-id="selectedIncident?.id"
+      :incidents="nearbyIncidentCards"
+      :is-loading="isLoadingMap"
+      :error-message="mapError"
       @select="selectIncident"
     />
 
@@ -30,7 +38,18 @@ import HelpRequests from '~/components/dashboard/HelpRequests.vue'
 import NearbyIncidents from '~/components/dashboard/NearbyIncidents.vue'
 import RecentActivity from '~/components/dashboard/RecentActivity.vue'
 
-const { selectedIncident, selectIncident } = useHomeDashboard()
+const {
+  selectedIncident,
+  publicMapItems,
+  nearbyIncidentCards,
+  isLoadingMap,
+  mapError,
+  mapCenter,
+  selectIncident,
+  fetchPublicMapItems,
+} = useHomeDashboard()
+
+onMounted(fetchPublicMapItems)
 </script>
 
 <style scoped>
@@ -84,6 +103,21 @@ const { selectedIncident, selectIncident } = useHomeDashboard()
   border-radius: 50%;
   background: #1479ef;
   box-shadow: 0 0 0 4px rgb(20 121 239 / 16%);
+}
+
+.desktop-home__map-status {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  max-width: min(22rem, calc(100% - 2rem));
+  padding: 0.65rem 0.8rem;
+  border: 1px solid #fecaca;
+  border-radius: 0.625rem;
+  background: rgb(255 255 255 / 94%);
+  color: #b91c1c;
+  font-size: 0.78rem;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgb(26 58 108 / 12%);
 }
 
 .desktop-home__lower-grid {
