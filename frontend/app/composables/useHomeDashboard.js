@@ -30,6 +30,13 @@ const formatRelativeTime = (value) => {
   return `${diffDays} วันที่แล้ว`
 }
 
+const formatImpactRadius = (radiusMeters) => {
+  const radius = toNumber(radiusMeters)
+  if (!radius || radius <= 0) return 'ไม่ระบุ'
+  if (radius >= 1000) return `${(radius / 1000).toFixed(radius % 1000 === 0 ? 0 : 1)} กม.`
+  return `${Math.round(radius)} ม.`
+}
+
 const toneFromColor = (color, fallback = 'blue') => {
   const normalized = String(color || '').trim().toLowerCase()
   if (normalized.includes('red')) return 'red'
@@ -75,7 +82,10 @@ const normalizeIncident = (incident) => {
     }),
     displayMode: hasFinalType ? incident.display_mode : 'marker',
     radiusM: hasFinalType ? toNumber(incident.radius_m) : null,
+    radiusLabel: formatImpactRadius(hasFinalType ? incident.radius_m : null),
     reportCount,
+    imageUrl: incident.image_url || incident.media_url || incident.thumbnail_url || null,
+    reporterLabel: incident.reporter_name || 'ชุมชน',
     location: formatCoordinate(incident.lat, incident.lng),
     distance: `${reportCount} รายงาน`,
     time: formatRelativeTime(incident.last_reported_at),
@@ -98,7 +108,10 @@ const normalizePendingReport = (report) => ({
   iconUrl: getIncidentIconUrl({ kind: 'pending_report' }),
   displayMode: 'marker',
   radiusM: null,
+  radiusLabel: 'ไม่ระบุ',
   reportCount: 1,
+  imageUrl: report.image_url || report.media_url || report.thumbnail_url || null,
+  reporterLabel: report.reporter_name || 'ชุมชน',
   location: formatCoordinate(report.lat, report.lng),
   distance: 'รายงานใหม่',
   time: formatRelativeTime(report.created_at),

@@ -8,50 +8,36 @@ defineProps({
 
 const emit = defineEmits(['toggle']);
 
-const iconPaths = {
-  home: 'M3 10.8 12 3l9 7.8v9.4a.8.8 0 0 1-.8.8H3.8a.8.8 0 0 1-.8-.8v-7.8Zm6 9.4v-5.3h6v5.3',
-  map: 'M9 4 3.8 6.6v13.2L9 17.2l6 2.6 5.2-2.6V4L15 6.6 9 4Zm0 0v13.2m6-10.6v13.2',
-  incidents: 'M7 3.5h10a1.5 1.5 0 0 1 1.5 1.5v14A1.5 1.5 0 0 1 17 20.5H7A1.5 1.5 0 0 1 5.5 19V5A1.5 1.5 0 0 1 7 3.5Zm3 4h4m-4 4h4m-4 4h2',
-  helpRequests: 'M16.5 20.5v-1.3a4.2 4.2 0 0 0-4.2-4.2H7.2A4.2 4.2 0 0 0 3 19.2v1.3m6.7-9A3.2 3.2 0 1 0 9.7 5a3.2 3.2 0 0 0 0 6.5Zm7-5.2a3.1 3.1 0 0 1 0 5.9m3.4 8.3v-1.3a4.2 4.2 0 0 0-2.6-3.9',
-  report: 'M12 21s6.8-6.1 6.8-11.5a6.8 6.8 0 1 0-13.6 0C5.2 14.9 12 21 12 21Zm0-13.8v4.1m0 3.1h.01',
-  request: 'M12 20.5s-7.5-4.2-7.5-10.1A4.1 4.1 0 0 1 12 8a4.1 4.1 0 0 1 7.5 2.4c0 5.9-7.5 10.1-7.5 10.1ZM8.5 13h7m-3.5-3.5v7',
-  followed: 'm12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z',
-  notifications: 'M18 9.8a6 6 0 0 0-12 0c0 7-2.7 7.3-2.7 8.7h17.4c0-1.4-2.7-1.7-2.7-8.7ZM9.7 21h4.6',
-  guide: 'M4 4.8c2.9-.8 5.7-.2 8 1.5 2.3-1.7 5.1-2.3 8-1.5v14.3c-2.9-.8-5.7-.2-8 1.5-2.3-1.7-5.1-2.3-8-1.5V4.8Zm8 1.5v14.3',
-  profile: 'M19.5 20.5v-1.2a5 5 0 0 0-5-5h-5a5 5 0 0 0-5 5v1.2m7.5-9.7a3.7 3.7 0 1 0 0-7.4 3.7 3.7 0 0 0 0 7.4Z',
-  settings: 'M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Zm7.4-3.2a7.4 7.4 0 0 0-.1-1l2-1.5-2-3.4-2.4 1a8 8 0 0 0-1.8-1L14.8 3h-5.6l-.3 2.1a8 8 0 0 0-1.8 1l-2.4-1-2 3.4 2 1.5a7.4 7.4 0 0 0-.1 1c0 .3 0 .7.1 1l-2 1.5 2 3.4 2.4-1a8 8 0 0 0 1.8 1l.3 2.1h5.6l.3-2.1a8 8 0 0 0 1.8-1l2.4 1 2-3.4-2-1.5c.1-.3.1-.7.1-1Z'
-};
-
 const menuGroups = [
   {
     label: 'เมนูหลัก',
     items: [
-      { label: 'หน้าหลัก', to: '/', icon: 'home' },
-      { label: 'ดูเหตุการณ์', to: '/incidents', icon: 'incidents' },
-      { label: 'ดูคำขอช่วยเหลือ', to: '/help-requests', icon: 'helpRequests' }
+      { label: 'หน้าหลัก', to: '/', icon: '/House.svg' },
+      { label: 'ดูเหตุการณ์', to: '/incidents', icon: '/Alert.svg' },
+      { label: 'ดูคำขอช่วยเหลือ', to: '/help-requests', icon: '/Help.svg' }
     ]
   },
   {
     label: 'การดำเนินการ',
     kind: 'actions',
     items: [
-      { label: 'แจ้งเหตุใหม่', to: '/report-incident', icon: 'report' },
-      { label: 'ขอความช่วยเหลือ', to: '/request-help', icon: 'request' }
+      { label: 'แจ้งเหตุใหม่', to: '/report-incident', icon: '/Report.svg' },
+      { label: 'ขอความช่วยเหลือ', to: '/request-help', icon: '/Life-saving.svg' }
     ]
   },
   {
     label: 'พื้นที่ของฉัน',
     items: [
-      { label: 'พื้นที่ติดตาม', to: '/followed-locations', icon: 'followed' },
-      { label: 'การแจ้งเตือน', to: '/notifications', icon: 'notifications', badge: '3' },
-      { label: 'คู่มือความปลอดภัย', to: '/safety-guide', icon: 'guide' }
+      { label: 'พื้นที่ติดตาม', to: '/followed-locations', icon: '/Location.svg' },
+      { label: 'การแจ้งเตือน', to: '/notifications', icon: '/Notification.svg', badge: '3' },
+      { label: 'คู่มือความปลอดภัย', to: '/safety-guide', icon: '/Safety-and-security.svg' }
     ]
   }
 ];
 
 const accountItems = [
-  { label: 'โปรไฟล์', to: '/profile', icon: 'profile' },
-  { label: 'ตั้งค่า', to: '/settings', icon: 'settings' }
+  { label: 'โปรไฟล์', to: '/profile', icon: '/User.svg' },
+  { label: 'ตั้งค่า', to: '/settings', icon: '/Settings.svg' }
 ];
 </script>
 
@@ -94,9 +80,7 @@ const accountItems = [
           :title="collapsed ? item.label : undefined"
         >
           <span class="app-sidebar__icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24">
-              <path :d="iconPaths[item.icon]" />
-            </svg>
+            <img :src="item.icon" alt="" />
           </span>
 
           <span v-if="!collapsed" class="app-sidebar__link-label">
@@ -120,9 +104,7 @@ const accountItems = [
         :title="collapsed ? item.label : undefined"
       >
         <span class="app-sidebar__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24">
-            <path :d="iconPaths[item.icon]" />
-          </svg>
+          <img :src="item.icon" alt="" />
         </span>
 
         <span v-if="!collapsed" class="app-sidebar__link-label">
@@ -277,21 +259,19 @@ const accountItems = [
 }
 
 .app-sidebar__icon {
-  display: grid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex: 0 0 auto;
-  width: 1.25rem;
-  height: 1.25rem;
-  place-items: center;
+  width: 18px;
+  height: 18px;
 }
 
-.app-sidebar__icon svg {
+.app-sidebar__icon img {
   width: 100%;
   height: 100%;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.85;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.05)); /* เพิ่มมิติให้รูปดูชัดเจนขึ้นนิดหน่อย */
 }
 
 .app-sidebar__link-label {

@@ -23,6 +23,11 @@
         class="mobile-map"
         @select-item="selectIncident"
       />
+      <IncidentMapPopup
+        class="mobile-map-popup"
+        :incident="selectedIncident"
+        @close="clearSelectedIncident"
+      />
     </div>
 
     <!-- Bottom Sheet -->
@@ -71,6 +76,7 @@
 
 <script setup>
 import MapboxMap from '~/components/MapboxMap.vue'
+import IncidentMapPopup from '~/components/map/IncidentMapPopup.vue'
 
 const {
   selectedIncident,
@@ -80,6 +86,7 @@ const {
   mapError,
   mapCenter,
   selectIncident,
+  clearSelectedIncident,
   fetchPublicMapItems,
 } = useHomeDashboard()
 
@@ -175,6 +182,15 @@ onMounted(fetchPublicMapItems)
   border-radius: 0 !important;
   border: none !important;
   box-shadow: none !important;
+}
+
+.mobile-map-popup {
+  position: absolute;
+  right: 1rem;
+  bottom: calc(55dvh + 0.75rem);
+  left: 1rem;
+  z-index: 10;
+  width: auto;
 }
 
 /* ============================== Bottom Sheet ============================== */

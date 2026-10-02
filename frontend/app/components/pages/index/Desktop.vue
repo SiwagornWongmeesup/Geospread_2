@@ -15,6 +15,11 @@
       <div v-if="mapError" class="desktop-home__map-status">
         {{ mapError }}
       </div>
+      <IncidentMapPopup
+        class="desktop-home__map-popup"
+        :incident="selectedIncident"
+        @close="clearSelectedIncident"
+      />
     </section>
 
     <NearbyIncidents
@@ -34,6 +39,7 @@
 
 <script setup>
 import MapboxMap from '~/components/MapboxMap.vue'
+import IncidentMapPopup from '~/components/map/IncidentMapPopup.vue'
 import HelpRequests from '~/components/dashboard/HelpRequests.vue'
 import NearbyIncidents from '~/components/dashboard/NearbyIncidents.vue'
 import RecentActivity from '~/components/dashboard/RecentActivity.vue'
@@ -46,6 +52,7 @@ const {
   mapError,
   mapCenter,
   selectIncident,
+  clearSelectedIncident,
   fetchPublicMapItems,
 } = useHomeDashboard()
 
@@ -64,8 +71,8 @@ onMounted(fetchPublicMapItems)
 .desktop-home__map {
   position: relative;
   width: 100%;
-  height: clamp(22rem, 42vh, 30rem);
-  min-height: 25rem;
+  height: clamp(28rem, 58dvh, 42rem);
+  min-height: 28rem;
   overflow: hidden;
   border: 1px solid #dce6f2;
   border-radius: 1rem;
@@ -118,6 +125,14 @@ onMounted(fetchPublicMapItems)
   font-size: 0.78rem;
   font-weight: 700;
   box-shadow: 0 4px 12px rgb(26 58 108 / 12%);
+}
+
+.desktop-home__map-popup {
+  position: absolute;
+  z-index: 2;
+  bottom: 1rem;
+  left: 1rem;
+  max-width: calc(100% - 2rem);
 }
 
 .desktop-home__lower-grid {

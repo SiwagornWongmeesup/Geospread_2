@@ -85,28 +85,6 @@ const buildRadiusFeatureCollection = () => ({
     .filter(Boolean),
 })
 
-const createPopupContent = (item) => {
-  const popup = document.createElement('div')
-  popup.className = 'incident-map-popup'
-
-  const status = document.createElement('span')
-  status.className = 'incident-map-popup__status'
-  status.textContent = item.statusLabel || (item.kind === 'pending_report' ? 'รอตรวจสอบ' : 'เหตุการณ์')
-  popup.appendChild(status)
-
-  const title = document.createElement('strong')
-  title.textContent = item.title || 'รายงานเหตุการณ์'
-  popup.appendChild(title)
-
-  if (item.description) {
-    const description = document.createElement('p')
-    description.textContent = item.description
-    popup.appendChild(description)
-  }
-
-  return popup
-}
-
 const createMarkerElement = (item) => {
   const marker = document.createElement('button')
   marker.type = 'button'
@@ -192,7 +170,6 @@ const renderMapItems = () => {
       anchor: 'bottom',
     })
       .setLngLat(lngLat)
-      .setPopup(new mapboxgl.Popup({ offset: 18 }).setDOMContent(createPopupContent(item)))
       .addTo(map)
 
     markers.push(marker)
@@ -326,34 +303,6 @@ watch(() => props.mapItems, () => {
   line-height: 1.1;
   box-shadow: 0 4px 10px rgb(15 23 42 / 15%);
   transform: translateX(-50%);
-}
-
-:global(.incident-map-popup) {
-  display: grid;
-  gap: 0.35rem;
-  max-width: 15rem;
-  color: #18304f;
-}
-
-:global(.incident-map-popup__status) {
-  width: fit-content;
-  padding: 0.12rem 0.45rem;
-  border-radius: 999px;
-  background: #eff6ff;
-  color: #1f5fae;
-  font-size: 0.68rem;
-  font-weight: 800;
-}
-
-:global(.incident-map-popup strong) {
-  font-size: 0.88rem;
-}
-
-:global(.incident-map-popup p) {
-  margin: 0;
-  color: #53647d;
-  font-size: 0.78rem;
-  line-height: 1.45;
 }
 
 </style>

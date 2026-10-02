@@ -44,7 +44,12 @@ export const useAuth = () => {
       return true
     } catch (err) {
       console.log('Login Error Detail:', err?.data || err)
-      error.value = err?.data?.message || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง'
+      if (err?.data?.message) {
+        error.value = err.data.message // ถ้า Backend แจ้งชัดเจนว่ารหัสผิด ให้แสดงตามนั้น
+      } else {
+        // ถ้าเป็น Error อื่นๆ เช่น Server ล่ม, เน็ตหลุด ให้แสดงข้อความนี้
+        error.value = 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ หรือเกิดข้อผิดพลาดขัดข้อง'
+      }
       return false
     } finally {
       loading.value = false
