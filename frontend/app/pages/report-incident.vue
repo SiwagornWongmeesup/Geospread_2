@@ -1,7 +1,7 @@
 <script setup>
 import ReportIncidentForm from '~/components/report/ReportIncidentForm.vue'
 
-definePageMeta({ showRightPanel: true })
+definePageMeta({ showRightPanel: false })
 </script>
 
 <template>
@@ -13,7 +13,7 @@ definePageMeta({ showRightPanel: true })
 <style scoped>
 .report-page {
   min-height: 100%;
-  padding: 1.5rem;
-  background: #f5f8fc;
+  padding: 1rem;
+  background: #edf6ff;
 }
 </style>

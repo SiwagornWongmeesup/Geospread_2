@@ -21,31 +21,34 @@ const createIncidentReport = async (reportData, queryable = db) => {
         user_selected_type_id = null,
         system_suggested_type_id = null,
         final_type_id = null,
-        custom_type = null,
         type_status = final_type_id ? 'confirmed' : 'pending',
         report_status = 'pending',
         lat,
         lng,
+        incident_source = 'unknown',
         reporter_lat = null,
-        reporter_lng = null
+        reporter_lng = null,
+        reporter_accuracy_m = null,
+        reporter_captured_at = null
     } = reportData;
 
     const result = await queryable.query(
         `INSERT INTO tb_incident_reports (
             user_id, reporter_trust_score, incident_id, description,
-            user_selected_type_id, system_suggested_type_id, final_type_id, custom_type,
-            type_status, report_status, incident_location,
-            reporter_location, distance_from_reporter
+            user_selected_type_id, system_suggested_type_id, final_type_id,
+            type_status, report_status, incident_location, incident_location_source,
+            reporter_location, reporter_accuracy_m, reporter_captured_at, distance_from_reporter
         )
         VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-            ST_SetSRID(ST_MakePoint($11, $12), 4326),
+            $1, $2, $3, $4, $5, $6, $7, $8, $9,
+            ST_SetSRID(ST_MakePoint($10, $11), 4326), $12,
             CASE WHEN $13::numeric IS NULL OR $14::numeric IS NULL THEN NULL
                  ELSE ST_SetSRID(ST_MakePoint($13, $14), 4326)
             END,
+            $15, $16,
             CASE WHEN $13::numeric IS NULL OR $14::numeric IS NULL THEN NULL
                  ELSE ST_Distance(
-                    ST_SetSRID(ST_MakePoint($11, $12), 4326)::geography,
+                    ST_SetSRID(ST_MakePoint($10, $11), 4326)::geography,
                     ST_SetSRID(ST_MakePoint($13, $14), 4326)::geography
                  )
             END
@@ -58,12 +61,14 @@ const createIncidentReport = async (reportData, queryable = db) => {
             user_selected_type_id,
             system_suggested_type_id,
             final_type_id,
-            custom_type,
             type_status,
             report_status,
             is_suspicious,
             ST_X(incident_location) AS lng,
             ST_Y(incident_location) AS lat,
+            incident_location_source,
+            reporter_accuracy_m,
+            reporter_captured_at,
             distance_from_reporter,
             created_at`,
         [
@@ -74,13 +79,15 @@ const createIncidentReport = async (reportData, queryable = db) => {
             user_selected_type_id,
             system_suggested_type_id,
             final_type_id,
-            custom_type,
             type_status,
             report_status,
             lng,
             lat,
+            incident_source,
             reporter_lng,
-            reporter_lat
+            reporter_lat,
+            reporter_accuracy_m,
+            reporter_captured_at
         ]
     );
 

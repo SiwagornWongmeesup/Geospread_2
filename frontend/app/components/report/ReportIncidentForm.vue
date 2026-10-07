@@ -5,6 +5,8 @@
       <p>แจ้งสิ่งที่คุณพบเพื่อให้คนในพื้นที่รับรู้และช่วยเหลือได้เร็วขึ้น</p>
     </header>
 
+    <div class="report-incident-form__body">
+    <div class="report-incident-form__fields">
     <label class="report-incident-form__section report-incident-form__details">
       <span>เกิดอะไรขึ้น? <b aria-hidden="true">*</b></span>
       <textarea v-model="details" rows="4" maxlength="500" required placeholder="พิมพ์สิ่งที่เกิดขึ้น เช่น น้ำท่วมหน้าตลาด, มีควันผิดปกติ, ถนนทรุด..." />
@@ -42,17 +44,29 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm0 2v12h16V6H4Zm3 10 3.2-4.1 2.4 2.9 1.7-2.1L18 16H7Zm3-5.5A1.5 1.5 0 1 0 10 7.5a1.5 1.5 0 0 0 0 3Z" fill="currentColor" /></svg>
         <span><strong>{{ selectedMediaLabel }}</strong><small>{{ selectedFiles.length ? 'ไฟล์จะถูกอัปโหลดเมื่อส่งรายงาน' : 'รองรับ JPG, PNG และ MP4 สูงสุด 5 ไฟล์ ไฟล์ละไม่เกิน 20 MB' }}</small></span>
       </button>
+      <ul v-if="selectedFiles.length" class="selected-media" aria-label="ไฟล์ที่เลือก">
+        <li v-for="(item, index) in selectedFiles" :key="`${item.file.name}-${item.file.lastModified}`" :title="item.file.name">
+          <img v-if="item.previewUrl" :src="item.previewUrl" :alt="`ตัวอย่าง ${item.file.name}`"><span v-else class="selected-media__video">วิดีโอ</span>
+          <span class="selected-media__details"><strong>{{ item.file.name }}</strong><small>{{ formatFileSize(item.file.size) }}</small></span>
+          <button type="button" :disabled="isSubmitting" :aria-label="`ลบ ${item.file.name}`" @click="removeSelectedFile(index)">ลบ</button>
+        </li>
+      </ul>
     </section>
-
     <div v-if="feedback" class="report-incident-form__feedback" role="status">
       <span>{{ feedback }}</span>
       <button v-if="needsLogin" type="button" class="feedback-login" @click="goToLogin">เข้าสู่ระบบ</button>
     </div>
-    <footer class="report-incident-form__actions">
-      <button type="button" class="button button--secondary" :disabled="isSubmitting" @click="saveMockDraft">บันทึกร่าง</button>
-      <button v-if="isLoggedIn" type="submit" class="button button--primary" :disabled="isSubmitting">{{ isSubmitting ? 'กำลังส่งรายงาน…' : 'ส่งรายงาน' }}</button>
-      <button v-else type="button" class="button button--primary" @click="showLoginPrompt">เข้าสู่ระบบเพื่อส่งรายงาน</button>
-    </footer>
+    </div>
+    <ReportIncidentRightPanel class="report-incident-form__location">
+      <template #action>
+        <footer class="report-incident-form__action-row">
+          <button type="button" class="button button--secondary" :disabled="isSubmitting" @click="saveMockDraft">บันทึกร่าง</button>
+          <button v-if="isLoggedIn" type="submit" class="button button--primary" :disabled="isSubmitting">{{ isSubmitting ? 'กำลังส่งรายงาน…' : 'ส่งรายงาน' }}</button>
+          <button v-else type="button" class="button button--primary" @click="showLoginPrompt">เข้าสู่ระบบเพื่อส่งรายงาน</button>
+        </footer>
+      </template>
+    </ReportIncidentRightPanel>
+    </div>
   </form>
 
   <Teleport to="body">
@@ -123,6 +137,7 @@
 <script setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { getRecommendedIncidentTypes, toDisplayIncidentCategory, toDisplayKeywordType } from '~/composables/useReportIncident'
+import ReportIncidentRightPanel from '~/components/report/ReportIncidentRightPanel.vue'
 
 const {
   userSelectedTypeId,
@@ -131,11 +146,12 @@ const {
   reporterLocation,
   selectUserSelectedType,
   clearUserSelectedType,
+  restoreLocations,
 } = useReportIncident()
-clearUserSelectedType()
 const details = ref('')
 const fileInput = ref(null)
-const selectedFiles = ref([])
+// อยู่ใน state ระดับแอป เพื่อให้ไฟล์ที่เลือกยังอยู่เมื่อเปลี่ยนหน้าไปล็อกอินแล้วกลับมา
+const selectedFiles = useState('report-incident-selected-media', () => [])
 const feedback = ref('')
 const isSubmitting = ref(false)
 const isTypePickerOpen = ref(false)
@@ -155,13 +171,17 @@ const { getToken, isLoggedIn } = useAuth()
 const maxMediaFiles = 5
 const maxMediaFileSizeBytes = 20 * 1024 * 1024
 const needsLogin = ref(false)
+const loginDraftKey = 'geospread-report-incident-login-draft'
 const recommendedTypes = computed(() => getRecommendedIncidentTypes(details.value, keywordTypeCache.value))
 const detectedSuggestion = computed(() => recommendedTypes.value[0] ?? null)
+const quickIncidentTypes = computed(() => incidentTypeGroups.value
+  .flatMap((group) => group.types)
+  .filter((type) => type.isQuick)
+  .slice(0, 4))
 const visibleIncidentTypes = computed(() => {
-  // ก่อนพิมพ์ข้อความจะไม่แสดง Type ทั้งหมด: ผู้ใช้เห็นเฉพาะคำแนะนำจาก keyword
-  // หรือ Type ที่ตนเลือกเองจาก modal เท่านั้น
   const prioritized = [userSelectedType.value, ...recommendedTypes.value].filter(Boolean)
-  return [...new Map(prioritized.map((type) => [type.id, type])).values()]
+  const typesToShow = prioritized.length ? prioritized : quickIncidentTypes.value
+  return [...new Map(typesToShow.map((type) => [type.id, type])).values()]
 })
 const hasTypeConflict = computed(() => Boolean(
   userSelectedType.value?.databaseTypeId
@@ -170,12 +190,12 @@ const hasTypeConflict = computed(() => Boolean(
 ))
 const selectedMediaLabel = computed(() => {
   if (!selectedFiles.value.length) return 'เลือกรูปภาพหรือวิดีโอ'
-  if (selectedFiles.value.length === 1) return selectedFiles.value[0].name
+  if (selectedFiles.value.length === 1) return selectedFiles.value[0].file.name
   return `เลือกแล้ว ${selectedFiles.value.length} ไฟล์`
 })
 const suggestionNote = computed(() => {
   if (userSelectedType.value) return `เลือกประเภท “${userSelectedType.value.label}” แล้ว กดอีกครั้งเพื่อยกเลิก หรือเลือกประเภทอื่นได้`
-  if (details.value.trim().length < 2) return 'พิมพ์รายละเอียดก่อน ระบบจะแนะนำ Type ที่เกี่ยวข้องให้ หรือกดดูเพิ่มเติมได้'
+  if (details.value.trim().length < 2) return 'เลือกประเภทที่ใกล้เคียง หรือพิมพ์รายละเอียดเพื่อให้ระบบแนะนำได้'
   if (isLoadingTypeCache.value) return 'กำลังเตรียมคำแนะนำประเภทเหตุการณ์…'
   if (detectedSuggestion.value) return `ระบบคาดว่าอาจเป็น “${detectedSuggestion.value.label}” เลือกได้ถ้าตรง ไม่เลือกก็ส่งรายงานได้`
   if (catalogLoadError.value) return 'ยังโหลดคำแนะนำจากระบบไม่ได้ แต่คุณยังพิมพ์และส่งรายงานได้ตามปกติ'
@@ -214,6 +234,7 @@ watch(details, () => {
 })
 
 onMounted(() => {
+  restoreLoginDraft()
   void fetchReportTypeCache()
 })
 const iconColorByType = {
@@ -258,28 +279,67 @@ const confirmSelectedTypeDespiteConflict = () => {
 const selectFiles = (event) => {
   const files = Array.from(event.target.files ?? [])
 
-  if (files.length > maxMediaFiles) {
+  if (selectedFiles.value.length + files.length > maxMediaFiles) {
     feedback.value = 'แนบรูปภาพหรือวิดีโอได้สูงสุด 5 ไฟล์ต่อรายงาน'
-    selectedFiles.value = []
     event.target.value = ''
     return
   }
 
   if (files.some((file) => file.size > maxMediaFileSizeBytes)) {
     feedback.value = 'ไฟล์แนบแต่ละไฟล์ต้องมีขนาดไม่เกิน 20 MB'
-    selectedFiles.value = []
     event.target.value = ''
     return
   }
 
-  selectedFiles.value = files
+  selectedFiles.value.push(...files.map((file) => ({
+    file,
+    previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : null,
+  })))
+
+  // ทำให้เลือกไฟล์เดิมซ้ำได้ ถ้าผู้ใช้ลบแล้วต้องการเพิ่มกลับ
+  event.target.value = ''
+}
+const formatFileSize = (size) => `${Math.max(1, Math.round(size / 1024 / 1024 * 10) / 10)} MB`
+const clearSelectedFiles = () => {
+  selectedFiles.value.forEach((item) => item.previewUrl && URL.revokeObjectURL(item.previewUrl))
+  selectedFiles.value = []
+}
+const removeSelectedFile = (index) => {
+  const [removed] = selectedFiles.value.splice(index, 1)
+  if (removed?.previewUrl) URL.revokeObjectURL(removed.previewUrl)
+  if (!selectedFiles.value.length && fileInput.value) fileInput.value.value = ''
 }
 const saveMockDraft = () => { feedback.value = 'บันทึกข้อมูลตัวอย่างแล้ว ข้อมูลนี้ยังอยู่เฉพาะในหน้าจอนี้' }
 const showLoginPrompt = (message = 'เข้าสู่ระบบก่อนส่งรายงาน เพื่อให้ระบบยืนยันผู้แจ้งและป้องกันการส่งข้อมูลรบกวน') => {
   feedback.value = message
   needsLogin.value = true
 }
-const goToLogin = () => navigateTo({ path: '/login', query: { redirect: '/report-incident' } })
+const saveLoginDraft = () => {
+  if (!import.meta.client) return
+  const draft = {
+    details: details.value,
+    selectedType: userSelectedType.value,
+    incidentLocation: incidentLocation.value,
+    reporterLocation: reporterLocation.value,
+  }
+  sessionStorage.setItem(loginDraftKey, JSON.stringify(draft))
+}
+const restoreLoginDraft = () => {
+  if (!import.meta.client) return
+  try {
+    const savedDraft = sessionStorage.getItem(loginDraftKey)
+    if (!savedDraft) return
+    const draft = JSON.parse(savedDraft)
+    details.value = String(draft.details ?? '')
+    if (draft.selectedType?.id) selectUserSelectedType(draft.selectedType)
+    restoreLocations({ incident: draft.incidentLocation, reporter: draft.reporterLocation })
+    feedback.value = 'คืนค่ารายละเอียด ประเภท และตำแหน่งที่บันทึกไว้ก่อนเข้าสู่ระบบแล้ว'
+  } catch {
+    sessionStorage.removeItem(loginDraftKey)
+  }
+}
+const clearLoginDraft = () => { if (import.meta.client) sessionStorage.removeItem(loginDraftKey) }
+const goToLogin = () => { saveLoginDraft(); navigateTo({ path: '/login', query: { redirect: '/report-incident' } }) }
 const submitReport = async () => {
   if (!incidentLocation.value) {
     feedback.value = 'กรุณาเลือกตำแหน่งเหตุการณ์ก่อนส่งรายงาน'
@@ -299,19 +359,26 @@ const submitReport = async () => {
 
   const formData = new FormData()
   formData.append('description', details.value.trim())
-  formData.append('lat', String(incidentLocation.value.lat))
-  formData.append('lng', String(incidentLocation.value.lng))
+  formData.append('incident_lat', String(incidentLocation.value.lat))
+  formData.append('incident_lng', String(incidentLocation.value.lng))
+  formData.append('incident_source', incidentLocation.value.source ?? 'unknown')
 
   if (reporterLocation.value) {
     formData.append('reporter_lat', String(reporterLocation.value.lat))
     formData.append('reporter_lng', String(reporterLocation.value.lng))
+    if (reporterLocation.value.accuracyM !== null) {
+      formData.append('reporter_accuracy_m', String(reporterLocation.value.accuracyM))
+    }
+    if (reporterLocation.value.capturedAt) {
+      formData.append('reporter_captured_at', reporterLocation.value.capturedAt)
+    }
   }
 
   if (userSelectedType.value?.databaseTypeId) {
     formData.append('user_selected_type_id', String(userSelectedType.value.databaseTypeId))
   }
 
-  for (const file of selectedFiles.value) formData.append('media', file)
+  for (const item of selectedFiles.value) formData.append('media', item.file)
 
   isSubmitting.value = true
   feedback.value = ''
@@ -325,12 +392,12 @@ const submitReport = async () => {
     })
 
     const reportId = response.data?.report_id
-    console.log(response)
     feedback.value = reportId ? `ส่งรายงาน #${reportId} สำเร็จแล้ว` : 'ส่งรายงานสำเร็จแล้ว'
     details.value = ''
-    selectedFiles.value = []
+    clearSelectedFiles()
     if (fileInput.value) fileInput.value.value = ''
     clearUserSelectedType()
+    clearLoginDraft()
     allowTypeConflict.value = false
   } catch (error) {
     if (error?.statusCode === 401) {
@@ -547,10 +614,15 @@ const submitReport = async () => {
 }
 
 .suggested-type__check {
+  position: absolute;
+  top: 50%;
+  right: .7rem;
   width: 1.7rem;
   height: 1.7rem;
-  margin-left: auto;
-  padding: 0.25rem;
+  margin: 0;
+  padding: .25rem;
+  box-sizing: border-box;
+  transform: translateY(-50%);
   border-radius: 50%;
   background: #1479ef;
   color: #fff;
@@ -1048,6 +1120,245 @@ const submitReport = async () => {
   }
   .more-types-button {
     font-size: 0.8rem;
+  }
+}
+
+/* โครงสร้างหน้าแจ้งเหตุ: ฟอร์มและแผนที่อยู่ในการ์ดเดียวกัน */
+.report-incident-form {
+  max-width: 92rem;
+  margin: 0 auto;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px solid #dce8f5;
+  border-radius: .85rem;
+  box-shadow: 0 .65rem 1.8rem rgb(31 72 125 / 8%);
+}
+
+.report-incident-form__body {
+  display: grid;
+  grid-template-columns: minmax(22rem, 2fr) minmax(31rem, 3fr);
+  gap: 1.15rem;
+  align-items: stretch;
+}
+
+.report-incident-form__fields {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.report-incident-form__location {
+  min-width: 0;
+  padding-left: 1.15rem;
+  border-left: 1px solid #e0eaf6;
+}
+
+.report-incident-form__details textarea {
+  min-height: 6.25rem;
+}
+
+.incident-suggestions {
+  padding-top: 1rem;
+}
+
+.suggested-type-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .55rem;
+}
+
+.suggested-type {
+  min-height: 3.7rem;
+  padding: .65rem .7rem;
+  font-size: .8rem;
+}
+
+.suggested-type__icon {
+  width: 1.7rem;
+  height: 1.7rem;
+}
+
+.suggested-type__icon img {
+  width: 1rem;
+  height: 1rem;
+}
+
+.report-incident-form__upload {
+  padding-top: 1rem;
+  border-top: 1px solid #dce6f1;
+}
+
+.upload-zone {
+  min-height: 4.75rem;
+  padding: .65rem .75rem;
+}
+
+.selected-media {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: .45rem;
+  margin: .6rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.selected-media li {
+  position: relative;
+  display: grid;
+  grid-template-rows: 3.25rem auto;
+  gap: .3rem;
+  min-width: 0;
+  padding: .3rem;
+  border: 1px solid #dbe6f2;
+  border-radius: .5rem;
+  background: #f9fbff;
+}
+
+.selected-media li > img,
+.selected-media__video {
+  display: grid;
+  width: 100%;
+  height: 3.25rem;
+  min-width: 0;
+  place-items: center;
+  border-radius: .3rem;
+  background: #e4efff;
+  color: #345a9f;
+  object-fit: cover;
+  font-size: .6rem;
+  font-weight: 800;
+}
+
+.selected-media__details {
+  min-width: 0;
+}
+
+.selected-media strong,
+.selected-media small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selected-media strong {
+  color: #29457a;
+  font-size: .68rem;
+}
+
+.selected-media small {
+  margin-top: .12rem;
+  color: #7284a9;
+  font-size: .62rem;
+}
+
+.selected-media button {
+  position: absolute;
+  top: .45rem;
+  right: .45rem;
+  border: 0;
+  border-radius: .25rem;
+  background: rgb(130 35 45 / 88%);
+  color: #fff;
+  font: inherit;
+  font-size: .6rem;
+  font-weight: 800;
+  line-height: 1;
+  padding: .23rem .3rem;
+  cursor: pointer;
+}
+
+.selected-media button:focus-visible {
+  outline: 2px solid #1479ef;
+  outline-offset: 2px;
+}
+
+.selected-media button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.report-incident-form__fields .report-incident-form__actions {
+  width: 100%;
+  grid-template-columns: .92fr 1.28fr;
+  gap: .6rem;
+  margin: 0;
+}
+
+.report-incident-form__actions .button {
+  min-height: 3rem;
+  font-size: .9rem;
+}
+
+.report-incident-form__actions .button--primary {
+  background: #f52c3c;
+  box-shadow: 0 .35rem .8rem rgb(232 51 60 / 18%);
+}
+
+.report-incident-form__action-row {
+  display: grid;
+  grid-template-columns: .92fr 1.28fr;
+  gap: .6rem;
+  width: 100%;
+  margin: 0;
+}
+
+.report-incident-form__action-row .button {
+  width: 100%;
+  min-height: 3rem;
+  font-size: .9rem;
+}
+
+.report-incident-form__action-row .button--primary {
+  background: #f52c3c;
+  box-shadow: 0 .35rem .8rem rgb(232 51 60 / 18%);
+}
+
+@media (min-width: 58.01rem) {
+  .report-incident-form__fields {
+    /* ปล่อยแต่ละส่วนสูงตามเนื้อหาจริง เพื่อให้ส่วนแนบไฟล์อยู่ต่อจาก Type และรองรับครบ 5 ไฟล์ */
+    height: auto;
+    align-content: start;
+  }
+
+  .report-incident-form__details textarea {
+    min-height: 8rem;
+    font-size: 1rem;
+  }
+
+  .suggested-type-grid {
+    /* รายการอาจเหลือเพียง Type เดียวหลังเลือก: อย่ายืดการ์ดให้เต็มพื้นที่ว่าง */
+    grid-auto-rows: minmax(3.7rem, auto);
+    align-content: start;
+  }
+
+  .suggested-type {
+    min-height: 3.7rem;
+    padding: .65rem 3rem .65rem .7rem;
+    font-size: .8rem;
+  }
+
+  .upload-zone {
+    min-height: 6.25rem;
+  }
+}
+
+@media (max-width: 58rem) {
+  .report-incident-form__body {
+    grid-template-columns: 1fr;
+  }
+
+  .report-incident-form__location {
+    padding: 1rem 0 0;
+    border-top: 1px solid #e0eaf6;
+    border-left: 0;
+  }
+
+  .report-incident-form__actions {
+    width: 100%;
+  }
+
+  .report-incident-form__action-row {
+    grid-template-columns: 1fr;
   }
 }
 </style>

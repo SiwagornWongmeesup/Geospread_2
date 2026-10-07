@@ -20,6 +20,9 @@ const createIncident = async (incidentData) => {
         description,
         lat,
         lng,
+        incident_lat,
+        incident_lng,
+        incident_source = 'unknown',
         reporter_lat,
         reporter_lng,
         user_selected_type_id,
@@ -38,7 +41,10 @@ const createIncident = async (incidentData) => {
         throw new AppError('กรุณาระบุรายละเอียดเหตุการณ์อย่างน้อย 5 ตัวอักษร', 400);
     }
 
-    if (!isCoordinate(lat, -90, 90) || !isCoordinate(lng, -180, 180)) {
+    const incidentLat = incident_lat ?? lat;
+    const incidentLng = incident_lng ?? lng;
+
+    if (!isCoordinate(incidentLat, -90, 90) || !isCoordinate(incidentLng, -180, 180)) {
         throw new AppError('พิกัดจุดเกิดเหตุไม่ถูกต้อง', 400);
     }
 
@@ -94,13 +100,16 @@ const createIncident = async (incidentData) => {
         return await incidentRepository.createIncidentReportWithMerge({
             incidentData: buildInitialIncidentData({
                 description: trimmedDescription,
-                lat,
-                lng,
+                lat: incidentLat,
+                lng: incidentLng,
                 selectedType: typeStatus === 'confirmed' ? selectedType : null,
             }),
             reportData: {
                 ...incidentData,
                 description: trimmedDescription,
+                lat: incidentLat,
+                lng: incidentLng,
+                incident_source,
                 user_selected_type_id: selectedTypeId,
                 system_suggested_type_id: systemSuggestedType?.type_id ?? null,
                 // final_type ใช้เฉพาะ Type ที่ไม่ขัดกับคำแนะนำของระบบ; กรณี conflict รอ Administrator ยืนยัน

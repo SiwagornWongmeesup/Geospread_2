@@ -84,24 +84,48 @@ export const useReportIncident = () => {
   const clearUserSelectedType = () => {
     userSelectedType.value = null
   }
-  const setCurrentLocation = ({ lat, lng, accuracyM = null }) => {
+  const normalizeLocation = ({ lat, lng, accuracyM = null, placeName = null, capturedAt = null, source = 'unknown' }) => {
     const normalizedLat = Number(lat)
     const normalizedLng = Number(lng)
 
-    if (!Number.isFinite(normalizedLat) || !Number.isFinite(normalizedLng)) return false
+    if (!Number.isFinite(normalizedLat) || !Number.isFinite(normalizedLng)) return null
 
-    const location = {
+    return {
       lat: normalizedLat,
       lng: normalizedLng,
       accuracyM: Number.isFinite(Number(accuracyM)) ? Number(accuracyM) : null,
-      capturedAt: new Date().toISOString(),
+      placeName,
+      capturedAt: capturedAt ?? new Date().toISOString(),
+      source: ['device', 'map', 'unknown'].includes(source) ? source : 'unknown',
     }
+  }
 
-    // ผู้ใช้กดใช้ "ตำแหน่งปัจจุบัน" เพื่อระบุจุดเกิดเหตุ จึงตั้งสองตำแหน่งเท่ากัน
-    reporterLocation.value = location
-    incidentLocation.value = { ...location }
+  const setIncidentLocation = (location) => {
+    const normalizedLocation = normalizeLocation({ ...location, source: location.source ?? 'map' })
+    if (!normalizedLocation) return false
+
+    incidentLocation.value = normalizedLocation
 
     return true
+  }
+
+  const setReporterLocation = (location) => {
+    const normalizedLocation = normalizeLocation({ ...location, source: location.source ?? 'device' })
+    if (!normalizedLocation) return false
+
+    reporterLocation.value = normalizedLocation
+
+    return true
+  }
+
+  const restoreLocations = ({ incident = null, reporter = null } = {}) => {
+    const normalize = (location) => {
+      const lat = Number(location?.lat)
+      const lng = Number(location?.lng)
+      return Number.isFinite(lat) && Number.isFinite(lng) ? { ...location, lat, lng } : null
+    }
+    incidentLocation.value = normalize(incident)
+    reporterLocation.value = normalize(reporter)
   }
 
   return {
@@ -111,6 +135,8 @@ export const useReportIncident = () => {
     reporterLocation,
     selectUserSelectedType,
     clearUserSelectedType,
-    setCurrentLocation,
+    setIncidentLocation,
+    setReporterLocation,
+    restoreLocations,
   }
 }

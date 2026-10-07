@@ -5,6 +5,7 @@
         :center="mapCenter"
         :zoom="11"
         :map-items="publicMapItems"
+        :selected-item-id="selectedIncident?.id"
         class="desktop-home__map-canvas"
         @select-item="selectIncident"
       />

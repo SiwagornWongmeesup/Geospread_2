@@ -1,292 +1,302 @@
 <template>
   <section class="location-picker" aria-labelledby="location-picker-heading">
     <header class="location-picker__header">
-      <svg class="location-picker__header-icon" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 2a7 7 0 0 0-7 7c0 5.1 7 13 7 13s7-7.9 7-13a7 7 0 0 0-7-7Zm0 9.6A2.6 2.6 0 1 1 12 6a2.6 2.6 0 0 1 0 5.6Z" fill="currentColor" />
-      </svg>
       <div>
-        <h2 id="location-picker-heading" class="location-picker__title">ตำแหน่งเหตุการณ์</h2>
-        <p class="location-picker__subtitle">ตรวจสอบตำแหน่งก่อนส่งรายงาน</p>
+        <h2 id="location-picker-heading">ตำแหน่งเกิดเหตุ</h2>
+        <p>คลิกบนแผนที่หรือลากหมุดเพื่อเลือกจุดเกิดเหตุ</p>
       </div>
+      <button type="button" class="location-picker__current-button" :disabled="isLocating" :aria-busy="isLocating"
+        @click="useCurrentLocation"><img src="/Location.svg" alt="">{{ isLocating ? 'กำลังขอตำแหน่ง…' :
+        'ใช้ตำแหน่งปัจจุบัน' }}</button>
     </header>
-
-    <div class="location-picker__current" :class="{ 'location-picker__current--ready': incidentLocation }">
-      <div class="location-picker__info">
-        <strong class="location-picker__label">{{ locationLabel }}</strong>
-        <span class="location-picker__hint">{{ locationHint }}</span>
-      </div>
-      <button
-        type="button"
-        class="location-picker__button"
-        :disabled="isLocating"
-        :aria-busy="isLocating"
-        @click="useCurrentLocation"
-      >
-        <svg class="location-picker__button-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M12 3a1 1 0 0 1 1 1v1.1a7 7 0 0 1 5.9 5.9H20a1 1 0 1 1 0 2h-1.1a7 7 0 0 1-5.9 5.9V20a1 1 0 1 1-2 0v-1.1A7 7 0 0 1 5.1 13H4a1 1 0 1 1 0-2h1.1A7 7 0 0 1 11 5.1V4a1 1 0 0 1 1-1Zm0 4a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0 3a2 2 0 1 1 0 4 2 2 0 0 1 0-4Z" fill="currentColor" />
-        </svg>
-        <span>{{ isLocating ? 'กำลังขอตำแหน่ง…' : 'ใช้ตำแหน่งปัจจุบัน' }}</span>
-      </button>
-    </div>
+    <section class="location-picker__selection" :class="{ 'location-picker__selection--ready': incidentLocation }"
+      aria-live="polite"><img src="/Location.svg" alt="">
+      <div><strong>{{ locationLabel }}</strong><span>{{ locationHint }}</span></div><b
+        v-if="incidentLocation">เลือกตำแหน่งแล้ว</b>
+    </section>
     <p v-if="locationError" class="location-picker__error" role="alert">{{ locationError }}</p>
-
-    <div class="location-picker__map" aria-label="แผนที่ตำแหน่งเหตุการณ์">
-      <MapboxMap
-        :center="mapCenter"
-        :zoom="12"
-        :show-geolocate-control="false"
-        class="location-picker__map-canvas"
-      />
-      <span v-if="incidentLocation" class="map-marker map-marker--incident" aria-hidden="true">
-        <svg viewBox="0 0 24 24">
-          <path d="M12 2a7 7 0 0 0-7 7c0 5.1 7 13 7 13s7-7.9 7-13a7 7 0 0 0-7-7Z" fill="currentColor" />
-          <circle cx="12" cy="9" r="2.3" fill="#fff" />
-        </svg>
-      </span>
+    <div class="location-picker__map" :class="{ 'location-picker__map--fullscreen': isFullscreen }">
+      <MapboxMap :center="mapCenter" :zoom="14" :show-geolocate-control="false" :editable-location="incidentLocation"
+        :allow-location-selection="true" class="location-picker__map-canvas" @location-select="setMapLocation" />
+      <button type="button" class="location-picker__fullscreen"
+        :aria-label="isFullscreen ? 'ย่อแผนที่' : 'ขยายแผนที่เต็มจอ'" @click="isFullscreen = !isFullscreen"><span
+          v-if="isFullscreen">ย่อแผนที่</span><span v-else>ขยายแผนที่</span></button>
+      <div class="location-picker__legend"><span><i class="incident"></i>จุดเกิดเหตุที่เลือก</span></div>
+      <button v-if="isFullscreen" type="button" class="location-picker__confirm"
+        @click="isFullscreen = false; locationError = incidentLocation ? '' : 'กรุณาเลือกจุดเกิดเหตุก่อนยืนยัน'">ยืนยันตำแหน่ง</button>
     </div>
-
-    <p class="location-picker__note">
-      ระบบจะขอสิทธิ์เข้าถึงตำแหน่งเฉพาะเมื่อคุณกดปุ่มด้านบนเท่านั้น
-    </p>
   </section>
 </template>
 
 <script setup>
 import { computed, ref } from 'vue'
 import MapboxMap from '~/components/MapboxMap.vue'
+import { useGeolocation } from '~/composables/useGeolocation'
 
-const { incidentLocation, setCurrentLocation } = useReportIncident()
-const isLocating = ref(false)
-const locationError = ref('')
-
+const { incidentLocation, setReporterLocation, setIncidentLocation } = useReportIncident()
+const { getCurrentLocation, isLocating, locationError } = useGeolocation()
+const isFullscreen = ref(false)
 const defaultMapCenter = [98.9853, 18.7883]
-const mapCenter = computed(() => incidentLocation.value
-  ? [incidentLocation.value.lng, incidentLocation.value.lat]
-  : defaultMapCenter)
-
-const locationLabel = computed(() => {
-  if (isLocating.value) return 'กำลังค้นหาตำแหน่ง…'
-  return incidentLocation.value ? 'ตั้งตำแหน่งเหตุการณ์แล้ว' : 'ยังไม่ได้เลือกตำแหน่ง'
-})
-
+const mapCenter = computed(() => incidentLocation.value ? [incidentLocation.value.lng, incidentLocation.value.lat] : defaultMapCenter)
+const locationLabel = computed(() => incidentLocation.value?.placeName || 'ยังไม่ได้เลือกจุดเกิดเหตุ')
 const locationHint = computed(() => {
-  if (!incidentLocation.value) return 'กดปุ่มเพื่อใช้ตำแหน่งที่คุณอยู่ ณ ตอนนี้'
-
+  if (!incidentLocation.value) return 'กดใช้ตำแหน่งปัจจุบัน หรือคลิกบนแผนที่เพื่อเลือกจุด'
   const { lat, lng, accuracyM } = incidentLocation.value
-  const accuracyText = accuracyM ? ` · ความแม่นยำประมาณ ${Math.round(accuracyM)} ม.` : ''
-
-  return `${lat.toFixed(6)}, ${lng.toFixed(6)}${accuracyText}`
+  return `${lat.toFixed(6)}, ${lng.toFixed(6)}${accuracyM !== null ? ` · ความแม่นยำประมาณ ${Math.round(accuracyM)} ม.` : ''}`
 })
-
-const getLocationErrorMessage = (error) => {
-  if (error?.code === 1) return 'ไม่ได้รับอนุญาตให้เข้าถึงตำแหน่ง กรุณาอนุญาตใน browser แล้วลองอีกครั้ง'
-  if (error?.code === 2) return 'ยังระบุตำแหน่งไม่ได้ ลองขยับไปจุดที่มีสัญญาณดีขึ้นแล้วลองอีกครั้ง'
-  if (error?.code === 3) return 'ใช้เวลาค้นหาตำแหน่งนานเกินไป กรุณาลองอีกครั้ง'
-  return 'ไม่สามารถอ่านตำแหน่งปัจจุบันได้ กรุณาลองอีกครั้ง'
+const setMapLocation = (location) => {
+  setIncidentLocation({ ...location, accuracyM: null, source: 'map' })
 }
 
-const useCurrentLocation = () => {
-  locationError.value = ''
+const useCurrentLocation = async () => {
+  try {
+    const location = await getCurrentLocation()
+    setReporterLocation(location)
 
-  if (!navigator.geolocation) {
-    locationError.value = 'Browser นี้ไม่รองรับการระบุตำแหน่ง'
-    return
+    // อย่าเขียนทับหมุดที่ผู้ใช้เลือกเองบนแผนที่ แต่ยัง refresh จุดที่มาจากเครื่องได้
+    if (!incidentLocation.value || incidentLocation.value.source === 'device') {
+      setIncidentLocation({ ...location, placeName: 'ตำแหน่งปัจจุบันของคุณ', source: 'device' })
+    }
+  } catch {
+    // useGeolocation แปลงและเก็บข้อความผิดพลาดสำหรับแสดงผลแล้ว
   }
-
-  isLocating.value = true
-  navigator.geolocation.getCurrentPosition(
-    (position) => {
-      setCurrentLocation({
-        lat: position.coords.latitude,
-        lng: position.coords.longitude,
-        accuracyM: position.coords.accuracy,
-      })
-      isLocating.value = false
-    },
-    (error) => {
-      locationError.value = getLocationErrorMessage(error)
-      isLocating.value = false
-    },
-    {
-      enableHighAccuracy: true,
-      timeout: 15_000,
-      maximumAge: 0,
-    },
-  )
 }
 </script>
 
 <style scoped>
-/* ============================== Location Picker Base ============================== */
-
 .location-picker {
-  padding: 1rem;
-  border-radius: 0.875rem;
-  background: #ffffff;
-  box-shadow: 0 4px 16px rgba(31, 72, 125, 0.08);
+  color: #102968
 }
-
-/* ============================== Header ============================== */
 
 .location-picker__header {
   display: flex;
   align-items: flex-start;
-  gap: 0.65rem;
+  justify-content: space-between;
+  gap: .8rem
 }
 
-.location-picker__header-icon {
-  width: 1.9rem;
-  height: 1.9rem;
-  color: #1479ef;
-  flex-shrink: 0;
-}
-
-.location-picker__title {
+.location-picker h2 {
   margin: 0;
-  color: #102968;
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: 1.05rem
 }
 
-.location-picker__subtitle {
-  margin: 0.18rem 0 0;
-  color: #63758f;
-  font-size: 0.74rem;
+.location-picker__header p {
+  margin: .2rem 0 0;
+  color: #62779d;
+  font-size: .76rem
 }
 
-/* ============================== Current Location Box ============================== */
-
-.location-picker__current {
-  display: grid;
-  gap: 0.65rem;
-  margin: 0.9rem 0;
-  padding: 0.75rem;
-  border-radius: 0.65rem;
-  background: #fff4f4;
-}
-
-.location-picker__current--ready {
-  background: #edf8f2;
-}
-
-.location-picker__current--ready .location-picker__label {
-  color: #187a49;
-}
-
-.location-picker__current--ready .location-picker__hint {
-  color: #45735d;
-}
-
-.location-picker__info {
-  display: flex;
-  flex-direction: column;
-}
-
-.location-picker__label {
-  display: block;
-  color: #c22831;
-  font-size: 0.8rem;
-  font-weight: 700;
-}
-
-.location-picker__hint {
-  display: block;
-  margin-top: 0.15rem;
-  color: #7b6870;
-  font-size: 0.7rem;
-  line-height: 1.35;
-}
-
-.location-picker__button {
+.location-picker__current-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
-  min-height: 2.55rem;
+  gap: .4rem;
+  min-height: 2.45rem;
+  padding: 0 .7rem;
   border: 0;
-  border-radius: 0.5rem;
-  background: #e8333c;
-  color: #ffffff;
+  border-radius: .45rem;
+  background: #1479ef;
+  color: #fff;
   font: inherit;
-  font-size: 0.78rem;
+  font-size: .73rem;
   font-weight: 800;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
+  cursor: pointer
 }
 
-.location-picker__button-icon {
-  width: 1.2rem;
-  height: 1.2rem;
+.location-picker__current-button img,
+.location-picker__selection>img {
+  width: 1.05rem;
+  height: 1.05rem
 }
 
-.location-picker__button:hover,
-.location-picker__button:focus-visible {
-  background: #cf202a;
-  outline: none;
+.location-picker__current-button img {
+  filter: brightness(0) invert(1)
 }
 
-.location-picker__button:disabled {
-  cursor: progress;
-  opacity: 0.72;
+.location-picker__selection {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  margin: .75rem 0;
+  padding: .68rem .75rem;
+  border: 1px solid #dbe7f5;
+  border-radius: .55rem;
+  background: #f9fbff
+}
+
+.location-picker__selection>img {
+  filter: invert(39%) sepia(54%) saturate(852%) hue-rotate(182deg)
+}
+
+.location-picker__selection div {
+  min-width: 0;
+  flex: 1
+}
+
+.location-picker__selection strong,
+.location-picker__selection span {
+  display: block
+}
+
+.location-picker__selection strong {
+  color: #29457a;
+  font-size: .78rem
+}
+
+.location-picker__selection span {
+  margin-top: .12rem;
+  overflow: hidden;
+  color: #62779d;
+  font-size: .67rem;
+  text-overflow: ellipsis;
+  white-space: nowrap
+}
+
+.location-picker__selection b {
+  padding: .3rem .45rem;
+  border-radius: .35rem;
+  background: #e8f8ed;
+  color: #23874f;
+  font-size: .65rem;
+  white-space: nowrap
 }
 
 .location-picker__error {
-  margin: -0.25rem 0 0.8rem;
-  padding: 0.65rem 0.75rem;
-  border-radius: 0.55rem;
+  margin: 0 0 .65rem;
+  padding: .6rem .7rem;
+  border-radius: .45rem;
   background: #fff1f1;
   color: #b4232a;
-  font-size: 0.72rem;
-  font-weight: 650;
-  line-height: 1.4;
+  font-size: .72rem
 }
-
-/* ============================== Map Container ============================== */
 
 .location-picker__map {
   position: relative;
-  height: 17rem;
+  height: 27rem;
   overflow: hidden;
-  border-radius: 0.7rem;
-  background: #dceef1;
+  border: 1px solid #d6e3f2;
+  border-radius: .65rem;
+  background: #dceef1
 }
 
 .location-picker__map-canvas {
   width: 100%;
   height: 100%;
-  min-height: 0;
+  min-height: 0
 }
 
-/* ============================== Map Markers ============================== */
-
-.map-marker {
+.location-picker__fullscreen {
   position: absolute;
-  display: block;
-  pointer-events: none;
+  z-index: 2;
+  right: .75rem;
+  bottom: 3rem;
+  min-height: 2rem;
+  padding: 0 .55rem;
+  border: 0;
+  border-radius: .4rem;
+  background: #fff;
+  color: #23427c;
+  font: inherit;
+  font-size: .66rem;
+  font-weight: 800;
+  box-shadow: 0 .3rem .8rem rgb(31 72 125 / 18%);
+  cursor: pointer
 }
 
-.map-marker--incident {
-  top: 50%;
-  left: 50%;
-  width: 2.8rem;
-  height: 2.8rem;
-  color: #e52d38;
-  transform: translate(-50%, -100%);
-  filter: drop-shadow(0 4px 5px rgba(114, 22, 27, 0.28));
+.location-picker__legend {
+  position: absolute;
+  z-index: 2;
+  bottom: .65rem;
+  left: .65rem;
+  display: flex;
+  gap: .6rem;
+  padding: .45rem .6rem;
+  border-radius: .4rem;
+  background: rgb(255 255 255 / 93%);
+  color: #39517f;
+  font-size: .65rem;
+  box-shadow: 0 .2rem .7rem rgb(31 72 125 / 13%)
 }
 
-.map-marker--incident svg {
-  display: block;
-  width: 100%;
-  height: 100%;
+.location-picker__legend span {
+  display: flex;
+  align-items: center;
+  gap: .25rem
 }
 
-/* ============================== Footer Note ============================== */
+.location-picker__legend i {
+  width: .55rem;
+  height: .55rem;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgb(20 48 106 / 15%)
+}
 
-.location-picker__note {
-  margin: 0.65rem 0 0;
-  color: #63758f;
-  font-size: 0.7rem;
-  line-height: 1.4;
+.location-picker__legend .incident {
+  background: #e8343e
+}
+
+.location-picker__map--fullscreen {
+  position: fixed;
+  z-index: 70;
+  inset: 1rem;
+  height: auto;
+  border-radius: .75rem;
+  box-shadow: 0 .8rem 2rem rgb(15 23 42 / 28%)
+}
+
+.location-picker__confirm {
+  position: absolute;
+  z-index: 3;
+  right: .75rem;
+  bottom: .7rem;
+  min-height: 2.4rem;
+  padding: 0 .8rem;
+  border: 0;
+  border-radius: .45rem;
+  background: #1479ef;
+  color: #fff;
+  font: inherit;
+  font-size: .72rem;
+  font-weight: 800;
+  cursor: pointer
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap
+}
+
+@media(max-width:48rem) {
+  .location-picker__header {
+    align-items: stretch;
+    flex-direction: column
+  }
+
+  .location-picker__current-button {
+    width: 100%
+  }
+
+  .location-picker__map {
+    height: 20rem
+  }
+
+  .location-picker__fullscreen {
+    bottom: 3.25rem
+  }
+}
+
+@media(min-width:49rem) {
+  .location-picker__map {
+    height: clamp(32rem, 58dvh, 42rem);
+  }
+
+  .location-picker__fullscreen {
+    display: none
+  }
 }
 </style>

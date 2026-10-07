@@ -11,7 +11,11 @@ const createIncident = async (req, res, next) => {
         res.status(201).json({
             success: true,
             message: 'ส่งรายงานเหตุการณ์สำเร็จ',
-            data: report
+            data: {
+                report_id: report.report_id,
+                status: report.report_status,
+                created_at: report.created_at,
+            }
         });
     } catch (error) {
         next(error);

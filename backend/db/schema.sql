@@ -161,14 +161,17 @@ CREATE TABLE IF NOT EXISTS tb_incident_reports (
     system_suggested_type_id INT REFERENCES tb_incident_types(type_id) ON DELETE SET NULL,
     -- รหัสประเภทเหตุการณ์สุดท้ายที่ระบบหรือผู้ดูแลยืนยันให้รายงาน
     final_type_id INT REFERENCES tb_incident_types(type_id) ON DELETE SET NULL,
-    -- เก็บข้อมูลเก่าจากระบบเดิมเท่านั้น; flow ปัจจุบันใช้ description เมื่อยังไม่เลือก Type
-    custom_type VARCHAR(150),
     -- สถานะของการจัดประเภทเหตุการณ์ในรายงาน
     type_status VARCHAR(20) NOT NULL DEFAULT 'pending',
     -- พิกัดจุดเกิดเหตุที่ผู้ใช้ระบุ
     incident_location GEOMETRY(Point, 4326) NOT NULL,
+    -- แหล่งที่มาของจุดเกิดเหตุ: พิกัดเครื่องหรือหมุดที่ผู้ใช้เลือกบนแผนที่
+    incident_location_source VARCHAR(20) NOT NULL DEFAULT 'unknown',
     -- พิกัดของผู้รายงานขณะส่งรายงาน ใช้ตรวจสอบภายใน
     reporter_location GEOMETRY(Point, 4326),
+    -- รัศมีความคลาดเคลื่อนและเวลาที่อุปกรณ์อ่านตำแหน่งผู้รายงาน
+    reporter_accuracy_m NUMERIC(10, 2),
+    reporter_captured_at TIMESTAMPTZ,
     -- ระยะห่างระหว่างผู้รายงานกับจุดเกิดเหตุ หน่วยเมตร
     distance_from_reporter NUMERIC(10, 2),
     -- สถานะการตรวจสอบรายงาน แยกจาก incident_id และ Candidate
@@ -181,8 +184,33 @@ CREATE TABLE IF NOT EXISTS tb_incident_reports (
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_report_type_status CHECK (type_status IN ('confirmed', 'pending', 'conflict')),
     CONSTRAINT chk_report_status CHECK (report_status IN ('pending', 'verified', 'rejected')),
-    CONSTRAINT chk_report_distance CHECK (distance_from_reporter IS NULL OR distance_from_reporter >= 0)
+    CONSTRAINT chk_report_distance CHECK (distance_from_reporter IS NULL OR distance_from_reporter >= 0),
+    CONSTRAINT chk_report_location_source CHECK (incident_location_source IN ('device', 'map', 'unknown')),
+    CONSTRAINT chk_report_accuracy CHECK (reporter_accuracy_m IS NULL OR reporter_accuracy_m >= 0)
 );
+
+-- schema นี้ถูกใช้กับฐานข้อมูลเดิมด้วย จึงเพิ่ม field แบบไม่กระทบข้อมูลเก่า
+ALTER TABLE tb_incident_reports
+    ADD COLUMN IF NOT EXISTS incident_location_source VARCHAR(20) NOT NULL DEFAULT 'unknown',
+    ADD COLUMN IF NOT EXISTS reporter_accuracy_m NUMERIC(10, 2),
+    ADD COLUMN IF NOT EXISTS reporter_captured_at TIMESTAMPTZ;
+
+-- ไม่ใช้ custom_type ใน flow ปัจจุบันแล้ว; รายละเอียดอิสระอยู่ใน description
+ALTER TABLE tb_incident_reports DROP COLUMN IF EXISTS custom_type;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_report_location_source') THEN
+        ALTER TABLE tb_incident_reports
+            ADD CONSTRAINT chk_report_location_source
+            CHECK (incident_location_source IN ('device', 'map', 'unknown'));
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_report_accuracy') THEN
+        ALTER TABLE tb_incident_reports
+            ADD CONSTRAINT chk_report_accuracy
+            CHECK (reporter_accuracy_m IS NULL OR reporter_accuracy_m >= 0);
+    END IF;
+END $$;
 
 -- Report ที่ยังไม่มี Type แต่ใกล้ Incident ที่มีอยู่ จึงรอ Administrator ตรวจสอบ
 CREATE TABLE IF NOT EXISTS tb_incident_report_candidates (

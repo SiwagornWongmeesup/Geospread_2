@@ -69,14 +69,13 @@ async function migrateLegacyIncidents(client) {
   // ย้ายแต่ละแถวเดิมเป็น Report รอตรวจสอบ โดยไม่บังคับ Type ใหม่ให้ข้อมูลเก่า
   await client.query(`
     INSERT INTO tb_incident_reports (
-      user_id, incident_id, description, custom_type, type_status, incident_location,
+      user_id, incident_id, description, type_status, incident_location,
       report_status, is_suspicious, created_at, updated_at
     )
     SELECT
       user_id,
       id,
-      COALESCE(NULLIF(description, ''), 'รายงานเดิมที่ไม่มีรายละเอียด'),
-      NULLIF(category, ''),
+      COALESCE(NULLIF(description, ''), NULLIF(category, ''), 'รายงานเดิมที่ไม่มีรายละเอียด'),
       'pending',
       location,
       CASE WHEN status = 'rejected' THEN 'rejected' ELSE 'pending' END,

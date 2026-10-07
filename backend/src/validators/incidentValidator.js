@@ -25,13 +25,39 @@ const reportValidator = [
         .trim()
         .isLength({ min: 5, max: 500 }).withMessage('รายละเอียดเหตุการณ์ต้องมี 5 ถึง 500 ตัวอักษร'),
 
+    body('incident_lat')
+        .optional({ values: 'falsy' })
+        .isFloat({ min: -90, max: 90 }).withMessage('ละติจูดจุดเกิดเหตุไม่ถูกต้อง')
+        .toFloat(),
+
+    body('incident_lng')
+        .optional({ values: 'falsy' })
+        .isFloat({ min: -180, max: 180 }).withMessage('ลองจิจูดจุดเกิดเหตุไม่ถูกต้อง')
+        .toFloat(),
+
+    // รองรับ client เดิมที่ยังส่ง lat/lng ระหว่างเปลี่ยนผ่าน
     body('lat')
+        .optional({ values: 'falsy' })
         .isFloat({ min: -90, max: 90 }).withMessage('ละติจูดจุดเกิดเหตุไม่ถูกต้อง')
         .toFloat(),
 
     body('lng')
+        .optional({ values: 'falsy' })
         .isFloat({ min: -180, max: 180 }).withMessage('ลองจิจูดจุดเกิดเหตุไม่ถูกต้อง')
         .toFloat(),
+
+    body().custom((_, { req }) => {
+        const incidentLat = req.body.incident_lat ?? req.body.lat;
+        const incidentLng = req.body.incident_lng ?? req.body.lng;
+        if (incidentLat === undefined || incidentLng === undefined) {
+            throw new Error('กรุณาระบุละติจูดและลองจิจูดจุดเกิดเหตุ');
+        }
+        return true;
+    }),
+
+    body('incident_source')
+        .optional({ values: 'falsy' })
+        .isIn(['device', 'map', 'unknown']).withMessage('แหล่งที่มาของจุดเกิดเหตุไม่ถูกต้อง'),
 
     body('reporter_lat')
         .optional({ values: 'falsy' })
@@ -42,6 +68,16 @@ const reportValidator = [
         .optional({ values: 'falsy' })
         .isFloat({ min: -180, max: 180 }).withMessage('ลองจิจูดผู้รายงานไม่ถูกต้อง')
         .toFloat(),
+
+    body('reporter_accuracy_m')
+        .optional({ values: 'falsy' })
+        .isFloat({ min: 0 }).withMessage('ค่าความแม่นยำของตำแหน่งผู้รายงานไม่ถูกต้อง')
+        .toFloat(),
+
+    body('reporter_captured_at')
+        .optional({ values: 'falsy' })
+        .isISO8601().withMessage('เวลาที่อ่านตำแหน่งผู้รายงานไม่ถูกต้อง')
+        .toDate(),
 
     body('user_selected_type_id')
         .optional({ values: 'falsy' })

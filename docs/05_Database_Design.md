@@ -42,7 +42,7 @@
 | **IncidentCategory** | `tb_incident_categories` | หมวดใหญ่สำหรับจัดกลุ่ม Type (code, name, icon, active, sort order) |
 | **IncidentType** | `tb_incident_types` | Type มาตรฐานที่กำหนด icon, marker color, display mode และ default radius |
 | **IncidentKeyword** | `tb_incident_keywords` | Keyword ที่เสนอ Type จากข้อความของผู้ใช้ |
-| **IncidentReport** | `tb_incident_reports` | ข้อมูลดิบที่ผู้ใช้ส่ง พร้อม Type ที่เลือก/ระบบเสนอ, custom type, PostGIS location และสถานะ Report |
+| **IncidentReport** | `tb_incident_reports` | ข้อมูลดิบที่ผู้ใช้ส่ง พร้อม Type ที่เลือก/ระบบเสนอ, PostGIS location และสถานะ Report |
 | **IncidentMedia** | `tb_incident_media` | รูปภาพหรือวิดีโอหลายไฟล์ของ IncidentReport |
 | **Incident** | `tb_incidents` | เหตุการณ์หลักที่รวม Report หนึ่งรายการหรือหลายรายการ พร้อม severity, credibility, verification และสถานะเหตุ |
 | **HelpRequest** | `tb_help_requests` | คำขอความช่วยเหลือที่ระบุพิกัด (id, event_id, user_id, desc, location, status) |

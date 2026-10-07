@@ -20,6 +20,7 @@
         :center="mapCenter"
         :zoom="13"
         :map-items="publicMapItems"
+        :selected-item-id="selectedIncident?.id"
         class="mobile-map"
         @select-item="selectIncident"
       />
