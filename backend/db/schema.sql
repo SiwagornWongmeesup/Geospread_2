@@ -176,6 +176,10 @@ CREATE TABLE IF NOT EXISTS tb_incident_reports (
     distance_from_reporter NUMERIC(10, 2),
     -- สถานะการตรวจสอบรายงาน แยกจาก incident_id และ Candidate
     report_status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    -- สถานะปัจจุบันของเหตุที่รายงานนี้ติดตาม แยกจากสถานะการตรวจสอบ Report
+    event_status VARCHAR(20) NOT NULL DEFAULT 'active',
+    -- เวลาที่หยุดแสดง Report นี้บนแผนที่ แต่ไม่ลบข้อมูลประวัติออกจากระบบ
+    expires_at TIMESTAMPTZ,
     -- สถานะระบุว่ารายงานนี้มีความผิดปกติหรือน่าสงสัย
     is_suspicious BOOLEAN NOT NULL DEFAULT FALSE,
     -- วันที่และเวลาที่ผู้ใช้ส่งรายงาน
@@ -184,16 +188,28 @@ CREATE TABLE IF NOT EXISTS tb_incident_reports (
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_report_type_status CHECK (type_status IN ('confirmed', 'pending', 'conflict')),
     CONSTRAINT chk_report_status CHECK (report_status IN ('pending', 'verified', 'rejected')),
+    CONSTRAINT chk_report_event_status CHECK (event_status IN ('active', 'improving', 'resolved', 'expired')),
     CONSTRAINT chk_report_distance CHECK (distance_from_reporter IS NULL OR distance_from_reporter >= 0),
     CONSTRAINT chk_report_location_source CHECK (incident_location_source IN ('device', 'map', 'unknown')),
     CONSTRAINT chk_report_accuracy CHECK (reporter_accuracy_m IS NULL OR reporter_accuracy_m >= 0)
+);
+
+-- รายงานจากชุมชนที่แจ้งว่า Incident อาจเป็นข้อมูลเท็จหรือคลาดเคลื่อน
+CREATE TABLE IF NOT EXISTS tb_incident_false_reports (
+    false_report_id SERIAL PRIMARY KEY,
+    incident_id INT NOT NULL REFERENCES tb_incidents(incident_id) ON DELETE CASCADE,
+    user_id INT NOT NULL REFERENCES tb_users(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_false_report_per_user UNIQUE (incident_id, user_id)
 );
 
 -- schema นี้ถูกใช้กับฐานข้อมูลเดิมด้วย จึงเพิ่ม field แบบไม่กระทบข้อมูลเก่า
 ALTER TABLE tb_incident_reports
     ADD COLUMN IF NOT EXISTS incident_location_source VARCHAR(20) NOT NULL DEFAULT 'unknown',
     ADD COLUMN IF NOT EXISTS reporter_accuracy_m NUMERIC(10, 2),
-    ADD COLUMN IF NOT EXISTS reporter_captured_at TIMESTAMPTZ;
+    ADD COLUMN IF NOT EXISTS reporter_captured_at TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS event_status VARCHAR(20) NOT NULL DEFAULT 'active',
+    ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ;
 
 -- ไม่ใช้ custom_type ใน flow ปัจจุบันแล้ว; รายละเอียดอิสระอยู่ใน description
 ALTER TABLE tb_incident_reports DROP COLUMN IF EXISTS custom_type;
@@ -210,7 +226,27 @@ BEGIN
             ADD CONSTRAINT chk_report_accuracy
             CHECK (reporter_accuracy_m IS NULL OR reporter_accuracy_m >= 0);
     END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_report_event_status') THEN
+        ALTER TABLE tb_incident_reports
+            ADD CONSTRAINT chk_report_event_status
+            CHECK (event_status IN ('active', 'improving', 'resolved', 'expired'));
+    END IF;
 END $$;
+
+-- ทุกความคืบหน้าของเหตุเก็บเป็นประวัติใหม่ ไม่เขียนทับข้อความ Report ต้นฉบับ
+CREATE TABLE IF NOT EXISTS tb_incident_report_updates (
+    report_update_id SERIAL PRIMARY KEY,
+    report_id INT NOT NULL REFERENCES tb_incident_reports(report_id) ON DELETE CASCADE,
+    -- ผู้ที่แจ้งความคืบหน้า เช่น เจ้าของ Report หรือ Administrator
+    user_id INT REFERENCES tb_users(id) ON DELETE SET NULL,
+    -- ข้อความความคืบหน้า เช่น "เจ้าหน้าที่กำลังเข้าพื้นที่" หรือ "ระดับน้ำลดลงแล้ว"
+    message TEXT NOT NULL,
+    -- สถานะเหตุหลังอัปเดตนี้ ต้องสอดคล้องกับ event_status ของ Report
+    status_after VARCHAR(20) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_report_update_message CHECK (char_length(trim(message)) BETWEEN 1 AND 1000),
+    CONSTRAINT chk_report_update_status CHECK (status_after IN ('active', 'improving', 'resolved', 'expired'))
+);
 
 -- Report ที่ยังไม่มี Type แต่ใกล้ Incident ที่มีอยู่ จึงรอ Administrator ตรวจสอบ
 CREATE TABLE IF NOT EXISTS tb_incident_report_candidates (
@@ -271,13 +307,81 @@ CREATE TABLE IF NOT EXISTS tb_incident_media (
     CONSTRAINT chk_media_type CHECK (media_type IN ('image', 'video'))
 );
 
+-- คำขอความช่วยเหลือเป็นข้อมูลคนละโดเมนกับ Incident Report: ทุกคำขออยู่แยกกันและไม่ถูก merge
+CREATE TABLE IF NOT EXISTS tb_help_requests (
+    help_request_id SERIAL PRIMARY KEY,
+    -- ผู้ขอความช่วยเหลือ
+    user_id INT REFERENCES tb_users(id) ON DELETE SET NULL,
+    -- ประเภทความช่วยเหลือที่ผู้ใช้เลือกจากฟอร์ม
+    help_type VARCHAR(30) NOT NULL,
+    -- ภัยพิบัติที่เกี่ยวข้องหรือความต้องการที่พิมพ์เอง เมื่อเลือก "อื่น ๆ"
+    related_disaster VARCHAR(50),
+    custom_help_type VARCHAR(255),
+    description TEXT NOT NULL,
+    -- จำนวนคนขั้นต่ำที่ต้องการความช่วยเหลือ; ค่า 4 แทนตัวเลือก "4+"
+    people_count SMALLINT NOT NULL DEFAULT 1,
+    -- ตำแหน่งที่ต้องการความช่วยเหลือ และแหล่งที่มาของตำแหน่ง
+    help_location GEOMETRY(Point, 4326) NOT NULL,
+    location_source VARCHAR(20) NOT NULL DEFAULT 'unknown',
+    -- ตำแหน่งของผู้ขอ ณ เวลาส่ง ใช้ตรวจสอบภายใน ไม่จำเป็นต้องเป็นจุดขอความช่วยเหลือ
+    reporter_location GEOMETRY(Point, 4326),
+    reporter_accuracy_m NUMERIC(10, 2),
+    reporter_captured_at TIMESTAMPTZ,
+    -- pending → accepted → in_progress → resolved; หรือ cancelled / expired
+    request_status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    accepted_by INT REFERENCES tb_users(id) ON DELETE SET NULL,
+    accepted_at TIMESTAMPTZ,
+    resolved_at TIMESTAMPTZ,
+    -- เมื่อถึงเวลานี้ให้ซ่อนหมุดจากแผนที่ แต่เก็บ record และประวัติไว้
+    expires_at TIMESTAMPTZ NOT NULL DEFAULT (CURRENT_TIMESTAMP + INTERVAL '24 hours'),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_help_request_type CHECK (help_type IN ('evacuation', 'medical', 'food', 'shelter', 'vehicle', 'other')),
+    CONSTRAINT chk_help_request_people CHECK (people_count >= 1 AND people_count <= 999),
+    CONSTRAINT chk_help_request_location_source CHECK (location_source IN ('device', 'map', 'unknown')),
+    CONSTRAINT chk_help_request_accuracy CHECK (reporter_accuracy_m IS NULL OR reporter_accuracy_m >= 0),
+    CONSTRAINT chk_help_request_status CHECK (request_status IN ('pending', 'accepted', 'in_progress', 'resolved', 'cancelled', 'expired'))
+);
+
+-- ชื่อเดิม custom_type อาจหลงเหลือจาก schema รุ่นแรกของ Help Request
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'tb_help_requests' AND column_name = 'custom_type'
+    ) AND NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'tb_help_requests' AND column_name = 'custom_help_type'
+    ) THEN
+        ALTER TABLE tb_help_requests RENAME COLUMN custom_type TO custom_help_type;
+    END IF;
+END $$;
+
+-- Timeline ความคืบหน้าของคำขอช่วยเหลือ ไม่เขียนทับข้อความคำขอเริ่มต้น
+CREATE TABLE IF NOT EXISTS tb_help_request_updates (
+    help_request_update_id SERIAL PRIMARY KEY,
+    help_request_id INT NOT NULL REFERENCES tb_help_requests(help_request_id) ON DELETE CASCADE,
+    user_id INT REFERENCES tb_users(id) ON DELETE SET NULL,
+    message TEXT NOT NULL,
+    status_after VARCHAR(20) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_help_request_update_message CHECK (char_length(trim(message)) BETWEEN 1 AND 1000),
+    CONSTRAINT chk_help_request_update_status CHECK (status_after IN ('pending', 'accepted', 'in_progress', 'resolved', 'cancelled', 'expired'))
+);
+
 CREATE INDEX IF NOT EXISTS idx_types_category ON tb_incident_types(category_id);
 CREATE INDEX IF NOT EXISTS idx_keywords_active ON tb_incident_keywords(keyword) WHERE is_active;
 CREATE INDEX IF NOT EXISTS idx_main_incidents_location ON tb_incidents USING GIST (incident_location);
 CREATE INDEX IF NOT EXISTS idx_incidents_active ON tb_incidents(incident_status, last_reported_at DESC) WHERE incident_status = 'active';
 CREATE INDEX IF NOT EXISTS idx_reports_location ON tb_incident_reports USING GIST (incident_location);
 CREATE INDEX IF NOT EXISTS idx_reports_incident ON tb_incident_reports(incident_id);
+CREATE INDEX IF NOT EXISTS idx_false_reports_incident_created ON tb_incident_false_reports(incident_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_reports_event_status_expiry ON tb_incident_reports(event_status, expires_at);
+CREATE INDEX IF NOT EXISTS idx_report_updates_report_created ON tb_incident_report_updates(report_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_media_report ON tb_incident_media(report_id);
+CREATE INDEX IF NOT EXISTS idx_help_requests_location ON tb_help_requests USING GIST (help_location);
+CREATE INDEX IF NOT EXISTS idx_help_requests_status_expiry ON tb_help_requests(request_status, expires_at);
+CREATE INDEX IF NOT EXISTS idx_help_request_updates_request_created ON tb_help_request_updates(help_request_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_report_candidates_pending_target
     ON tb_incident_report_candidates(target_incident_id, created_at DESC)
     WHERE candidate_status = 'pending';

@@ -2,23 +2,28 @@
   <div class="desktop-home">
     <section class="desktop-home__map" aria-label="แผนที่เหตุการณ์">
       <MapboxMap
-        :center="mapCenter"
-        :zoom="11"
+        :center="activeMapCenter"
+        :zoom="activeMapZoom"
+        :show-geolocate-control="false"
         :map-items="publicMapItems"
         :selected-item-id="selectedIncident?.id"
+        :reporter-location="userLocation"
         class="desktop-home__map-canvas"
         @select-item="selectIncident"
       />
-      <div class="desktop-home__map-label">
-        <span class="desktop-home__map-pulse" aria-hidden="true" />
-        แผนที่เหตุการณ์ชุมชน
-      </div>
+      <MapLocationSearch
+        :is-locating="isLocating"
+        :location-error="locationError"
+        @locate="focusCurrentLocation"
+        @select="selectArea"
+        @clear-selection="clearAreaSelection"
+      />
       <div v-if="mapError" class="desktop-home__map-status">
         {{ mapError }}
       </div>
       <IncidentMapPopup
         class="desktop-home__map-popup"
-        :incident="selectedIncident"
+        :incident="selectedIncidentPreview"
         @close="clearSelectedIncident"
       />
     </section>
@@ -28,7 +33,6 @@
       :incidents="nearbyIncidentCards"
       :is-loading="isLoadingMap"
       :error-message="mapError"
-      @select="selectIncident"
     />
 
     <div class="desktop-home__lower-grid">
@@ -39,25 +43,63 @@
 </template>
 
 <script setup>
+import { computed, ref } from 'vue'
 import MapboxMap from '~/components/MapboxMap.vue'
 import IncidentMapPopup from '~/components/map/IncidentMapPopup.vue'
 import HelpRequests from '~/components/dashboard/HelpRequests.vue'
 import NearbyIncidents from '~/components/dashboard/NearbyIncidents.vue'
 import RecentActivity from '~/components/dashboard/RecentActivity.vue'
+import MapLocationSearch from '~/components/map/MapLocationSearch.vue'
+import { useGeolocation } from '~/composables/useGeolocation'
 
 const {
   selectedIncident,
+  selectedIncidentPreview,
   publicMapItems,
+  userLocation,
   nearbyIncidentCards,
   isLoadingMap,
   mapError,
   mapCenter,
   selectIncident,
   clearSelectedIncident,
+  setUserLocation,
   fetchPublicMapItems,
 } = useHomeDashboard()
 
-onMounted(fetchPublicMapItems)
+const { getCurrentLocation, isLocating, locationError } = useGeolocation()
+const selectedArea = ref(null)
+
+const activeMapCenter = computed(() => selectedArea.value?.center || mapCenter.value)
+const activeMapZoom = computed(() => selectedArea.value?.zoom || 11)
+
+const selectArea = (area) => {
+  selectedArea.value = area
+  clearSelectedIncident()
+}
+
+const clearAreaSelection = () => {
+  selectedArea.value = null
+  clearSelectedIncident()
+}
+
+const focusCurrentLocation = async () => {
+  try {
+    const location = await getCurrentLocation()
+    setUserLocation(location)
+    selectedArea.value = {
+      center: [location.lng, location.lat],
+      zoom: 13,
+    }
+    clearSelectedIncident()
+  } catch {
+    // ข้อความผิดพลาดแสดงในเครื่องมือเลือกพื้นที่แล้ว
+  }
+}
+
+onMounted(() => {
+  void fetchPublicMapItems()
+})
 </script>
 
 <style scoped>
@@ -85,32 +127,6 @@ onMounted(fetchPublicMapItems)
   width: 100%;
   height: 100%;
   min-height: 0;
-}
-
-.desktop-home__map-label {
-  position: absolute;
-  top: 1rem;
-  left: 1rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.625rem 0.875rem;
-  border: 1px solid #d8e5f4;
-  border-radius: 0.625rem;
-  background: rgb(255 255 255 / 94%);
-  color: #173a75;
-  font-size: 0.875rem;
-  font-weight: 700;
-  box-shadow: 0 4px 12px rgb(26 58 108 / 12%);
-  pointer-events: none;
-}
-
-.desktop-home__map-pulse {
-  width: 0.625rem;
-  height: 0.625rem;
-  border-radius: 50%;
-  background: #1479ef;
-  box-shadow: 0 0 0 4px rgb(20 121 239 / 16%);
 }
 
 .desktop-home__map-status {

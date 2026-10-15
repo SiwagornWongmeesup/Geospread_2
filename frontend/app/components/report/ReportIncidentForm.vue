@@ -339,7 +339,8 @@ const restoreLoginDraft = () => {
   }
 }
 const clearLoginDraft = () => { if (import.meta.client) sessionStorage.removeItem(loginDraftKey) }
-const goToLogin = () => { saveLoginDraft(); navigateTo({ path: '/login', query: { redirect: '/report-incident' } }) }
+const goToLogin = () => 
+{ saveLoginDraft(); navigateTo({ path: '/login', query: { redirect: '/report-incident' } }) }
 const submitReport = async () => {
   if (!incidentLocation.value) {
     feedback.value = 'กรุณาเลือกตำแหน่งเหตุการณ์ก่อนส่งรายงาน'
@@ -357,8 +358,16 @@ const submitReport = async () => {
     return
   }
 
+  const description = details.value.trim()
+
+  if (description.length < 5) {
+    feedback.value = 'กรุณากรอกข้อความอย่างน้อย 5 ตัวอักษร'
+    return
+  }
+
+
   const formData = new FormData()
-  formData.append('description', details.value.trim())
+  formData.append('description', description)
   formData.append('incident_lat', String(incidentLocation.value.lat))
   formData.append('incident_lng', String(incidentLocation.value.lng))
   formData.append('incident_source', incidentLocation.value.source ?? 'unknown')
@@ -390,7 +399,6 @@ const submitReport = async () => {
       body: formData,
       headers: { Authorization: `Bearer ${authToken}` },
     })
-
     const reportId = response.data?.report_id
     feedback.value = reportId ? `ส่งรายงาน #${reportId} สำเร็จแล้ว` : 'ส่งรายงานสำเร็จแล้ว'
     details.value = ''
@@ -398,6 +406,9 @@ const submitReport = async () => {
     if (fileInput.value) fileInput.value.value = ''
     clearUserSelectedType()
     clearLoginDraft()
+        setTimeout(() => {
+      navigateTo('/')
+    }, 1500)
     allowTypeConflict.value = false
   } catch (error) {
     if (error?.statusCode === 401) {

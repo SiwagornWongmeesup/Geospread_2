@@ -4,9 +4,20 @@ defineProps({
     type: Object,
     default: null,
   },
-});
+})
 
-defineEmits(["close"]);
+defineEmits(['close'])
+
+const previewText = (incident) => String(incident?.description || '').trim()
+  || incident?.title
+  || 'ยังไม่มีรายละเอียดเพิ่มเติม'
+
+const incidentDetailPath = (incident) => {
+  if (incident?.kind === 'incident') return `/incidents/${incident.sourceId}`
+  if (incident?.kind === 'pending_report') return `/incidents/report-${incident.sourceId}`
+  if (incident?.kind === 'help_request') return `/incidents/help-${incident.sourceId}`
+  return '/'
+}
 </script>
 
 <template>
@@ -14,148 +25,65 @@ defineEmits(["close"]);
     <button
       class="incident-map-popup__close"
       type="button"
-      aria-label="ปิดรายละเอียดเหตุการณ์"
+      aria-label="ปิดตัวอย่างเหตุการณ์"
       @click="$emit('close')"
     >
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="m7 7 10 10M17 7 7 17" />
-      </svg>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17" /></svg>
     </button>
 
-    <div class="incident-map-popup__heading">
-      <span
-        class="incident-map-popup__icon"
-        :style="{ backgroundColor: incident.markerColor }"
-        aria-hidden="true"
-      >
-        <img :src="incident.iconUrl || '/Alert.svg'" alt="" />
-      </span>
-      <div>
-        <p class="incident-map-popup__status">
-          {{ incident.statusLabel || "เหตุการณ์" }}
+    <NuxtLink
+      class="incident-map-popup__open"
+      :to="incidentDetailPath(incident)"
+      :aria-label="`เปิดเหตุการณ์ ${incident.title || 'ที่เลือก'}`"
+    >
+      <div class="incident-map-popup__media" :class="{ 'incident-map-popup__media--empty': !incident.imageUrl }">
+        <img v-if="incident.imageUrl" :src="incident.imageUrl" :alt="incident.title" />
+        <img v-else :src="incident.iconUrl || '/Alert.svg'" alt="" />
+      </div>
+
+      <div class="incident-map-popup__content">
+        <p class="incident-map-popup__category">
+          <img :src="incident.iconUrl || '/Alert.svg'" alt="" />
+          {{ incident.category || 'เหตุการณ์' }}
         </p>
-        <h2>{{ incident.title || "รายงานเหตุการณ์" }}</h2>
+        <h2 :title="previewText(incident)">{{ previewText(incident) }}</h2>
+        <div class="incident-map-popup__details">
+          <span
+            class="incident-map-popup__status"
+            :class="`incident-map-popup__status--${incident.statusTone || 'pending'}`"
+          >
+            {{ incident.statusLabel || 'รอตรวจสอบ' }}
+          </span>
+          <p>{{ incident.time || 'เมื่อสักครู่' }} · {{ incident.distanceFromUserLabel || 'ยังไม่ทราบระยะทาง' }}</p>
+        </div>
       </div>
-    </div>
 
-    <p v-if="incident.description" class="incident-map-popup__description">
-      {{ incident.description }}
-    </p>
-
-    <dl class="incident-map-popup__meta">
-      <div v-if="incident.location">
-        <dt>ตำแหน่ง</dt>
-        <dd>{{ incident.location }}</dd>
-      </div>
-      <div v-if="incident.time">
-        <dt>เวลา</dt>
-        <dd>{{ incident.time }}</dd>
-      </div>
-      <div v-if="incident.distance">
-        <dt>ข้อมูล</dt>
-        <dd>{{ incident.distance }}</dd>
-      </div>
-    </dl>
+      <svg class="incident-map-popup__arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg>
+    </NuxtLink>
   </article>
 </template>
 
 <style scoped>
-.incident-map-popup {
-  position: relative;
-  width: min(22rem, 100%);
-  padding: 1rem;
-  border-radius: 0.875rem;
-  background: #fff;
-  color: #173a75;
-  box-shadow: 0 12px 28px rgb(15 50 96 / 20%);
-}
-.incident-map-popup__close {
-  position: absolute;
-  top: 0.55rem;
-  right: 0.55rem;
-  display: grid;
-  width: 2rem;
-  height: 2rem;
-  place-items: center;
-  border: 0;
-  border-radius: 0.5rem;
-  background: transparent;
-  color: #58719a;
-  cursor: pointer;
-}
-.incident-map-popup__close:hover {
-  background: #edf5ff;
-  color: #0876eb;
-}
-.incident-map-popup__close:focus-visible {
-  outline: 3px solid rgb(8 118 235 / 28%);
-  outline-offset: 2px;
-}
-.incident-map-popup__close svg {
-  width: 1rem;
-  height: 1rem;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-width: 2;
-}
-.incident-map-popup__heading {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  padding-right: 2rem;
-}
-.incident-map-popup__icon {
-  display: grid;
-  width: 2.4rem;
-  height: 2.4rem;
-  flex: 0 0 auto;
-  place-items: center;
-  border-radius: 0.7rem;
-}
-.incident-map-popup__icon img {
-  width: 1.3rem;
-  height: 1.3rem;
-  filter: brightness(0) invert(1);
-}
-.incident-map-popup__status {
-  margin: 0 0 0.12rem;
-  color: #3973b8;
-  font-size: 0.7rem;
-  font-weight: 800;
-}
-.incident-map-popup h2 {
-  margin: 0;
-  color: #173a75;
-  font-size: 0.94rem;
-  line-height: 1.35;
-}
-.incident-map-popup__description {
-  margin: 0.75rem 0 0;
-  color: #536d97;
-  font-size: 0.78rem;
-  line-height: 1.5;
-}
-.incident-map-popup__meta {
-  display: grid;
-  gap: 0.3rem;
-  margin: 0.75rem 0 0;
-  padding-top: 0.7rem;
-  border-top: 1px solid #e5edf7;
-}
-.incident-map-popup__meta div {
-  display: flex;
-  gap: 0.5rem;
-  font-size: 0.7rem;
-  line-height: 1.35;
-}
-.incident-map-popup__meta dt {
-  min-width: 3.3rem;
-  color: #7288a9;
-}
-.incident-map-popup__meta dd {
-  margin: 0;
-  color: #315581;
-  font-weight: 700;
-}
+.incident-map-popup { position: relative; width: min(19.5rem, 100%); overflow: hidden; border-radius: .9rem; background: #fff; box-shadow: 0 .75rem 1.75rem rgb(15 50 96 / 20%); }
+.incident-map-popup__open { display: grid; grid-template-columns: 4rem minmax(0, 1fr) 1rem; align-items: center; gap: .75rem; padding: .75rem 2.9rem .75rem .75rem; color: inherit; text-decoration: none; }
+.incident-map-popup__open:hover { background: #f8fbff; }
+.incident-map-popup__open:focus-visible { outline: 3px solid rgb(37 99 235 / 35%); outline-offset: -3px; }
+.incident-map-popup__media { display: grid; width: 4rem; height: 4rem; place-items: center; overflow: hidden; border-radius: .65rem; background: #e9f1fb; }
+.incident-map-popup__media img { width: 100%; height: 100%; object-fit: cover; }
+.incident-map-popup__media--empty img { width: 1.9rem; height: 1.9rem; object-fit: contain; filter: invert(31%) sepia(42%) saturate(1131%) hue-rotate(182deg) brightness(89%) contrast(86%); }
+.incident-map-popup__content { min-width: 0; }
+.incident-map-popup__category { display: flex; align-items: center; gap: .3rem; margin: 0; overflow: hidden; color: #3766a8; font-size: .69rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.incident-map-popup__category img { width: .9rem; height: .9rem; object-fit: contain; }
+.incident-map-popup h2 { display: -webkit-box; margin: .2rem 0 0; overflow: hidden; color: #152b56; font-size: .9rem; font-weight: 800; line-height: 1.28; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.incident-map-popup__details { display: grid; gap: .3rem; margin-top: .45rem; }
+.incident-map-popup__status { width: fit-content; max-width: 100%; padding: .2rem .45rem; overflow: hidden; border-radius: 999px; color: #fff; font-size: .63rem; font-weight: 800; line-height: 1; text-overflow: ellipsis; white-space: nowrap; }
+.incident-map-popup__status--pending { background: #df7b29; }
+.incident-map-popup__status--ongoing { background: #2563eb; }
+.incident-map-popup__status--verified { background: #25805b; }
+.incident-map-popup__details p { margin: 0; overflow: hidden; color: #617895; font-size: .67rem; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.incident-map-popup__arrow { width: 1rem; height: 1rem; fill: none; stroke: #2a61ba; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2.3; }
+.incident-map-popup__close { position: absolute; z-index: 1; top: .38rem; right: .38rem; display: grid; width: 1.75rem; height: 1.75rem; place-items: center; border: 0; border-radius: .5rem; background: #f1f6fc; color: #58719a; cursor: pointer; }
+.incident-map-popup__close:hover { background: #e2efff; color: #1d4ed8; }
+.incident-map-popup__close:focus-visible { outline: 3px solid rgb(37 99 235 / 35%); outline-offset: 2px; }
+.incident-map-popup__close svg { width: .9rem; height: .9rem; fill: none; stroke: currentColor; stroke-linecap: round; stroke-width: 2; }
 </style>

@@ -99,11 +99,27 @@ const buildRadiusFeatureCollection = () => ({
 })
 
 const createMarkerElement = (item) => {
+  const markerKind = item.kind === 'pending_report'
+    ? 'pending'
+    : item.kind === 'help_request'
+      ? 'help'
+      : 'incident'
+  const fallbackMarkerColor = markerKind === 'pending'
+    ? '#e8333c'
+    : markerKind === 'help'
+      ? '#f97316'
+      : '#1479ef'
+  const badgeLabel = item.kind === 'pending_report'
+    ? 'รอตรวจสอบ'
+    : item.kind === 'help_request'
+      ? 'ขอความช่วยเหลือ'
+      : null
+
   const marker = document.createElement('button')
   marker.type = 'button'
-  marker.className = `incident-map-marker incident-map-marker--${item.kind === 'pending_report' ? 'pending' : 'incident'}`
-  marker.style.setProperty('--marker-color', item.markerColor || (item.kind === 'pending_report' ? '#e8333c' : '#1479ef'))
-  marker.setAttribute('aria-label', item.title || 'ตำแหน่งเหตุการณ์')
+  marker.className = `incident-map-marker incident-map-marker--${markerKind}`
+  marker.style.setProperty('--marker-color', item.markerColor || fallbackMarkerColor)
+  marker.setAttribute('aria-label', badgeLabel ? `${badgeLabel}: ${item.title || 'ตำแหน่งบนแผนที่'}` : (item.title || 'ตำแหน่งเหตุการณ์'))
 
   const pin = document.createElement('span')
   pin.className = 'incident-map-marker__pin'
@@ -117,10 +133,10 @@ const createMarkerElement = (item) => {
 
   marker.appendChild(pin)
 
-  if (item.kind === 'pending_report') {
+  if (badgeLabel) {
     const badge = document.createElement('span')
-    badge.className = 'incident-map-marker__badge'
-    badge.textContent = 'รอตรวจสอบ'
+    badge.className = `incident-map-marker__badge incident-map-marker__badge--${markerKind}`
+    badge.textContent = badgeLabel
     marker.appendChild(badge)
   }
 
@@ -362,6 +378,7 @@ onMounted(() => {
     map.on('load', () => {
       isMapLoaded = true
       renderMapItems()
+      renderReportLocations()
       if (props.allowLocationSelection) map.on('click', (event) => emitLocation(event.lngLat))
     })
 
@@ -459,6 +476,10 @@ watch(() => [props.editableLocation, props.reporterLocation], () => {
   box-shadow: 0 0 0 5px rgb(232 51 60 / 18%), 0 8px 18px rgb(15 23 42 / 22%);
 }
 
+:global(.incident-map-marker--help .incident-map-marker__pin) {
+  box-shadow: 0 0 0 5px rgb(249 115 22 / 20%), 0 8px 18px rgb(15 23 42 / 22%);
+}
+
 :global(.incident-map-marker__badge) {
   position: absolute;
   top: -1rem;
@@ -474,6 +495,10 @@ watch(() => [props.editableLocation, props.reporterLocation], () => {
   line-height: 1.1;
   box-shadow: 0 4px 10px rgb(15 23 42 / 15%);
   transform: translateX(-50%);
+}
+
+:global(.incident-map-marker__badge--help) {
+  color: #c2410c;
 }
 
 :global(.incident-map-cluster) {

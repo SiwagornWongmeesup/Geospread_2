@@ -37,6 +37,25 @@ const formatImpactRadius = (radiusMeters) => {
   return `${Math.round(radius)} ม.`
 }
 
+const formatDistanceFromUser = (lat, lng, userLocation) => {
+  const incidentLat = toNumber(lat)
+  const incidentLng = toNumber(lng)
+  const userLat = toNumber(userLocation?.lat)
+  const userLng = toNumber(userLocation?.lng)
+
+  if ([incidentLat, incidentLng, userLat, userLng].some((value) => value === null)) return null
+
+  const toRadians = (degrees) => (degrees * Math.PI) / 180
+  const latitudeDifference = toRadians(incidentLat - userLat)
+  const longitudeDifference = toRadians(incidentLng - userLng)
+  const distanceFactor = Math.sin(latitudeDifference / 2) ** 2
+    + Math.cos(toRadians(userLat)) * Math.cos(toRadians(incidentLat)) * Math.sin(longitudeDifference / 2) ** 2
+  const distanceMeters = 6_371_000 * 2 * Math.atan2(Math.sqrt(distanceFactor), Math.sqrt(1 - distanceFactor))
+
+  if (distanceMeters < 1000) return `${Math.max(10, Math.round(distanceMeters / 10) * 10)} ม. จากคุณ`
+  return `${(distanceMeters / 1000).toFixed(distanceMeters < 10_000 ? 1 : 0)} กม. จากคุณ`
+}
+
 const toneFromColor = (color, fallback = 'blue') => {
   const normalized = String(color || '').trim().toLowerCase()
   if (normalized.includes('red')) return 'red'
@@ -57,19 +76,41 @@ const toneFromColor = (color, fallback = 'blue') => {
   return fallback
 }
 
+const getFirstImageUrl = (item) => {
+  if (item.image_url) return item.image_url
+
+  const firstImage = Array.isArray(item.media)
+    ? item.media.find((media) => media?.media_type === 'image' && media?.media_url)
+    : null
+
+  return firstImage?.media_url || item.media_url || item.thumbnail_url || null
+}
+
+const withoutStatusSuffix = (title, fallback) => {
+  const cleanedTitle = String(title || '')
+    .replace(/\s*[—–-]\s*(รอตรวจสอบ|ยืนยันแล้ว|กำลังดำเนินการ|pending|verified)\s*$/iu, '')
+    .trim()
+
+  return cleanedTitle || fallback
+}
+
 const normalizeIncident = (incident) => {
   const hasFinalType = Boolean(incident.final_type_id)
   const markerColor = hasFinalType ? incident.marker_color || '#1479ef' : pendingMarkerColor
   const reportCount = Number(incident.report_count) || 1
+  const isVerified = incident.verification_status === 'verified'
+  const statusTone = isVerified ? 'verified' : hasFinalType ? 'ongoing' : 'pending'
+  const statusLabel = isVerified ? 'ยืนยันแล้ว' : hasFinalType ? 'กำลังดำเนินการ' : 'รอตรวจสอบ'
 
   return {
     id: `incident-${incident.incident_id}`,
     kind: 'incident',
     sourceId: incident.incident_id,
-    title: incident.title || incident.type_name || 'เหตุการณ์รอตรวจสอบ',
+    title: withoutStatusSuffix(incident.title, incident.type_name || 'เหตุการณ์'),
     description: incident.description,
     category: hasFinalType ? incident.type_name || 'เหตุการณ์' : 'รอตรวจสอบ',
-    statusLabel: incident.verification_status === 'verified' ? 'ยืนยันแล้ว' : 'รอตรวจสอบ',
+    statusLabel,
+    statusTone,
     lat: toNumber(incident.lat),
     lng: toNumber(incident.lng),
     markerColor,
@@ -84,9 +125,10 @@ const normalizeIncident = (incident) => {
     radiusM: hasFinalType ? toNumber(incident.radius_m) : null,
     radiusLabel: formatImpactRadius(hasFinalType ? incident.radius_m : null),
     reportCount,
-    imageUrl: incident.image_url || incident.media_url || incident.thumbnail_url || null,
+    imageUrl: getFirstImageUrl(incident),
     reporterLabel: incident.reporter_name || 'ชุมชน',
     location: formatCoordinate(incident.lat, incident.lng),
+    areaLabel: incident.location_name || incident.area_name || incident.province_name || 'พื้นที่ที่รายงาน',
     distance: `${reportCount} รายงาน`,
     time: formatRelativeTime(incident.last_reported_at),
   }
@@ -100,6 +142,7 @@ const normalizePendingReport = (report) => ({
   description: report.description,
   category: 'รอตรวจสอบ',
   statusLabel: 'รอตรวจสอบ',
+  statusTone: 'pending',
   lat: toNumber(report.lat),
   lng: toNumber(report.lng),
   markerColor: pendingMarkerColor,
@@ -110,11 +153,37 @@ const normalizePendingReport = (report) => ({
   radiusM: null,
   radiusLabel: 'ไม่ระบุ',
   reportCount: 1,
-  imageUrl: report.image_url || report.media_url || report.thumbnail_url || null,
+  imageUrl: getFirstImageUrl(report),
   reporterLabel: report.reporter_name || 'ชุมชน',
   location: formatCoordinate(report.lat, report.lng),
+  areaLabel: report.location_name || report.area_name || report.province_name || 'พื้นที่ที่รายงาน',
   distance: 'รายงานใหม่',
   time: formatRelativeTime(report.created_at),
+})
+const normalizeHelpRequest = (helpRequest) => ({
+  id: `help-${helpRequest.help_request_id}`,
+  kind: 'help_request',
+  sourceId: helpRequest.help_request_id,
+  title: helpRequest.custom_help_type || helpRequest.help_type || 'คำขอความช่วยเหลือ',
+  category: 'ขอความช่วยเหลือ',
+  statusLabel: 'กำลังรอความช่วยเหลือ',
+  tone: 'orange',
+  iconName: null,
+  displayMode: 'marker',
+  radiusM: null,
+  radiusLabel: 'ไม่ระบุ',
+  reportCount: 1,
+  distance: `${helpRequest.people_count} คนต้องการความช่วยเหลือ`,
+  description: helpRequest.description,
+  lat: toNumber(helpRequest.lat),
+  lng: toNumber(helpRequest.lng),
+  markerColor: '#f97316',
+  iconUrl: '/Life-saving.svg',
+  imageUrl: null,
+  reporterLabel: 'ชุมชน',
+  location: formatCoordinate(helpRequest.lat, helpRequest.lng),
+  areaLabel: helpRequest.location_name || helpRequest.area_name || helpRequest.province_name || 'พื้นที่ที่รายงาน',
+  time: formatRelativeTime(helpRequest.created_at),
 })
 
 export const useHomeDashboard = () => {
@@ -123,6 +192,7 @@ export const useHomeDashboard = () => {
 
   const selectedIncident = useState('home-selected-incident', () => null)
   const publicMapItems = useState('home-public-map-items', () => [])
+  const userLocation = useState('home-user-location', () => null)
   const isLoadingMap = useState('home-map-loading', () => false)
   const mapError = useState('home-map-error', () => null)
 
@@ -134,6 +204,16 @@ export const useHomeDashboard = () => {
     selectedIncident.value = null
   }
 
+  const setUserLocation = (location) => {
+    const lat = toNumber(location?.lat)
+    const lng = toNumber(location?.lng)
+
+    if (lat === null || lng === null) return false
+
+    userLocation.value = { lat, lng }
+    return true
+  }
+
   const fetchPublicMapItems = async () => {
     isLoadingMap.value = true
     mapError.value = null
@@ -141,12 +221,31 @@ export const useHomeDashboard = () => {
     try {
       const response = await $fetch(`${apiBase}/incidents/map`)
       const incidents = response.data?.incidents ?? []
+      //ในdataมีช่องชื่อpending_reports ไหม
       const pendingReports = response.data?.pending_reports ?? []
+      const helpResponse = await $fetch(`${apiBase}/help-requests/map`)
+      const helpRequests = helpResponse.data ?? []
+      const mapItems = []
+      //รวมเหตุการณ์
+      for (const incident of incidents) {
+        const normalizedIncident = normalizeIncident(incident)
+        mapItems.push(normalizedIncident)
+      }
+      //รายงานดิบ
+      for (const report of pendingReports) {
+        const normalizeReport = normalizePendingReport(report)
+        mapItems.push(normalizeReport)
+      }
 
-      publicMapItems.value = [
-        ...incidents.map(normalizeIncident),
-        ...pendingReports.map(normalizePendingReport),
-      ].filter((item) => item.lat !== null && item.lng !== null)
+      for (const helpRequest of helpRequests) {
+        const normalizedHelpRequest = normalizeHelpRequest(helpRequest)
+        mapItems.push(normalizedHelpRequest)
+      }
+
+      //กรองเหตุเพื่อส่งไปmap
+      publicMapItems.value = mapItems.filter((item) => {
+        return item.lat !== null && item.lng !== null
+      })
     } catch (error) {
       console.error('Unable to load public map incidents', error)
       mapError.value = 'โหลดข้อมูลแผนที่ไม่สำเร็จ'
@@ -156,7 +255,26 @@ export const useHomeDashboard = () => {
     }
   }
 
-  const nearbyIncidentCards = computed(() => publicMapItems.value.slice(0, 6))
+  const nearbyIncidentCards = computed(() => publicMapItems.value
+    .filter((item) => item.kind === 'incident')
+    .slice(0, 6)
+    .map((item) => ({
+      ...item,
+      distanceFromUserLabel: formatDistanceFromUser(item.lat, item.lng, userLocation.value),
+    })))
+
+  const selectedIncidentPreview = computed(() => {
+    if (!selectedIncident.value) return null
+
+    return {
+      ...selectedIncident.value,
+      distanceFromUserLabel: formatDistanceFromUser(
+        selectedIncident.value.lat,
+        selectedIncident.value.lng,
+        userLocation.value,
+      ),
+    }
+  })
 
   const mapCenter = computed(() => {
     const focusedItem = selectedIncident.value ?? publicMapItems.value[0]
@@ -167,13 +285,16 @@ export const useHomeDashboard = () => {
 
   return {
     selectedIncident,
+    selectedIncidentPreview,
     publicMapItems,
+    userLocation,
     nearbyIncidentCards,
     isLoadingMap,
     mapError,
     mapCenter,
     selectIncident,
     clearSelectedIncident,
+    setUserLocation,
     fetchPublicMapItems,
   }
 }

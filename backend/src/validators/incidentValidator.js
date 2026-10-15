@@ -18,7 +18,25 @@ const suggestedTypesValidator = [
 const incidentCatalogValidator = [validateRequest];
 const reportTypeSuggestionCacheValidator = [validateRequest];
 const publicMapValidator = [validateRequest];
+const incidentDetailValidator = [
+    param('incidentId')
+        .isInt({ min: 1 }).withMessage('รหัสเหตุการณ์ไม่ถูกต้อง')
+        .toInt(),
+    validateRequest,
+];
+const pendingReportDetailValidator = [
+    param('reportId')
+        .isInt({ min: 1 }).withMessage('รหัสรายงานไม่ถูกต้อง')
+        .toInt(),
+    validateRequest,
+];
 const adminReviewQueueValidator = [validateRequest];
+const falseIncidentReportValidator = [
+    param('incidentId')
+        .isInt({ min: 1 }).withMessage('รหัสเหตุการณ์ไม่ถูกต้อง')
+        .toInt(),
+    validateRequest,
+];
 
 const reportValidator = [
     body('description')
@@ -145,7 +163,10 @@ module.exports = {
     incidentCatalogValidator,
     reportTypeSuggestionCacheValidator,
     publicMapValidator,
+    incidentDetailValidator,
+    pendingReportDetailValidator,
     adminReviewQueueValidator,
+    falseIncidentReportValidator,
     reportValidator,
     candidateDecisionValidator,
     candidateGroupDecisionValidator,

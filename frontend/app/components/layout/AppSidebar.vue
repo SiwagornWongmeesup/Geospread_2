@@ -1,4 +1,6 @@
 <script setup>
+const route = useRoute();
+
 defineProps({
   collapsed: {
     type: Boolean,
@@ -7,6 +9,19 @@ defineProps({
 });
 
 const emit = defineEmits(['toggle']);
+
+const guideMenuOpen = ref(route.path === '/safety-guide');
+
+const guideItems = [
+  { id: 'flood', label: 'น้ำท่วม' },
+  { id: 'flash-flood', label: 'น้ำป่าไหลหลาก' },
+  { id: 'storm', label: 'พายุ' },
+  { id: 'wildfire', label: 'ไฟป่า' },
+  { id: 'earthquake', label: 'แผ่นดินไหว' },
+  { id: 'tsunami', label: 'สึนามิ' },
+  { id: 'landslide', label: 'ดินถล่ม' },
+  { id: 'drought', label: 'ภัยแล้ง' }
+];
 
 const menuGroups = [
   {
@@ -30,7 +45,7 @@ const menuGroups = [
     items: [
       { label: 'พื้นที่ติดตาม', to: '/followed-locations', icon: '/Location.svg' },
       { label: 'การแจ้งเตือน', to: '/notifications', icon: '/Notification.svg', badge: '3' },
-      { label: 'คู่มือความปลอดภัย', to: '/safety-guide', icon: '/Safety-and-security.svg' }
+      { label: 'คู่มือความปลอดภัย', to: '/safety-guide', icon: '/Safety-and-security.svg', kind: 'guide' }
     ]
   }
 ];
@@ -70,27 +85,66 @@ const accountItems = [
           {{ group.label }}
         </h2>
 
-        <NuxtLink
-          v-for="item in group.items"
-          :key="item.to"
-          :to="item.to"
-          class="app-sidebar__link"
-          :class="{ 'app-sidebar__link--action': group.kind === 'actions' }"
-          :aria-label="item.label"
-          :title="collapsed ? item.label : undefined"
-        >
-          <span class="app-sidebar__icon" aria-hidden="true">
-            <img :src="item.icon" alt="" />
-          </span>
+        <template v-for="item in group.items" :key="item.to">
+          <div v-if="item.kind === 'guide' && !collapsed" class="app-sidebar__guide-menu">
+            <button
+              type="button"
+              class="app-sidebar__link app-sidebar__guide-toggle"
+              :class="{ 'app-sidebar__link--guide-active': route.path === item.to }"
+              :aria-expanded="guideMenuOpen"
+              aria-controls="safety-guide-submenu"
+              @click="guideMenuOpen = !guideMenuOpen"
+            >
+              <span class="app-sidebar__icon" aria-hidden="true">
+                <img :src="item.icon" alt="" />
+              </span>
 
-          <span v-if="!collapsed" class="app-sidebar__link-label">
-            {{ item.label }}
-          </span>
+              <span class="app-sidebar__link-label">{{ item.label }}</span>
 
-          <span v-if="item.badge" class="app-sidebar__badge">
-            {{ item.badge }}
-          </span>
-        </NuxtLink>
+              <svg class="app-sidebar__guide-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m7 9 5 5 5-5" />
+              </svg>
+            </button>
+
+            <Transition name="guide-submenu">
+              <div v-if="guideMenuOpen" id="safety-guide-submenu" class="app-sidebar__guide-submenu">
+                <div class="app-sidebar__guide-submenu-content">
+                  <NuxtLink
+                    v-for="guide in guideItems"
+                    :key="guide.id"
+                    :to="{ path: '/safety-guide', hash: `#${guide.id}` }"
+                    class="app-sidebar__guide-link"
+                    :class="{ 'app-sidebar__guide-link--current': route.hash === `#${guide.id}` }"
+                  >
+                    <span class="app-sidebar__guide-dot" aria-hidden="true"></span>
+                    <span>{{ guide.label }}</span>
+                  </NuxtLink>
+                </div>
+              </div>
+            </Transition>
+          </div>
+
+          <NuxtLink
+            v-else
+            :to="item.to"
+            class="app-sidebar__link"
+            :class="{ 'app-sidebar__link--action': group.kind === 'actions' }"
+            :aria-label="item.label"
+            :title="collapsed ? item.label : undefined"
+          >
+            <span class="app-sidebar__icon" aria-hidden="true">
+              <img :src="item.icon" alt="" />
+            </span>
+
+            <span v-if="!collapsed" class="app-sidebar__link-label">
+              {{ item.label }}
+            </span>
+
+            <span v-if="item.badge" class="app-sidebar__badge">
+              {{ item.badge }}
+            </span>
+          </NuxtLink>
+        </template>
       </section>
     </nav>
 
@@ -249,6 +303,104 @@ const accountItems = [
   border-color: #b8dcff;
   background: #eaf5ff;
   color: #0561be;
+}
+
+.app-sidebar__guide-menu {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.app-sidebar__guide-toggle {
+  width: 100%;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.app-sidebar__link--guide-active {
+  background: #edf5ff;
+  color: #0876eb;
+}
+
+.app-sidebar__guide-chevron {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-left: auto;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.app-sidebar__guide-toggle[aria-expanded='true'] .app-sidebar__guide-chevron {
+  transform: rotate(180deg);
+}
+
+.app-sidebar__guide-submenu {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 180ms ease, transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.app-sidebar__guide-submenu-content {
+  display: grid;
+  min-height: 0;
+  gap: 0.1rem;
+  overflow: hidden;
+  padding: 0.1rem 0 0.25rem;
+}
+
+.app-sidebar__guide-link {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 2rem;
+  padding: 0.35rem 0.65rem 0.35rem 2.35rem;
+  border-radius: 0.55rem;
+  color: #547096;
+  font-size: 0.8rem;
+  font-weight: 650;
+  line-height: 1.25;
+  text-decoration: none;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.app-sidebar__guide-link:hover,
+.app-sidebar__guide-link--current {
+  background: #edf5ff;
+  color: #0876eb;
+}
+
+.app-sidebar__guide-link:focus-visible {
+  outline: 3px solid rgb(8 118 235 / 28%);
+  outline-offset: 2px;
+}
+
+.app-sidebar__guide-dot {
+  width: 0.42rem;
+  height: 0.42rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.72;
+}
+
+.guide-submenu-enter-from,
+.guide-submenu-leave-to {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transform: translateY(-0.35rem);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-sidebar__guide-chevron,
+  .app-sidebar__guide-submenu {
+    transition: none;
+  }
 }
 
 .app-sidebar__link.router-link-exact-active {

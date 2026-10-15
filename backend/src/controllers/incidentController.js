@@ -66,6 +66,40 @@ const getPublicMapItems = async (req, res, next) => {
     }
 };
 
+const getPublicIncidentDetail = async (req, res, next) => {
+    try {
+        const incident = await incidentService.getPublicIncidentDetail(req.params.incidentId);
+        res.json({ success: true, data: incident });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const getPublicPendingReportDetail = async (req, res, next) => {
+    try {
+        const report = await incidentService.getPublicPendingReportDetail(req.params.reportId);
+        res.json({ success: true, data: report });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const reportFalseIncident = async (req, res, next) => {
+    try {
+        const result = await incidentService.reportFalseIncident({
+            incidentId: req.params.incidentId,
+            userId: req.user.id,
+        });
+        res.status(result.created ? 201 : 200).json({
+            success: true,
+            message: result.created ? 'รับรายงานเหตุการณ์เท็จแล้ว' : 'คุณเคยรายงานเหตุการณ์นี้แล้ว',
+            data: result.falseReport,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 const getAdminReviewQueue = async (req, res, next) => {
     try {
         const reviewQueue = await incidentService.getAdminReviewQueue();
@@ -147,6 +181,9 @@ module.exports = {
     getIncidentTypeCatalog,
     getReportTypeSuggestionCache,
     getPublicMapItems,
+    getPublicIncidentDetail,
+    getPublicPendingReportDetail,
+    reportFalseIncident,
     getAdminReviewQueue,
     reviewReportCandidate,
     reviewCandidateGroup,

@@ -149,6 +149,30 @@ const getReporterTrustScore = async (userId, queryable = db) => {
     return result.rows[0]?.trust_score ?? 100;
 };
 
+const findActiveIncidentById = async (incidentId) => {
+    const result = await db.query(
+        `SELECT incident_id
+         FROM tb_incidents
+         WHERE incident_id = $1
+           AND incident_status = 'active'`,
+        [incidentId],
+    );
+
+    return result.rows[0] ?? null;
+};
+
+const createFalseIncidentReport = async ({ incidentId, userId }) => {
+    const result = await db.query(
+        `INSERT INTO tb_incident_false_reports (incident_id, user_id)
+         VALUES ($1, $2)
+         ON CONFLICT (incident_id, user_id) DO NOTHING
+         RETURNING false_report_id, incident_id, user_id, created_at`,
+        [incidentId, userId],
+    );
+
+    return result.rows[0] ?? null;
+};
+
 // referenceTime ทำให้การยืนยัน Type ภายหลังยังเทียบ "เวลาที่ Report ถูกส่ง" จริง ๆ
 // ไม่ใช่เวลาที่ Administrator มากดตรวจในภายหลัง
 const findActiveIncidentMatch = async ({ typeId, lat, lng, referenceTime = null }, queryable = db) => {
@@ -373,9 +397,28 @@ const findPublicMapItems = async () => {
                 incident_type.type_code,
                 incident_type.type_name,
                 incident_type.icon_name,
-                incident_type.marker_color
+                incident_type.marker_color,
+                latest_report.reporter_name,
+                latest_report.image_url
              FROM tb_incidents incident
              LEFT JOIN tb_incident_types incident_type ON incident_type.type_id = incident.final_type_id
+             LEFT JOIN LATERAL (
+                SELECT
+                    NULLIF(TRIM(CONCAT_WS(' ', reporter.name, reporter.lastname)), '') AS reporter_name,
+                    (
+                        SELECT media.media_url
+                        FROM tb_incident_media media
+                        WHERE media.report_id = report.report_id
+                          AND media.media_type = 'image'
+                        ORDER BY media.media_id ASC
+                        LIMIT 1
+                    ) AS image_url
+                FROM tb_incident_reports report
+                LEFT JOIN tb_users reporter ON reporter.id = report.user_id
+                WHERE report.incident_id = incident.incident_id
+                ORDER BY report.created_at DESC, report.report_id DESC
+                LIMIT 1
+             ) latest_report ON TRUE
              WHERE incident.incident_status = 'active'
              ORDER BY incident.last_reported_at DESC, incident.incident_id DESC`,
         ),
@@ -387,8 +430,19 @@ const findPublicMapItems = async () => {
                 report.report_status,
                 report.created_at,
                 ST_Y(report.incident_location) AS lat,
-                ST_X(report.incident_location) AS lng
+                ST_X(report.incident_location) AS lng,
+                NULLIF(TRIM(CONCAT_WS(' ', reporter.name, reporter.lastname)), '') AS reporter_name,
+                first_image.image_url
              FROM tb_incident_reports report
+             LEFT JOIN tb_users reporter ON reporter.id = report.user_id
+             LEFT JOIN LATERAL (
+                SELECT media.media_url AS image_url
+                FROM tb_incident_media media
+                WHERE media.report_id = report.report_id
+                  AND media.media_type = 'image'
+                ORDER BY media.media_id ASC
+                LIMIT 1
+             ) first_image ON TRUE
              WHERE report.incident_id IS NULL
                AND report.report_status = 'pending'
              ORDER BY report.created_at DESC, report.report_id DESC`,
@@ -399,6 +453,129 @@ const findPublicMapItems = async () => {
         incidents: incidentsResult.rows,
         pending_reports: pendingReportsResult.rows,
     };
+};
+
+const findPublicIncidentDetail = async (incidentId) => {
+    const [incidentResult, reportsResult] = await Promise.all([
+        db.query(
+            `SELECT
+                incident.incident_id,
+                incident.title,
+                incident.description,
+                incident.display_mode,
+                incident.radius_m,
+                incident.verification_status,
+                incident.incident_status,
+                incident.report_count,
+                incident.first_reported_at,
+                incident.last_reported_at,
+                ST_Y(incident.incident_location) AS lat,
+                ST_X(incident.incident_location) AS lng,
+                incident_type.type_code,
+                incident_type.type_name,
+                incident_type.icon_name,
+                incident_type.marker_color,
+                latest_report.image_url
+             FROM tb_incidents incident
+             LEFT JOIN tb_incident_types incident_type ON incident_type.type_id = incident.final_type_id
+             LEFT JOIN LATERAL (
+                SELECT media.media_url AS image_url
+                FROM tb_incident_reports report
+                JOIN tb_incident_media media ON media.report_id = report.report_id
+                WHERE report.incident_id = incident.incident_id
+                  AND media.media_type = 'image'
+                ORDER BY report.created_at DESC, media.media_id ASC
+                LIMIT 1
+             ) latest_report ON TRUE
+             WHERE incident.incident_id = $1`,
+            [incidentId],
+        ),
+        db.query(
+            `SELECT
+                report.report_id,
+                report.description,
+                report.report_status,
+                report.created_at,
+                COALESCE((
+                    SELECT json_agg(json_build_object(
+                        'media_id', media.media_id,
+                        'media_type', media.media_type,
+                        'media_url', media.media_url
+                    ) ORDER BY media.media_id)
+                    FROM tb_incident_media media
+                    WHERE media.report_id = report.report_id
+                ), '[]'::json) AS media
+             FROM tb_incident_reports report
+             WHERE report.incident_id = $1
+               AND report.report_status <> 'rejected'
+             ORDER BY report.created_at DESC, report.report_id DESC`,
+            [incidentId],
+        ),
+    ]);
+
+    const incident = incidentResult.rows[0];
+    if (!incident) return null;
+
+    return {
+        ...incident,
+        reports: reportsResult.rows,
+    };
+};
+
+// รายงานที่ยังไม่ถูกรวมเป็น Incident ก็ต้องเปิดดูรายละเอียดได้จากหมุดบนแผนที่
+// โดยไม่เปิดเผยข้อมูลส่วนบุคคลของผู้รายงาน
+const findPublicPendingReportDetail = async (reportId) => {
+    const result = await db.query(
+        `SELECT
+            report.report_id AS incident_id,
+            'รายงานรอตรวจสอบ' AS title,
+            report.description,
+            'marker' AS display_mode,
+            NULL::numeric AS radius_m,
+            'pending' AS verification_status,
+            'active' AS incident_status,
+            1 AS report_count,
+            report.created_at AS first_reported_at,
+            report.created_at AS last_reported_at,
+            ST_Y(report.incident_location) AS lat,
+            ST_X(report.incident_location) AS lng,
+            NULL::text AS type_code,
+            NULL::text AS type_name,
+            NULL::text AS icon_name,
+            '#e8333c' AS marker_color,
+            first_image.image_url,
+            json_build_array(json_build_object(
+                'report_id', report.report_id,
+                'description', report.description,
+                'report_status', report.report_status,
+                'created_at', report.created_at,
+                'media', COALESCE(media_items.media, '[]'::json)
+            )) AS reports
+         FROM tb_incident_reports report
+         LEFT JOIN LATERAL (
+            SELECT media.media_url AS image_url
+            FROM tb_incident_media media
+            WHERE media.report_id = report.report_id
+              AND media.media_type = 'image'
+            ORDER BY media.media_id ASC
+            LIMIT 1
+         ) first_image ON TRUE
+         LEFT JOIN LATERAL (
+            SELECT json_agg(json_build_object(
+                'media_id', media.media_id,
+                'media_type', media.media_type,
+                'media_url', media.media_url
+            ) ORDER BY media.media_id) AS media
+            FROM tb_incident_media media
+            WHERE media.report_id = report.report_id
+         ) media_items ON TRUE
+         WHERE report.report_id = $1
+           AND report.incident_id IS NULL
+           AND report.report_status = 'pending'`,
+        [reportId],
+    );
+
+    return result.rows[0] ?? null;
 };
 
 const reportMediaJson = `COALESCE((
@@ -1093,12 +1270,16 @@ module.exports = {
     createIncidentReport,
     createIncident: createIncidentReport,
     createIncidentReportWithMerge,
+    findActiveIncidentById,
+    createFalseIncidentReport,
     findSuggestedTypes,
     findActiveIncidentTypeIds,
     findActiveIncidentTypeById,
     findActiveIncidentCatalogRows,
     findActiveIncidentKeywordRows,
     findPublicMapItems,
+    findPublicIncidentDetail,
+    findPublicPendingReportDetail,
     findAdminReviewQueue,
     acceptOrRejectReportCandidate,
     acceptOrRejectCandidateGroup,

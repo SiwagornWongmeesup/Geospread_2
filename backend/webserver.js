@@ -7,6 +7,7 @@ const cors = require('cors');
 // 1. นำเข้า Routes จากโฟลเดอร์ src/routes
 const userRoutes = require('./src/routes/userRoutes');
 const incidentRoutes = require('./src/routes/incidentRoutes');
+const helpRequestRoutes = require('./src/routes/helpRequestRoutes');
 const errorHandler = require('./src/middlewares/errorHandler');
 
 const allowedOrigins = (process.env.FRONTEND_ORIGINS || 'http://localhost:3000,http://localhost:3001')
@@ -23,6 +24,7 @@ app.use(cors({
 
 app.use('/users', userRoutes);
 app.use('/incidents', incidentRoutes);
+app.use('/help-requests', helpRequestRoutes)
 
 // 2. เรียกใช้ Global Error Handler ตรงบรรทัดสุดท้าย (สำคัญมาก ต้องอยู่ล่างสุด)
 app.use(errorHandler);

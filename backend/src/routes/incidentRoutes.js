@@ -10,6 +10,9 @@ const {
     candidateDecisionValidator,
     candidateGroupDecisionValidator,
     createIncidentFromPendingReportValidator,
+    falseIncidentReportValidator,
+    incidentDetailValidator,
+    pendingReportDetailValidator,
     incidentCatalogValidator,
     publicMapValidator,
     rejectStandalonePendingReportValidator,
@@ -24,6 +27,9 @@ router.get('/catalog', incidentCatalogValidator, incidentController.getIncidentT
 router.get('/report-type-cache', reportTypeSuggestionCacheValidator, incidentController.getReportTypeSuggestionCache);
 router.get('/suggestions', suggestedTypesValidator, incidentController.getSuggestedIncidentTypes);
 router.get('/map', publicMapValidator, incidentController.getPublicMapItems);
+router.get('/reports/:reportId', pendingReportDetailValidator, incidentController.getPublicPendingReportDetail);
+
+router.post('/:incidentId/false-reports', authMiddleware, reportRateLimit, falseIncidentReportValidator, incidentController.reportFalseIncident);
 
 // Candidate และ Candidate Group เป็นข้อมูลตรวจสอบภายใน ไม่เปิดให้ Community User เห็น
 router.get('/admin/review-queue', authMiddleware, checkRole('admin'), adminReviewQueueValidator, incidentController.getAdminReviewQueue);
@@ -32,6 +38,9 @@ router.patch('/admin/candidate-groups/:candidateGroupId', authMiddleware, checkR
 router.post('/admin/pending-reports/:reportId/confirm-type', authMiddleware, checkRole('admin'), createIncidentFromPendingReportValidator, incidentController.createIncidentFromPendingReport);
 router.patch('/admin/pending-reports/:reportId/reject', authMiddleware, checkRole('admin'), rejectStandalonePendingReportValidator, incidentController.rejectStandalonePendingReport);
 router.post('/admin/reports/:reportId/separate', authMiddleware, checkRole('admin'), separateReportValidator, incidentController.separateReportFromIncident);
+
+// ต้องอยู่หลังเส้นทางชื่อคงที่ทั้งหมด มิฉะนั้น "/admin/..." จะถูกตีความเป็น incidentId
+router.get('/:incidentId', incidentDetailValidator, incidentController.getPublicIncidentDetail);
 
 // รายงานสร้างข้อมูลและไฟล์จริง จึงต้องผูกกับบัญชีผู้ใช้และจำกัดความถี่การส่ง
 router.post('/', authMiddleware, reportRateLimit, uploadIncidentMedia, reportValidator, incidentController.createIncident);

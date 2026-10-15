@@ -21,11 +21,6 @@
 
   
     <template v-if="isLoggedIn">
-       <button class="location-button">
-        <span>📍</span>
-        Chiang Mai
-        <span class="arrow">⌄</span>
-      </button>
       <button class="notification-button" aria-label="Notifications">
         ♧
         <span class="notification-badge">3</span>
@@ -177,28 +172,6 @@ const handleLogout = () => {
 
 .app-header__search input::placeholder {
   color: #6373a2;
-}
-
-/* Location */
-
-.location-button {
-  height: 40px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 14px;
-  border: 0;
-  border-radius: 8px;
-  background: #f2f6fd;
-  color: #071b72;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.location-button:hover {
-  background: #e6f0ff;
 }
 
 /* Notification */
