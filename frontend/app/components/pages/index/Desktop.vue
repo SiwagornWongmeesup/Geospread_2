@@ -121,8 +121,12 @@ onMounted(() => {
 .desktop-home__map {
   position: relative;
   width: 100%;
-  height: clamp(28rem, 58dvh, 42rem);
-  min-height: 28rem;
+  /* ต่ำสุด550px */
+  /* ความสูง 70% ของพื้นที่หน้าจอ */
+  /* สูงสุด ประมาณ 800px */
+  height: clamp(550px, 70dvh, 800px);
+  /* แผนที่จะไม่เตี้ยกว่า550px */
+  min-height: 550px;
   overflow: hidden;
   border: 1px solid #dce6f2;
   border-radius: 1rem;
@@ -177,6 +181,7 @@ onMounted(() => {
   }
 
   .desktop-home__map {
+    height: clamp(20rem, 58dvh, 32rem);
     min-height: 20rem;
   }
 }

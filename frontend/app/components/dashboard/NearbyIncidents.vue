@@ -32,7 +32,7 @@
 
     <div v-else class="nearby-incidents__list">
       <button
-        v-for="incident in incidents.slice(0, 4)"
+        v-for="incident in incidents.slice(0, 2)"
         :key="incident.id"
         type="button"
         class="incident-card"
@@ -63,28 +63,29 @@
               <path d="m4 18 5.2-5.2 3.1 3.1 2.4-2.4L20 18" />
             </svg>
           </div>
-
-          <span class="incident-card__category">
-            <img :src="incident.iconUrl || '/Alert.svg'" alt="" />
-            {{ incident.category || "เหตุการณ์" }}
-          </span>
-          <span
-            class="incident-card__status"
-            :class="`incident-card__status--${incident.statusTone || 'pending'}`"
-          >
-            {{ incident.statusLabel || "รอตรวจสอบ" }}
-          </span>
         </div>
 
         <div class="incident-card__body">
-          <h3 :title="previewText(incident)">{{ previewText(incident) }}</h3>
+          <div class="incident-card__eyebrow">
+            <span class="incident-card__category">
+              <img :src="incident.iconUrl || '/Alert.svg'" alt="" />
+              {{ incident.category || "เหตุการณ์" }}
+            </span>
+            <span class="incident-card__status">รอตรวจสอบ</span>
+          </div>
+
+          <h3 :title="incidentTitle(incident)">{{ incidentTitle(incident) }}</h3>
+          <p class="incident-card__summary">{{ incidentSummary(incident) }}</p>
+
           <p class="incident-card__location">
-            {{ incident.areaLabel || "พื้นที่ที่รายงาน" }}
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 21s6-5.1 6-11a6 6 0 1 0-12 0c0 5.9 6 11 6 11Z" />
+              <circle cx="12" cy="10" r="2" />
+            </svg>
+            พื้นที่ที่รายงาน
           </p>
           <div class="incident-card__meta">
-            <span>{{
-              incident.distanceFromUserLabel || "ยังไม่ทราบระยะทาง"
-            }}</span>
+            <span>{{ distanceLabel(incident) }}</span>
             <span aria-hidden="true">·</span>
             <span>{{ incident.time || "เมื่อสักครู่" }}</span>
           </div>
@@ -105,10 +106,20 @@ defineProps({
   errorMessage: { type: String, default: null },
 });
 
-const previewText = (incident) =>
-  String(incident?.description || "").trim() ||
-  incident?.title ||
-  "ยังไม่มีรายละเอียดเพิ่มเติม";
+const MOCK_DISTANCE_LABEL = "750 ม. จากคุณ";
+
+const incidentTitle = (incident) =>
+  String(incident?.title || "").trim() || "เหตุการณ์ที่รายงาน";
+
+const incidentSummary = (incident) => {
+  const summary = String(incident?.description || "").trim();
+  return summary && summary !== incidentTitle(incident)
+    ? summary
+    : "ยังไม่มีรายละเอียดเพิ่มเติม";
+};
+
+const distanceLabel = (incident) =>
+  incident?.distanceFromUserLabel || MOCK_DISTANCE_LABEL;
 </script>
 
 <style scoped>
@@ -166,7 +177,7 @@ const previewText = (incident) =>
 }
 .nearby-incidents__list {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   grid-auto-rows: 1fr;
   gap: 0.8rem;
 }
@@ -186,10 +197,12 @@ const previewText = (incident) =>
   color: #b91c1c;
 }
 .incident-card {
-  display: flex;
+  display: grid;
   min-width: 0;
   height: 100%;
-  flex-direction: column;
+  padding: 10px;
+  min-height: 8.4rem;
+  grid-template-columns: clamp(7.5rem, 30%, 10rem) minmax(0, 1fr);
   overflow: hidden;
   border: 1px solid #e0e8f3;
   border-radius: 0.875rem;
@@ -208,12 +221,11 @@ const previewText = (incident) =>
   transform: translateY(-2px);
 }
 .incident-card__media {
-  position: relative;
   display: grid;
-  width: 100%;
-  aspect-ratio: 16 / 9;
+  min-height: 100%;
   place-items: center;
   overflow: hidden;
+  border-radius: 10px;
   background: #eef4fb;
 }
 .incident-card__photo {
@@ -225,35 +237,45 @@ const previewText = (incident) =>
   color: #8494b2;
 }
 .incident-card__empty-media svg {
-  width: 2.3rem;
-  height: 2.3rem;
+  width: 2rem;
+  height: 2rem;
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 1.6;
 }
+.incident-card__body {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 6px;
+  padding: 0.7rem 0.78rem;
+}
+.incident-card__eyebrow {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.42rem;
+}
 .incident-card__category,
 .incident-card__status {
-  position: absolute;
-  top: 0.55rem;
-  max-width: calc(100% - 1.1rem);
-  padding: 0.28rem 0.5rem;
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.46rem;
   overflow: hidden;
   border-radius: 999px;
-  font-size: 0.66rem;
+  font-size: 0.65rem;
   font-weight: 800;
   line-height: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .incident-card__category {
-  left: 0.55rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  background: rgb(255 255 255 / 93%);
   color: #24528e;
+  background: #eef6ff;
 }
 .incident-card__category img {
   width: 0.78rem;
@@ -261,40 +283,38 @@ const previewText = (incident) =>
   object-fit: contain;
 }
 .incident-card__status {
-  right: 0.55rem;
-  color: #fff;
-  box-shadow: 0 0.18rem 0.65rem rgb(11 29 60 / 20%);
-}
-.incident-card__status--pending {
-  background: #df7b29;
-}
-.incident-card__status--ongoing {
-  background: #2563eb;
-}
-.incident-card__status--verified {
-  background: #25805b;
-}
-.incident-card__body {
-  display: grid;
-  width: 100%;
-  align-content: start;
-  gap: 0.28rem;
-  padding: 0.72rem 0.78rem 0.8rem;
+  flex: 0 0 auto;
+  color: #9b5b00;
+  background: #fff0d4;
 }
 .incident-card h3 {
   display: -webkit-box;
-  min-height: 2.55em;
   margin: 0;
   overflow: hidden;
   color: #152b56;
-  font-size: 0.88rem;
+  font-size: 0.9rem;
   font-weight: 800;
   line-height: 1.28;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+.incident-card__summary {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: #536f98;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.35;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
 .incident-card__location {
-  margin: 0;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.28rem;
+  margin: 0.08rem 0 0;
   overflow: hidden;
   color: #55739d;
   font-size: 0.72rem;
@@ -302,11 +322,21 @@ const previewText = (incident) =>
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.incident-card__location svg {
+  width: 0.86rem;
+  height: 0.86rem;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
 .incident-card__meta {
   display: flex;
   min-width: 0;
   gap: 0.3rem;
-  margin-top: 0.2rem;
+  margin-top: 0.05rem;
   overflow: hidden;
   color: #627d9f;
   font-size: 0.67rem;
@@ -317,20 +347,15 @@ const previewText = (incident) =>
   overflow: hidden;
   text-overflow: ellipsis;
 }
-@media (max-width: 84rem) {
-  .nearby-incidents__list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
 @media (max-width: 46rem) {
   .nearby-incidents__list {
     grid-template-columns: 1fr;
   }
   .incident-card__body {
-    padding: 0.85rem 0.9rem 0.95rem;
+    padding: 0.72rem 0.78rem;
   }
   .incident-card h3 {
-    font-size: 1rem;
+    font-size: 0.88rem;
   }
 }
 </style>
