@@ -30,7 +30,7 @@
 
 <script setup>
 import { computed, ref } from 'vue'
-import MapboxMap from '~/components/MapboxMap.vue'
+import MapboxMap from '~/components/map/MapboxMap.vue'
 import { useGeolocation } from '~/composables/useGeolocation'
 
 const { incidentLocation, setReporterLocation, setIncidentLocation } = useReportIncident()

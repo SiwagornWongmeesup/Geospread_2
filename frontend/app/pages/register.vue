@@ -1,6 +1,6 @@
 <script setup>
-import DesktopView from '~/components/pages/register/Desktop.vue'
-import MobileView from '~/components/pages/register/Mobile.vue'
+import DesktopView from '~/components/views/register/Desktop.vue'
+import MobileView from '~/components/views/register/Mobile.vue'
 
 // ---------------------------------------------------------------------------
 // Register Page — Controller Layer

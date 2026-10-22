@@ -33,7 +33,7 @@
 </template>
 <script setup>
 import { computed } from 'vue'
-import MapboxMap from '~/components/MapboxMap.vue'
+import MapboxMap from '~/components/map/MapboxMap.vue'
 import { useGeolocation } from '~/composables/useGeolocation'
 
 const props = defineProps({

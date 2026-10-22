@@ -45,7 +45,7 @@
 
 <script setup>
 import { computed, ref } from 'vue'
-import MapboxMap from '~/components/MapboxMap.vue'
+import MapboxMap from '~/components/map/MapboxMap.vue'
 import IncidentMapPopup from '~/components/map/IncidentMapPopup.vue'
 import HelpRequests from '~/components/dashboard/HelpRequests.vue'
 import NearbyIncidents from '~/components/dashboard/NearbyIncidents.vue'

@@ -1,6 +1,6 @@
 <script setup>
-import DesktopView from '~/components/pages/index/Desktop.vue'
-import MobileView from '~/components/pages/index/Mobile.vue'
+import DesktopView from '~/components/views/index/Desktop.vue'
+import MobileView from '~/components/views/index/Mobile.vue'
 import { useAuth } from '../composables/useAuth'
 
 definePageMeta({

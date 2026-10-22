@@ -1,6 +1,6 @@
 <script setup>
-import DesktopView from '~/components/pages/login/Desktop.vue'
-import MobileView from '~/components/pages/login/Mobile.vue'
+import DesktopView from '~/components/views/login/Desktop.vue'
+import MobileView from '~/components/views/login/Mobile.vue'
 
 // ---------------------------------------------------------------------------
 // Login Page — Controller Layer

@@ -59,15 +59,14 @@ app/middleware/
 
 ```text
 app/components/
-├── MapboxMap.vue             # ตัว Mapbox หลักที่ใช้ซ้ำ
 ├── admin/                    # UI สำหรับผู้ดูแลระบบ
 ├── common/                   # UI ใช้ซ้ำทั่วไป เช่น AppButton
 ├── dashboard/                # ส่วนย่อยบนหน้าหลัก Desktop
 ├── incidents/                # การ์ดและ filter ของหน้ารายการเหตุการณ์
 ├── layout/                   # Header, sidebar และ right panel ของ layout
-├── map/                      # Popup และเครื่องมือค้นหาบนแผนที่
+├── map/                      # Mapbox หลัก, Popup และเครื่องมือค้นหาบนแผนที่
 ├── mobile/                   # Bottom navigation และ mobile-only UI
-├── pages/                    # หน้าตาเฉพาะ route แยกตามขนาดหน้าจอ
+├── views/                    # หน้าตาเฉพาะ route แยกตามขนาดหน้าจอ
 │   ├── index/Desktop.vue     # หน้าแรกบน Desktop
 │   ├── index/Mobile.vue      # หน้าแรกบน Mobile
 │   ├── login/Desktop.vue
@@ -82,7 +81,7 @@ app/components/
 
 | ต้องการแก้ | เริ่มดูที่ |
 | --- | --- |
-| แผนที่หน้าหลัก | `components/pages/index/Desktop.vue` หรือ `Mobile.vue` → `components/MapboxMap.vue` |
+| แผนที่หน้าหลัก | `components/views/index/Desktop.vue` หรือ `Mobile.vue` → `components/map/MapboxMap.vue` |
 | Popup ของหมุด | `components/map/IncidentMapPopup.vue` |
 | ช่องค้นหา/ใช้ตำแหน่งปัจจุบันบนแผนที่ | `components/map/MapLocationSearch.vue` |
 | การ์ดเหตุการณ์ใกล้ตัว | `components/dashboard/NearbyIncidents.vue` |
@@ -151,12 +150,7 @@ rg --files frontend -g '!node_modules' -g '!.nuxt' -g '!.output'
 2. UI ที่ใช้เฉพาะ feature ให้อยู่ใน `components/<feature>/`
 3. UI ที่ใช้ซ้ำหลาย feature ให้อยู่ใน `components/common/`
 4. logic หรือ state ที่ใช้มากกว่าหนึ่ง component ให้อยู่ใน `composables/`
-5. ไฟล์ Desktop/Mobile ของ route เดียวกันให้อยู่คู่กันใน `components/pages/<route>/`
+5. ไฟล์ Desktop/Mobile ของ route เดียวกันให้อยู่คู่กันใน `components/views/<route>/`
 6. ก่อนสร้างโฟลเดอร์ใหม่ ให้ตรวจชื่อ feature เดิมก่อน เพื่อไม่ให้มีชื่อซ้ำ เช่น `incident`, `incidents` หรือ `map` กระจายหลายที่โดยไม่มีเหตุผล
 
-## หมายเหตุเรื่องการจัดระเบียบรอบถัดไป
-
-โครงสร้างปัจจุบันใช้งานได้ จึงไม่ควรย้ายไฟล์จำนวนมากระหว่างทำ feature เล็ก ๆ งานจัดระเบียบที่ปลอดภัยที่สุดคือ:
-
-1. ลบโฟลเดอร์ว่างที่ไม่มี route หรือ import รองรับ
-2. พิจารณาย้าย `components/MapboxMap.vue` เข้า `components/map/` พร้อมแก้ imports ทั้งหมดใน PR เดียว
+`components/views/` มีไว้สำหรับหน้าตาเฉพาะ route ส่วน `app/pages/` มีไว้ประกาศ URL ของ Nuxt เท่านั้น จึงไม่ควรนำสองโฟลเดอร์นี้มาปนกัน

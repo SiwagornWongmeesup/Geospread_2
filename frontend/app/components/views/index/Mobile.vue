@@ -51,7 +51,7 @@
 
 <script setup>
 import { computed, ref } from 'vue'
-import MapboxMap from '~/components/MapboxMap.vue'
+import MapboxMap from '~/components/map/MapboxMap.vue'
 import IncidentMapPopup from '~/components/map/IncidentMapPopup.vue'
 import MapLocationSearch from '~/components/map/MapLocationSearch.vue'
 import { useGeolocation } from '~/composables/useGeolocation'
