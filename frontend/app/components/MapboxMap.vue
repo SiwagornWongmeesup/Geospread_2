@@ -400,17 +400,21 @@ onUnmounted(() => {
   }
 })
 
-watch(() => props.center, (newCenter) => {
-  if (map && Array.isArray(newCenter)) {
-    map.flyTo({ center: newCenter })
-  }
-})
-
-watch(() => props.zoom, (newZoom) => {
-  if (map) {
-    map.zoomTo(newZoom)
-  }
-})
+watch(
+  [() => props.center, () => props.zoom],
+  ([newCenter, newZoom]) => {
+    if (map && Array.isArray(newCenter)) {
+      //flyToเลื่อน
+      map.flyTo({
+        center: newCenter,
+        zoom: newZoom,
+        duration: 900,
+        essential: true,
+        easing: (t) => t * (2 - t),
+      })
+    }
+  },
+)
 
 watch(() => props.mapItems, () => {
   renderMapItems()

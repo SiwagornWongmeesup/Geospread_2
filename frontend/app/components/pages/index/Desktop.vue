@@ -33,6 +33,7 @@
       :incidents="nearbyIncidentCards"
       :is-loading="isLoadingMap"
       :error-message="mapError"
+      @select="selectIncident"
     />
 
     <div class="desktop-home__lower-grid">
@@ -70,7 +71,13 @@ const {
 const { getCurrentLocation, isLocating, locationError } = useGeolocation()
 const selectedArea = ref(null)
 
-const activeMapCenter = computed(() => selectedArea.value?.center || mapCenter.value)
+const activeMapCenter = computed(() => {
+  if (selectedIncident.value) {
+    return [selectedIncident.value.lng, selectedIncident.value.lat]
+  }
+
+  return selectedArea.value?.center || mapCenter.value
+})
 const activeMapZoom = computed(() => selectedArea.value?.zoom || 11)
 
 const selectArea = (area) => {
