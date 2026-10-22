@@ -1,7 +1,7 @@
 <template>
   <header class="app-header">
     <NuxtLink to="/" class="app-header__brand">
-      <img src="/logo.png" alt="GeoSpread Logo" class="app-header__logo-img" />
+      <img src="/logos/logo.png" alt="GeoSpread Logo" class="app-header__logo-img" />
 
       <div class="app-header__brand-text">
         <span class="app-header__name">GeoSpread</span>

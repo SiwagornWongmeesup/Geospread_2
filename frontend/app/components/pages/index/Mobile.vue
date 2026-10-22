@@ -2,7 +2,7 @@
   <div class="mobile-home">
     <header class="mobile-home__header">
       <NuxtLink to="/" class="mobile-home__brand" aria-label="GeoSpread หน้าหลัก">
-        <img src="/logo.png" alt="" aria-hidden="true">
+        <img src="/logos/logo.png" alt="" aria-hidden="true">
         <span><strong>GeoSpread</strong><small>ชุมชนปลอดภัย ไปด้วยกัน</small></span>
       </NuxtLink>
       <button type="button" class="mobile-home__menu-button" aria-label="เปิดเมนูเพิ่มเติม" :aria-expanded="isMenuOpen" @click="isMenuOpen = !isMenuOpen">
@@ -34,10 +34,10 @@
       <div v-else class="mobile-home__incident-list">
         <button v-for="incident in nearbyIncidentCards.slice(0, 4)" :key="incident.id" type="button" class="mobile-incident" :class="{ 'mobile-incident--selected': selectedIncident?.id === incident.id }" @click="selectIncident(incident)">
           <div class="mobile-incident__media" :class="{ 'mobile-incident__media--empty': !incident.imageUrl }">
-            <img v-if="incident.imageUrl" :src="incident.imageUrl" :alt="incident.title"><img v-else :src="incident.iconUrl || '/Alert.svg'" alt="" aria-hidden="true">
+            <img v-if="incident.imageUrl" :src="incident.imageUrl" :alt="incident.title"><img v-else :src="incident.iconUrl || '/icons/Alert.svg'" alt="" aria-hidden="true">
           </div>
           <div class="mobile-incident__content">
-            <span class="mobile-incident__category" :style="{ backgroundColor: incident.markerColor || '#1479ef' }"><img :src="incident.iconUrl || '/Alert.svg'" alt="" aria-hidden="true">{{ incident.category || 'เหตุการณ์' }}</span>
+            <span class="mobile-incident__category" :style="{ backgroundColor: incident.markerColor || '#1479ef' }"><img :src="incident.iconUrl || '/icons/Alert.svg'" alt="" aria-hidden="true">{{ incident.category || 'เหตุการณ์' }}</span>
             <h2>{{ previewText(incident) }}</h2>
             <p class="mobile-incident__area"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s6-5.1 6-11a6 6 0 1 0-12 0c0 5.9 6 11 6 11Zm0-8.5a2.5 2.5 0 1 1 0-5" /></svg>{{ incident.areaLabel || 'พื้นที่ที่รายงาน' }}</p>
             <p class="mobile-incident__meta"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" /><path d="M12 7v5l3.2 2" /></svg>{{ incident.distanceFromUserLabel || incident.distance || 'ยังไม่ทราบระยะทาง' }} · {{ incident.time || 'เมื่อสักครู่' }}</p>

@@ -77,7 +77,7 @@ const iconFilesByIconName = {
 
 const normalizeKey = (value) => String(value ?? '').trim()
 
-const toPublicIconUrl = (fileName) => `/${encodeURIComponent(fileName)}`
+const toPublicIconUrl = (fileName) => `/icons/${encodeURIComponent(fileName)}`
 
 export const getIncidentIconFile = ({ typeCode, iconName, kind } = {}) => {
   if (kind === 'pending_report') return pendingIconFile

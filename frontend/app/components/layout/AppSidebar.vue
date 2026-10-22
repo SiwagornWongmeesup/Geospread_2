@@ -27,32 +27,32 @@ const menuGroups = [
   {
     label: 'เมนูหลัก',
     items: [
-      { label: 'หน้าหลัก', to: '/', icon: '/House.svg' },
-      { label: 'ดูเหตุการณ์', to: '/incidents', icon: '/Alert.svg' },
-      { label: 'ดูคำขอช่วยเหลือ', to: '/help-requests', icon: '/Help.svg' }
+      { label: 'หน้าหลัก', to: '/', icon: '/icons/House.svg' },
+      { label: 'ดูเหตุการณ์', to: '/incidents', icon: '/icons/Alert.svg' },
+      { label: 'ดูคำขอช่วยเหลือ', to: '/help-requests', icon: '/icons/Help.svg' }
     ]
   },
   {
     label: 'การดำเนินการ',
     kind: 'actions',
     items: [
-      { label: 'แจ้งเหตุใหม่', to: '/report-incident', icon: '/Report.svg' },
-      { label: 'ขอความช่วยเหลือ', to: '/request-help', icon: '/Life-saving.svg' }
+      { label: 'แจ้งเหตุใหม่', to: '/report-incident', icon: '/icons/Report.svg' },
+      { label: 'ขอความช่วยเหลือ', to: '/request-help', icon: '/icons/Life-saving.svg' }
     ]
   },
   {
     label: 'พื้นที่ของฉัน',
     items: [
-      { label: 'พื้นที่ติดตาม', to: '/followed-locations', icon: '/Location.svg' },
-      { label: 'การแจ้งเตือน', to: '/notifications', icon: '/Notification.svg', badge: '3' },
-      { label: 'คู่มือความปลอดภัย', to: '/safety-guide', icon: '/Safety-and-security.svg', kind: 'guide' }
+      { label: 'พื้นที่ติดตาม', to: '/followed-locations', icon: '/icons/Location.svg' },
+      { label: 'การแจ้งเตือน', to: '/notifications', icon: '/icons/Notification.svg', badge: '3' },
+      { label: 'คู่มือความปลอดภัย', to: '/safety-guide', icon: '/icons/Safety-and-security.svg', kind: 'guide' }
     ]
   }
 ];
 
 const accountItems = [
-  { label: 'โปรไฟล์', to: '/profile', icon: '/User.svg' },
-  { label: 'ตั้งค่า', to: '/settings', icon: '/Settings.svg' }
+  { label: 'โปรไฟล์', to: '/profile', icon: '/icons/User.svg' },
+  { label: 'ตั้งค่า', to: '/settings', icon: '/icons/Settings.svg' }
 ];
 </script>
 

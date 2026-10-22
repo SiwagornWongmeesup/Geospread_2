@@ -6,7 +6,7 @@
     </div>
     <div class="mobile-login__content">
       <NuxtLink to="/" class="brand" aria-label="กลับสู่หน้าแรก GeoSpread">
-        <img src="/logo.png" alt="" class="brand__logo" />
+        <img src="/logos/logo.png" alt="" class="brand__logo" />
         <span>GeoSpread</span>
       </NuxtLink>
       <header class="mobile-login__header">

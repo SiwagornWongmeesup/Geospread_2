@@ -1,11 +1,11 @@
 const helpRequestIcons = {
-  evacuation: '/Life-saving.svg',
-  medical: '/Health.svg',
-  food: '/Food.svg',
-  shelter: '/Shelter.svg',
-  vehicle: '/Car.svg',
+  evacuation: '/icons/Life-saving.svg',
+  medical: '/icons/Health.svg',
+  food: '/icons/Food.svg',
+  shelter: '/icons/Shelter.svg',
+  vehicle: '/icons/Car.svg',
 }
 
 export const getHelpRequestIcon = (helpType) => (
-  helpRequestIcons[helpType] || '/Life-saving.svg'
+  helpRequestIcons[helpType] || '/icons/Life-saving.svg'
 )

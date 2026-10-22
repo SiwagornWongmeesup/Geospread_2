@@ -126,7 +126,7 @@ const createMarkerElement = (item) => {
 
   const icon = document.createElement('img')
   icon.className = 'incident-map-marker__icon'
-  icon.src = item.iconUrl || '/Alert.svg'
+  icon.src = item.iconUrl || '/icons/Alert.svg'
   icon.alt = ''
   icon.setAttribute('aria-hidden', 'true')
   pin.appendChild(icon)

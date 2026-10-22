@@ -13,13 +13,13 @@ const userDisplayName = computed(() => {
 <template>
   <header class="topbar">
     <label class="search">
-      <img src="/Search.svg" alt="">
+      <img src="/icons/Search.svg" alt="">
       <input type="search" placeholder="ค้นหาผู้ใช้ เหตุการณ์ หรือสถานที่…">
     </label>
     <div class="top-actions">
-      <button class="location" type="button"><img src="/Location.svg" alt="">เชียงใหม่ (ตัวอย่าง)<span>⌄</span></button>
+      <button class="location" type="button"><img src="/icons/Location.svg" alt="">เชียงใหม่ (ตัวอย่าง)<span>⌄</span></button>
       <button class="bell" type="button" aria-label="มีการแจ้งเตือน 3 รายการ"
-        @click="notice = 'คุณมีการแจ้งเตือนใหม่ 3 รายการ'"><img src="/Notification.svg" alt=""><b>3</b></button>
+        @click="notice = 'คุณมีการแจ้งเตือนใหม่ 3 รายการ'"><img src="/icons/Notification.svg" alt=""><b>3</b></button>
       <div class="account"><span class="avatar">{{ userDisplayName.charAt(0) }}</span><strong>{{ userDisplayName
           }}</strong><button type="button" @click="logout">ออกจากระบบ</button></div>
     </div>

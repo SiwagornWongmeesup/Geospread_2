@@ -68,7 +68,7 @@
         <div class="incident-card__body">
           <div class="incident-card__eyebrow">
             <span class="incident-card__category">
-              <img :src="incident.iconUrl || '/Alert.svg'" alt="" />
+              <img :src="incident.iconUrl || '/icons/Alert.svg'" alt="" />
               {{ incident.category || "เหตุการณ์" }}
             </span>
             <span class="incident-card__status">รอตรวจสอบ</span>

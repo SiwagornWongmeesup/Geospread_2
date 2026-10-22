@@ -3,7 +3,7 @@
     <AppHeader />
     <div class="login-layout">
     <section class="visual" aria-labelledby="visual-title">
-      <img src="/login-community-background.png" alt="ภาพชุมชนไทยและสถานการณ์ภัยพิบัติ" />
+      <img src="/images/login-community-background.png" alt="ภาพชุมชนไทยและสถานการณ์ภัยพิบัติ" />
       <div class="visual__wash" />
       <div class="visual__copy">
         <h1 id="visual-title">ชุมชนปลอดภัย<br />เริ่มจากการช่วยเหลือกัน</h1>
@@ -13,7 +13,7 @@
     <section class="form-area" aria-labelledby="login-title">
       <div class="form-card">
         <NuxtLink to="/" class="form-brand">
-          <img src="/logo.png" alt="GeoSpread" />
+          <img src="/logos/logo.png" alt="GeoSpread" />
           <span>GeoSpread</span>
         </NuxtLink>
         <h2 id="login-title">เข้าสู่ระบบ</h2>

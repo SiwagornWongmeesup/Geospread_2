@@ -28,7 +28,7 @@
       <div v-if="visibleIncidentTypes.length" class="suggested-type-grid" role="group" aria-label="ประเภทเหตุการณ์ที่เลือกได้อย่างรวดเร็ว">
         <button v-for="incidentType in visibleIncidentTypes" :key="incidentType.id" type="button" class="suggested-type" :class="{ 'suggested-type--selected': userSelectedTypeId === incidentType.id }" :aria-pressed="userSelectedTypeId === incidentType.id" @click="selectIncidentType(incidentType)">
           <span class="suggested-type__icon" :style="{ backgroundColor: iconColor(incidentType) }" aria-hidden="true">
-            <img :src="incidentType.iconUrl || '/Alert.svg'" alt="">
+            <img :src="incidentType.iconUrl || '/icons/Alert.svg'" alt="">
           </span>
           <span>{{ incidentType.label }}</span>
           <svg v-if="userSelectedTypeId === incidentType.id" class="suggested-type__check" viewBox="0 0 24 24" aria-label="เลือกแล้ว"><path d="m7.5 12.5 3 3 6-7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.3" /></svg>
@@ -92,7 +92,7 @@
           <section v-for="group in filteredTypeGroups" :key="group.id" class="type-picker-group" :aria-labelledby="`type-group-${group.id}`">
             <header class="type-picker-group__heading">
               <span class="type-picker-group__icon" :style="{ backgroundColor: groupColor(group.id) }" aria-hidden="true">
-                <img :src="group.iconUrl || '/Alert.svg'" alt="">
+                <img :src="group.iconUrl || '/icons/Alert.svg'" alt="">
               </span>
               <h3 :id="`type-group-${group.id}`">{{ group.label }}</h3>
               <span class="type-picker-group__count">{{ group.types.length }} ประเภท</span>
@@ -100,7 +100,7 @@
             <div class="type-picker-grid">
               <button v-for="incidentType in group.types" :key="incidentType.id" type="button" class="type-picker-option" :class="{ 'type-picker-option--selected': userSelectedTypeId === incidentType.id }" :aria-pressed="userSelectedTypeId === incidentType.id" @click="selectIncidentType(incidentType, true)">
                 <span class="type-picker-option__icon" :style="{ backgroundColor: iconColor(incidentType) }" aria-hidden="true">
-                  <img :src="incidentType.iconUrl || '/Alert.svg'" alt="">
+                  <img :src="incidentType.iconUrl || '/icons/Alert.svg'" alt="">
                 </span>
                 <span>{{ incidentType.label }}</span>
                 <svg v-if="userSelectedTypeId === incidentType.id" class="type-picker-option__check" viewBox="0 0 24 24" aria-label="เลือกแล้ว"><path d="m7.5 12.5 3 3 6-7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.3" /></svg>

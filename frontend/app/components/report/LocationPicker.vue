@@ -6,11 +6,11 @@
         <p>คลิกบนแผนที่หรือลากหมุดเพื่อเลือกจุดเกิดเหตุ</p>
       </div>
       <button type="button" class="location-picker__current-button" :disabled="isLocating" :aria-busy="isLocating"
-        @click="useCurrentLocation"><img src="/Location.svg" alt="">{{ isLocating ? 'กำลังขอตำแหน่ง…' :
+        @click="useCurrentLocation"><img src="/icons/Location.svg" alt="">{{ isLocating ? 'กำลังขอตำแหน่ง…' :
         'ใช้ตำแหน่งปัจจุบัน' }}</button>
     </header>
     <section class="location-picker__selection" :class="{ 'location-picker__selection--ready': incidentLocation }"
-      aria-live="polite"><img src="/Location.svg" alt="">
+      aria-live="polite"><img src="/icons/Location.svg" alt="">
       <div><strong>{{ locationLabel }}</strong><span>{{ locationHint }}</span></div><b
         v-if="incidentLocation">เลือกตำแหน่งแล้ว</b>
     </section>

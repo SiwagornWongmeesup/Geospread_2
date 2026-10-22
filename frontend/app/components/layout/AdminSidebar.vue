@@ -5,11 +5,11 @@ const sidebarCollapsed = useState('adminSidebarCollapsed', () => false)
 const route = useRoute()
 
 const menus = [
-  ['dashboard', 'แดชบอร์ด', '/Chart.svg'], ['incidents', 'เหตุการณ์', '/Report.svg'],
-  ['requests', 'คำขอความช่วยเหลือ', '/Help.svg'], ['events', 'กิจกรรม', '/Calendar.svg'],
-  ['users', 'ผู้ใช้และความน่าเชื่อถือ', '/Users.svg'], ['guides', 'คู่มือความปลอดภัย', '/Alert.svg'],
-  ['analytics', 'รายงานวิเคราะห์', '/Analysis.svg'], ['notifications', 'การแจ้งเตือน', '/Notification.svg', 3],
-  ['settings', 'ตั้งค่าระบบ', '/Settings.svg'],
+  ['dashboard', 'แดชบอร์ด', '/icons/Chart.svg'], ['incidents', 'เหตุการณ์', '/icons/Report.svg'],
+  ['requests', 'คำขอความช่วยเหลือ', '/icons/Help.svg'], ['events', 'กิจกรรม', '/icons/Calendar.svg'],
+  ['users', 'ผู้ใช้และความน่าเชื่อถือ', '/icons/Users.svg'], ['guides', 'คู่มือความปลอดภัย', '/icons/Alert.svg'],
+  ['analytics', 'รายงานวิเคราะห์', '/icons/Analysis.svg'], ['notifications', 'การแจ้งเตือน', '/icons/Notification.svg', 3],
+  ['settings', 'ตั้งค่าระบบ', '/icons/Settings.svg'],
 ]
 const menuGroups = [
   { label: 'ภาพรวม', items: [menus[0]] },

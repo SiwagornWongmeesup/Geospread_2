@@ -1,297 +1,162 @@
-# โครงสร้างโฟลเดอร์ Frontend และสถาปัตยกรรม Component (Nuxt 4 + Vue 3)
+# โครงสร้าง Frontend ปัจจุบัน
 
-เอกสารนี้ใช้อ้างอิงสำหรับการจัดโครงสร้างโค้ดส่วนของ Frontend (Nuxt 4 + Vue 3 + JavaScript + Tailwind CSS) สำหรับโปรเจกต์ **GeoSpread**
+เอกสารนี้อธิบายโครงสร้างที่มีอยู่จริงใน `frontend/` ของ GeoSpread ณ ปัจจุบัน เพื่อให้หาไฟล์ได้เร็วและแยกหน้าที่ของแต่ละโฟลเดอร์ได้ชัดเจน
 
----
-
-## 🏛️ แนวคิดสถาปัตยกรรม (Architecture Concept)
-
-เพื่อรองรับการใช้งานทั้งบน **Desktop (จอคอมพิวเตอร์)** และ **Mobile (สมาร์ตโฟน)** ซึ่งมีพฤติกรรมการใช้งานและ Layout ที่ต่างกันมากในระบบแผนที่และเหตุการณ์ฉุกเฉิน เราจึงแบ่งสถาปัตยกรรมออกเป็น **3 เลเยอร์** โดย Nuxt Layout เป็นเจ้าของ shell ของแอปเพียงจุดเดียว:
-
-1. **Layer 1: Nuxt Layout Shell (Chrome ที่ใช้ร่วมกัน)**
-   * อยู่ใน `app/layouts/default.vue` สำหรับ Desktop และ `app/layouts/mobile.vue` สำหรับ Mobile
-   * `default.vue` เป็นเจ้าของ Header, Sidebar, Main `<slot />` และ Right Panel เพียงชุดเดียว
-   * Component ใน `components/layout/` เป็นชิ้นส่วนของ shell; ห้ามสร้าง shell ซ้อนอีกชั้นใน `components/AppLayout.vue`
-
-2. **Layer 2: Pages / Smart Containers (ศูนย์กลางข้อมูลและ API)**
-   * อยู่ใน `app/pages/` หรือ `app/app.vue`
-   * ทำหน้าที่เรียก API (`$fetch`, `useFetch`, Composables), จัดการ State กลาง, และจัดการ Business Events
-   * ส่งข้อมูล (Props) และฟังก์ชัน (Callbacks) ต่อไปยัง View Component
-   * หน้าที่ต้องแสดง Right Panel กำหนดด้วย `definePageMeta({ showRightPanel: true })`; ปัจจุบันคือ Home และ Map
-
-3. **Layer 3: Responsive Views (แยกหน้า Desktop และ Mobile ชัดเจน)**
-   * วาง View ของแต่ละหน้าไว้คู่กันที่ `components/pages/<route>/Desktop.vue` และ `Mobile.vue`
-   * เป็น Presentational / Dumb Components: มีหน้าที่แค่รับ Props มา Render UI และ Emit Event กลับไปหา Page หลัก
-   * **ห้ามยิง API ซ้ำซ้อนที่ระดับ Component แสดงผล** เพื่อป้องกันการยิง Request ซ้ำและทำให้โค้ดเป็นระเบียบ
-
----
-
-## 📁 โครงสร้างโฟลเดอร์หลัก
+## ภาพรวม
 
 ```text
 frontend/
 ├── app/
-│   ├── app.vue                 # จุดเริ่มต้นของแอปพลิเคชัน
-│   ├── layouts/                 # Nuxt application shell (มี slot เพียงชั้นเดียวต่อ route)
-│   │   ├── default.vue          # Desktop: Header + Sidebar + Main + Right Panel
-│   │   └── mobile.vue           # Mobile: Main + Bottom Navigation
-│   ├── pages/                  # หน้าต่างๆ (Smart Containers / API Fetching)
-│   │   ├── index.vue           # หน้าหลัก (Live Map & Incident Feed)
-│   │   ├── map.vue
-│   │   ├── incidents.vue
-│   │   ├── report-incident.vue
-│   │   ├── login.vue           # หน้าเข้าสู่ระบบ
-│   │   ├── register.vue        # หน้าสมัครสมาชิก
-│   │   └── events/
-│   │       └── [id].vue        # หน้า Event Room
-│   ├── components/             # คอมโพเนนต์แสดงผล (Presentational Views)
-│   │   ├── MapboxMap.vue       # ตัวเรนเดอร์แผนที่ที่ใช้ร่วมกัน
-│   │   ├── layout/             # ส่วนย่อยของ Nuxt Layout เท่านั้น
-│   │   │   ├── AppHeader.vue
-│   │   │   ├── AppSidebar.vue
-│   │   │   └── AppRightPanel.vue
-│   │   ├── common/             # UI ทั่วไปที่ใช้ร่วมกัน (ปุ่ม, โมดอล, อินพุต, Badge)
-│   │   │   ├── AppButton.vue
-│   │   │   ├── AppModal.vue
-│   │   │   └── SeverityBadge.vue
-│   │   ├── mobile/             # Global mobile shell เช่น AppBottomNav
-│   │   ├── dashboard/          # ส่วนประกอบข้อมูลของ Dashboard
-│   │   ├── incidents/          # ส่วนประกอบของ Incident
-│   │   ├── report/             # ส่วนประกอบของการแจ้งเหตุ
-│   │   └── pages/              # View เฉพาะหน้า; CSS อยู่ในไฟล์ Desktop/Mobile ของหน้านั้น
-│   │       ├── index/
-│   │       │   ├── Desktop.vue
-│   │       │   └── Mobile.vue
-│   │       ├── login/
-│   │       │   ├── Desktop.vue
-│   │       │   └── Mobile.vue
-│   │       └── register/
-│   │           ├── Desktop.vue
-│   │           └── Mobile.vue
-│   ├── composables/            # Reusable Logic & API Calls (useAuth, useIncidents, useMap)
-│   │   ├── useAuth.js
-│   │   ├── useIncident.js
-│   │   └── useLocation.js
-│   └── assets/                 # สไตล์ CSS, รูปภาพ, ฟอนต์
-│       └── css/
-│           └── main.css
-├── nuxt.config.js
-└── package.json
+│   ├── app.vue                 # จุดเริ่ม Nuxt: NuxtLayout + NuxtPage
+│   ├── layouts/                # เปลือกของหน้าจอแต่ละโหมด
+│   ├── middleware/             # ตรวจอุปกรณ์และสิทธิ์ก่อนเข้า route
+│   ├── pages/                  # Route ของ Nuxt: 1 ไฟล์ = 1 URL
+│   ├── components/             # UI ที่นำกลับมาใช้ได้
+│   ├── composables/            # state, API และ logic ที่ใช้ซ้ำ
+│   ├── data/                   # ข้อมูลคงที่สำหรับ UI
+│   └── plugins/                # Nuxt plugin ฝั่ง client
+├── public/                     # ไฟล์ static แยกเป็น icons, images และ logos
+├── nuxt.config.js              # Nuxt modules และ runtime config
+└── package.json                # scripts และ dependencies
 ```
 
-### กฎสำคัญเพื่อไม่ให้ Layout ซ้ำ
+> `node_modules/`, `.nuxt/` และ `.output/` เป็นไฟล์จาก dependency หรือ build ไม่ใช่โค้ดที่ต้องแก้โดยตรง
 
-- `app.vue` เรียก `<NuxtLayout><NuxtPage /></NuxtLayout>` เพียงครั้งเดียว
-- `layouts/default.vue` และ `layouts/mobile.vue` คือไฟล์เดียวที่มี Main `<slot />` สำหรับ shell ของแอป
-- `components/layout/` ห้ามมี `<slot />` ระดับหน้าหลัก และห้ามมี component ชื่อ `AppLayout.vue` ซ้ำกับ Nuxt Layout
-- Login และ Register ใช้ `definePageMeta({ layout: false })` ได้ เพราะไม่ใช่ Dashboard
-- `components/pages/<route>/Desktop.vue` และ `Mobile.vue` แสดงเฉพาะเนื้อหาของ route นั้น ห้ามวาง Header, Sidebar หรือ Right Panel ซ้ำ
+## Route และ Page
 
----
+ไฟล์ใน `app/pages/` สร้าง URL อัตโนมัติตามชื่อและตำแหน่งของไฟล์
 
-## 🎨 กฎการเขียน CSS (CSS Convention)
+| URL | ไฟล์ | หน้าที่ |
+| --- | --- | --- |
+| `/` | `app/pages/index.vue` | เลือก Home view สำหรับ Desktop หรือ Mobile และกำหนด right panel |
+| `/incidents` | `app/pages/incidents.vue` | หน้ารายการเหตุการณ์ |
+| `/report-incident` | `app/pages/report-incident.vue` | หน้าแจ้งเหตุ |
+| `/request-help` | `app/pages/request-help.vue` | หน้าขอความช่วยเหลือ |
+| `/help-requests` | `app/pages/help-requests.vue` | หน้ารายการขอความช่วยเหลือ |
+| `/login`, `/register` | `app/pages/login.vue`, `app/pages/register.vue` | การเข้าสู่ระบบและสมัครสมาชิก |
+| `/admin` | `app/pages/admin/index.vue` | Dashboard ผู้ดูแลระบบ |
+| `/admin/incidents` | `app/pages/admin/incidents.vue` | ตรวจทานเหตุการณ์สำหรับผู้ดูแล |
+| `/admin/users` | `app/pages/admin/users.vue` | จัดการผู้ใช้สำหรับผู้ดูแล |
 
-| ✅ ทำ | ❌ ห้ามทำ |
-|---|---|
-| ใช้ `<style scoped>` ใน Component ย่อย (Desktop/Mobile) | ❌ ห้ามใช้ Inline Style (`style="..."`) ใน Template |
-| ใช้ class-based styling (`class="..."`) | ❌ ห้ามใช้ `:style="{ ... }"` สำหรับ static CSS |
-| เขียน CSS แยกไว้ด้านล่างไฟล์ `.vue` | ❌ ห้ามเขียน CSS ใน `<script>` |
-| ใช้ Dynamic class binding (`:class`) สำหรับ state-based styling | ❌ ห้ามยัด Tailwind utilities ยาวๆ ใน template เกิน 5 classes |
+ไฟล์หน้าอื่น เช่น `profile.vue`, `settings.vue`, `notifications.vue`, `followed-locations.vue` และ `safety-guide.vue` อยู่ในตำแหน่งเดียวกันและใช้หลักเดียวกัน
 
-### ตัวอย่างการเขียน CSS ที่ถูกต้อง:
+## Layout และ Middleware
+
+```text
+app/layouts/
+├── default.vue   # Desktop shell: Header + Sidebar + เนื้อหาหลัก + Right Panel ตาม route meta
+├── mobile.vue    # Mobile shell: เนื้อหาหลัก + Bottom Navigation
+└── admin.vue     # Admin shell: AdminSidebar + AdminTopbar + เนื้อหา
+
+app/middleware/
+├── device.js     # ระบุ mobile/desktop และเก็บลง responsive state
+└── admin.js      # กัน route ผู้ดูแลสำหรับผู้ที่ไม่ได้ล็อกอินหรือไม่ใช่ admin
+```
+
+`app/app.vue` เป็นจุดเดียวที่เรียก `<NuxtLayout>` และ `<NuxtPage>` จึงไม่ควรสร้าง layout shell ซ้ำใน component ของหน้า
+
+## Components: หาไฟล์จากสิ่งที่ต้องแก้
+
+```text
+app/components/
+├── MapboxMap.vue             # ตัว Mapbox หลักที่ใช้ซ้ำ
+├── admin/                    # UI สำหรับผู้ดูแลระบบ
+├── common/                   # UI ใช้ซ้ำทั่วไป เช่น AppButton
+├── dashboard/                # ส่วนย่อยบนหน้าหลัก Desktop
+├── incidents/                # การ์ดและ filter ของหน้ารายการเหตุการณ์
+├── layout/                   # Header, sidebar และ right panel ของ layout
+├── map/                      # Popup และเครื่องมือค้นหาบนแผนที่
+├── mobile/                   # Bottom navigation และ mobile-only UI
+├── pages/                    # หน้าตาเฉพาะ route แยกตามขนาดหน้าจอ
+│   ├── index/Desktop.vue     # หน้าแรกบน Desktop
+│   ├── index/Mobile.vue      # หน้าแรกบน Mobile
+│   ├── login/Desktop.vue
+│   ├── login/Mobile.vue
+│   ├── register/Desktop.vue
+│   └── register/Mobile.vue
+├── report/                   # UI แจ้งเหตุและเลือกตำแหน่ง
+└── request-help/             # UI ขอความช่วยเหลือ
+```
+
+### ทางลัดสำหรับงานที่พบบ่อย
+
+| ต้องการแก้ | เริ่มดูที่ |
+| --- | --- |
+| แผนที่หน้าหลัก | `components/pages/index/Desktop.vue` หรือ `Mobile.vue` → `components/MapboxMap.vue` |
+| Popup ของหมุด | `components/map/IncidentMapPopup.vue` |
+| ช่องค้นหา/ใช้ตำแหน่งปัจจุบันบนแผนที่ | `components/map/MapLocationSearch.vue` |
+| การ์ดเหตุการณ์ใกล้ตัว | `components/dashboard/NearbyIncidents.vue` |
+| data และ state ของแผนที่หน้าหลัก | `composables/useHomeDashboard.js` |
+| ฟอร์มแจ้งเหตุ | `components/report/ReportIncidentForm.vue` |
+| UI ของ sidebar/header | `components/layout/` |
+| เส้นทางและชื่อเมนูผู้ดูแล | `pages/admin/` และ `components/layout/AdminSidebar.vue` |
+
+## Composables และ Data
+
+```text
+app/composables/
+├── useAuth.js                # สถานะการเข้าสู่ระบบและบทบาท
+├── useHomeDashboard.js       # ข้อมูล/การเลือกเหตุการณ์/แผนที่หน้าหลัก
+├── useAdminReview.js         # ข้อมูลและ action สำหรับตรวจทานเหตุการณ์
+├── useGeolocation.js         # ขอพิกัดตำแหน่งปัจจุบัน
+├── useIncidentIcon.js        # เลือกไอคอนเหตุการณ์
+├── useHelpRequestIcon.js     # เลือกไอคอนขอความช่วยเหลือ
+├── useReportIncident.js      # logic สำหรับแจ้งเหตุ
+└── useResponsiveView.js      # สลับการแสดง Desktop/Mobile
+
+app/data/
+└── reportIncidentGuides.js   # ข้อมูลคงที่ของหน้าแจ้งเหตุ
+```
+
+กฎใช้งานง่าย ๆ: ถ้าโค้ดเกี่ยวกับการเรียก API, state ที่แชร์, หรือการแปลงข้อมูล ให้เริ่มค้นใน `composables/`; ถ้าเป็น HTML/CSS ของส่วนที่เห็น ให้เริ่มค้นใน `components/`
+
+## Public Assets
+
+ปัจจุบัน icon และรูป static อยู่ใน `public/` ระดับเดียวกันทั้งหมด เช่น:
+
+```text
+public/
+├── icons/                      # SVG ทั้งหมด เช่น Alert.svg, Location.svg, Report.svg
+├── images/                     # ภาพเนื้อหา/พื้นหลัง เช่น login-community-background.png
+└── logos/                      # โลโก้ เช่น logo.png
+```
+
+ใช้ในโค้ดผ่าน path ที่เริ่มด้วย `/`:
+
 ```vue
-<template>
-  <!-- ✅ ถูกต้อง: ใช้ class name ที่มีความหมาย -->
-  <div class="user-card">
-    <h2 class="user-card__name">{{ name }}</h2>
-  </div>
-</template>
-
-<style scoped>
-/* CSS เขียนแยกด้านล่าง — สะอาด อ่านง่าย */
-.user-card {
-  padding: 16px;
-  background: #ffffff;
-  border-radius: 8px;
-}
-
-.user-card__name {
-  font-size: 18px;
-  color: #0f172a;
-}
-</style>
+<img src="/icons/Alert.svg" alt="" />
 ```
 
----
+เมื่อเพิ่ม asset ใหม่ ให้เลือกหมวดก่อนเสมอ: ไอคอน SVG อยู่ใน `icons/`, รูปภาพอยู่ใน `images/`, และโลโก้อยู่ใน `logos/`
 
-## 🔄 ตัวอย่างรูปแบบการทำงาน (Data Flow Example)
+## วิธีสำรวจโครงสร้าง
 
-### 1. Page หลัก (`app/pages/index.vue`) — เป็น Smart Container
-ทำหน้าที่ยิง API ดึงข้อมูลเหตุการณ์ และสลับ Component ตามขนาดหน้าจอ:
+ใช้คำสั่งด้านล่างจากโฟลเดอร์รากของโปรเจกต์:
 
-```vue
-<script setup lang="ts">
-import DesktopView from '~/components/pages/index/Desktop.vue';
-import MobileView from '~/components/pages/index/Mobile.vue';
+```powershell
+# ดูเฉพาะโฟลเดอร์ที่สำคัญ
+tree /a frontend\app
+tree /a backend\src
 
-// 1. ดึงข้อมูลจาก API (ทำที่ Page เดียวเท่านั้น)
-const { data: incidents, pending, refresh } = await useFetch('http://localhost:5000/incidents');
+# ค้นหาว่า component ถูกเรียกใช้ที่ใด
+rg -n "NearbyIncidents" frontend
 
-// 2. เช็คขนาดหน้าจอ (Desktop หรือ Mobile)
-const windowWidth = ref(1024);
-const updateWidth = () => { windowWidth.value = window.innerWidth; };
-onMounted(() => { updateWidth(); window.addEventListener('resize', updateWidth); });
-onUnmounted(() => { window.removeEventListener('resize', updateWidth); });
-const isMobile = computed(() => windowWidth.value < 768);
-
-// 3. ฟังก์ชันจัดการเมื่อผู้ใช้กดสร้างเหตุการณ์
-const handleReportIncident = async (newIncidentData: any) => {
-  await $fetch('http://localhost:5000/incidents', {
-    method: 'POST',
-    body: newIncidentData
-  });
-  refresh();
-};
-</script>
-
-<template>
-  <div class="page-wrapper">
-    <!-- Render สำหรับ Mobile -->
-    <MobileView
-      v-if="isMobile"
-      :incidents="incidents"
-      :loading="pending"
-      @report="handleReportIncident"
-    />
-
-    <!-- Render สำหรับ Desktop -->
-    <DesktopView
-      v-else
-      :incidents="incidents"
-      :loading="pending"
-      @report="handleReportIncident"
-    />
-  </div>
-</template>
-
-<style scoped>
-.page-wrapper {
-  min-height: 100vh;
-  background-color: #f1f5f9;
-}
-</style>
+# ดูรายชื่อไฟล์ frontend โดยไม่รวม dependency/build output
+rg --files frontend -g '!node_modules' -g '!.nuxt' -g '!.output'
 ```
 
-### 2. Desktop Component (`app/components/pages/index/Desktop.vue`)
-แสดงเฉพาะเนื้อหาของหน้าจอ Desktop เช่นแผนที่ — Header, Sidebar และ Right Panel อยู่ที่ `app/layouts/default.vue` แล้ว จึงไม่ต้องสร้างซ้ำใน component หน้านี้:
-```vue
-<script setup lang="ts">
-defineProps<{
-  incidents: any[];
-  loading: boolean;
-}>();
+## ข้อตกลงสำหรับไฟล์ใหม่
 
-defineEmits(['report']);
-</script>
+1. เพิ่ม route ใหม่ใน `app/pages/` เท่านั้น
+2. UI ที่ใช้เฉพาะ feature ให้อยู่ใน `components/<feature>/`
+3. UI ที่ใช้ซ้ำหลาย feature ให้อยู่ใน `components/common/`
+4. logic หรือ state ที่ใช้มากกว่าหนึ่ง component ให้อยู่ใน `composables/`
+5. ไฟล์ Desktop/Mobile ของ route เดียวกันให้อยู่คู่กันใน `components/pages/<route>/`
+6. ก่อนสร้างโฟลเดอร์ใหม่ ให้ตรวจชื่อ feature เดิมก่อน เพื่อไม่ให้มีชื่อซ้ำ เช่น `incident`, `incidents` หรือ `map` กระจายหลายที่โดยไม่มีเหตุผล
 
-<template>
-  <main class="desktop-map">
-    <div id="desktop-map"></div>
-  </main>
-</template>
+## หมายเหตุเรื่องการจัดระเบียบรอบถัดไป
 
-<style scoped>
-.desktop-map {
-  height: 100vh;
-  width: 100%;
-}
-</style>
-```
+โครงสร้างปัจจุบันใช้งานได้ จึงไม่ควรย้ายไฟล์จำนวนมากระหว่างทำ feature เล็ก ๆ งานจัดระเบียบที่ปลอดภัยที่สุดคือ:
 
-### 3. Mobile Component (`app/components/pages/index/Mobile.vue`)
-แสดงผลแบบ แผนที่เต็มจอ + แผ่นดึงด้านล่าง (Bottom Sheet) + ปุ่มแจ้งเหตุด่วน (FAB) — **CSS อยู่ใน `<style scoped>`**:
-```vue
-<script setup lang="ts">
-defineProps<{
-  incidents: any[];
-  loading: boolean;
-}>();
-
-defineEmits(['report']);
-</script>
-
-<template>
-  <div class="mobile-layout">
-    <div id="mobile-map" class="mobile-map"></div>
-
-    <button class="fab-button">
-      🚨 แจ้งเหตุด่วน
-    </button>
-
-    <div class="bottom-sheet">
-      <div class="bottom-sheet__handle"></div>
-      <h3 class="bottom-sheet__title">เหตุการณ์ใกล้ตัวคุณ</h3>
-    </div>
-  </div>
-</template>
-
-<style scoped>
-.mobile-layout {
-  position: relative;
-  height: 100vh;
-  width: 100vw;
-  overflow: hidden;
-}
-
-.mobile-map {
-  width: 100%;
-  height: 100%;
-}
-
-.fab-button {
-  position: fixed;
-  bottom: 5rem;
-  right: 1rem;
-  background-color: #dc2626;
-  color: #ffffff;
-  border: none;
-  border-radius: 50%;
-  padding: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  cursor: pointer;
-}
-
-.bottom-sheet {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: #ffffff;
-  border-radius: 16px 16px 0 0;
-  padding: 16px;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
-  max-height: 50vh;
-  overflow-y: auto;
-}
-
-.bottom-sheet__handle {
-  width: 48px;
-  height: 6px;
-  background: #d1d5db;
-  border-radius: 9999px;
-  margin: 0 auto 12px;
-}
-
-.bottom-sheet__title {
-  font-weight: bold;
-}
-</style>
-```
-
----
-
-## 🎯 ข้อดีของโครงสร้างนี้
-1. **Separation of Concerns:** แยก Logic การดึงข้อมูล (API) ออกจาก Layout ทำให้ไม่งง
-2. **ปรับแต่ง UX ได้อิสระ:** การใช้งานแผนที่บนมือถือ (เน้นสัมผัส/Bottom Sheet) ต่างจาก Desktop (เน้น Sidebar/เมาส์คลิก) สองส่วนนี้จะไม่ปนและไม่กระทบกัน
-3. **ลดการยิง API ซ้ำ:** ทั้ง Mobile และ Desktop ใช้ข้อมูลชุดเดียวกันจาก Page หลัก
-4. **CSS สะอาดและเป็นระเบียบ:** ใช้ `<style scoped>` ใน Component ย่อย ทำให้ Template อ่านง่าย CSS ไม่หลุดไปกระทบ Component อื่น
+1. ลบโฟลเดอร์ว่างที่ไม่มี route หรือ import รองรับ
+2. พิจารณาย้าย `components/MapboxMap.vue` เข้า `components/map/` พร้อมแก้ imports ทั้งหมดใน PR เดียว

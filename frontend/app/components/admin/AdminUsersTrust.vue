@@ -12,7 +12,7 @@ const filters = [
 ]
 
 const users = [
-  { id: 'u001', name: 'พิมพ์ชนก วัฒนากุล', email: 'pimchanok@example.com', initials: 'พว', trust: 92, level: 'น่าเชื่อถือสูง', tone: 'trusted', reports: 48, verified: 45, suspicious: 1, lastActivity: '12 นาทีที่แล้ว', joined: '12 ม.ค. 2568', location: 'เชียงใหม่, ประเทศไทย', breakdown: [['รายงานที่ยืนยันแล้ว', '+30', 'positive'], ['การยืนยันจากชุมชน', '+18', 'positive'], ['ช่วยเหลือผู้ใช้อื่นสำเร็จ', '+12', 'positive'], ['ความสอดคล้องของตำแหน่ง', '+20', 'positive'], ['รายงานคลาดเคลื่อน', '-3', 'negative'], ['พฤติกรรมผิดปกติ', '-2', 'negative']], activity: [['รายงานไฟป่าใกล้ดอยสุเทพ', '12 นาทีที่แล้ว', '/Fire.svg'], ['ยืนยันต้นไม้ล้มกีดขวางถนน', '1 วันที่แล้ว', '/Environment.svg'], ['รายงานน้ำท่วมบริเวณช้างคลาน', '2 วันที่แล้ว', '/Flood.svg']] },
+  { id: 'u001', name: 'พิมพ์ชนก วัฒนากุล', email: 'pimchanok@example.com', initials: 'พว', trust: 92, level: 'น่าเชื่อถือสูง', tone: 'trusted', reports: 48, verified: 45, suspicious: 1, lastActivity: '12 นาทีที่แล้ว', joined: '12 ม.ค. 2568', location: 'เชียงใหม่, ประเทศไทย', breakdown: [['รายงานที่ยืนยันแล้ว', '+30', 'positive'], ['การยืนยันจากชุมชน', '+18', 'positive'], ['ช่วยเหลือผู้ใช้อื่นสำเร็จ', '+12', 'positive'], ['ความสอดคล้องของตำแหน่ง', '+20', 'positive'], ['รายงานคลาดเคลื่อน', '-3', 'negative'], ['พฤติกรรมผิดปกติ', '-2', 'negative']], activity: [['รายงานไฟป่าใกล้ดอยสุเทพ', '12 นาทีที่แล้ว', '/icons/Fire.svg'], ['ยืนยันต้นไม้ล้มกีดขวางถนน', '1 วันที่แล้ว', '/icons/Environment.svg'], ['รายงานน้ำท่วมบริเวณช้างคลาน', '2 วันที่แล้ว', '/icons/Flood.svg']] },
   { id: 'u002', name: 'ณัฐวุฒิ ศรีคำ', email: 'nattawut@example.com', initials: 'ณศ', trust: 76, level: 'น่าเชื่อถือ', tone: 'trusted', reports: 27, verified: 24, suspicious: 2, lastActivity: '1 ชั่วโมงที่แล้ว', joined: '8 ก.พ. 2568', location: 'สันทราย, เชียงใหม่' },
   { id: 'u003', name: 'กัญญารัตน์ อินต๊ะ', email: 'kanyarat@example.com', initials: 'กอ', trust: 68, level: 'ปกติ', tone: 'active', reports: 18, verified: 14, suspicious: 1, lastActivity: '2 ชั่วโมงที่แล้ว', joined: '21 ก.พ. 2568', location: 'แม่ริม, เชียงใหม่' },
   { id: 'u004', name: 'ธีรภัทร แซ่ลี', email: 'teerapat@example.com', initials: 'ทล', trust: 55, level: 'ปกติ', tone: 'active', reports: 12, verified: 9, suspicious: 3, lastActivity: '3 ชั่วโมงที่แล้ว', joined: '5 มี.ค. 2568', location: 'เมืองเชียงใหม่' },
@@ -48,29 +48,29 @@ const runAction = (action) => { actionNotice.value = `บันทึกเป�
       </div>
       <button type="button" class="users-trust__export"
         @click="actionNotice = 'การส่งออกข้อมูลเป็นตัวอย่าง — จะเปิดใช้เมื่อเชื่อม API แล้ว'">
-        <img src="/Download.svg" alt="">ส่งออกข้อมูล
+        <img src="/icons/Download.svg" alt="">ส่งออกข้อมูล
       </button>
     </header>
 
-    <p class="users-trust__sample" role="status"><img src="/Alert.svg"
+    <p class="users-trust__sample" role="status"><img src="/icons/Alert.svg"
         alt="">ข้อมูลบนหน้านี้เป็นข้อมูลตัวอย่างสำหรับออกแบบ ยังไม่เชื่อม API ผู้ใช้</p>
     <p v-if="actionNotice" class="users-trust__notice" role="status">{{ actionNotice }}<button type="button"
         aria-label="ปิดข้อความ" @click="actionNotice = ''">×</button></p>
 
     <section class="users-trust__metrics" aria-label="สรุปข้อมูลผู้ใช้ตัวอย่าง">
-      <article><img src="/Users.svg" alt="">
+      <article><img src="/icons/Users.svg" alt="">
         <div><strong>12,482</strong><span>ผู้ใช้ทั้งหมด</span><small class="up">↑ 5% จากเดือนก่อน</small></div>
       </article>
-      <article><img src="/Selected.svg" alt="">
+      <article><img src="/icons/Selected.svg" alt="">
         <div><strong>8,320</strong><span>ผู้ใช้น่าเชื่อถือ</span><small class="up">67% ของผู้ใช้ทั้งหมด</small></div>
       </article>
-      <article><img src="/Alert.svg" alt="">
+      <article><img src="/icons/Alert.svg" alt="">
         <div><strong>1,942</strong><span>รอตรวจสอบ</span><small class="warn">16% ของผู้ใช้ทั้งหมด</small></div>
       </article>
-      <article><img src="/Warning-Error.svg" alt="">
+      <article><img src="/icons/Warning-Error.svg" alt="">
         <div><strong>320</strong><span>ผู้ใช้เสี่ยงสูง</span><small class="risk">3% ของผู้ใช้ทั้งหมด</small></div>
       </article>
-      <article><img src="/Chart.svg" alt="">
+      <article><img src="/icons/Chart.svg" alt="">
         <div><strong>+12</strong><span>ผู้ใช้ใหม่วันนี้</span><small class="up">เทียบกับเมื่อวาน</small></div>
       </article>
     </section>
@@ -86,7 +86,7 @@ const runAction = (action) => { actionNotice.value = `บันทึกเป�
               {{ filter[1] }}<span v-if="filter[0] === 'all'"> ({{ users.length }})</span>
             </button>
           </div>
-          <label class="directory__search"><img src="/Search.svg" alt=""><span class="sr-only">ค้นหาผู้ใช้</span><input
+          <label class="directory__search"><img src="/icons/Search.svg" alt=""><span class="sr-only">ค้นหาผู้ใช้</span><input
               v-model="keyword" type="search" placeholder="ค้นหาชื่อ อีเมล หรือพื้นที่"></label>
         </header>
 
@@ -183,7 +183,7 @@ const runAction = (action) => { actionNotice.value = `บันทึกเป�
             </header>
             <ul>
               <li
-                v-for="item in (selectedUser.activity || [['รายงานเหตุการณ์ในพื้นที่', selectedUser.lastActivity, '/Report.svg'], ['ยืนยันข้อมูลจากชุมชน', '2 วันที่แล้ว', '/Selected.svg']])"
+                v-for="item in (selectedUser.activity || [['รายงานเหตุการณ์ในพื้นที่', selectedUser.lastActivity, '/icons/Report.svg'], ['ยืนยันข้อมูลจากชุมชน', '2 วันที่แล้ว', '/icons/Selected.svg']])"
                 :key="item[0]"><img :src="item[2]" alt=""><span>{{ item[0] }}<small>{{ item[1] }}</small></span></li>
             </ul>
           </section>

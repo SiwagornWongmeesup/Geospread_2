@@ -2,30 +2,30 @@
 const notice = useState('adminNotice', () => '')
 
 const cards = [
-  ['รายงานเหตุการณ์', '128', '12%', 'red', '/Warning-Error.svg', 'up'], ['คำขอความช่วยเหลือ', '56', '8%', 'blue', '/Help.svg', 'up'],
-  ['ยืนยันแล้ว', '42', '20%', 'green', '/Selected.svg', 'up'], ['รอตรวจสอบ', '18', '15%', 'yellow', '/Alert.svg', 'down'],
-  ['ผู้ใช้ทั้งหมด', '12,482', '5%', 'purple', '/Users.svg', 'up'], ['คะแนนความน่าเชื่อถือ', '8.3/10', '0.4', 'green', '/Selected.svg', 'up'],
+  ['รายงานเหตุการณ์', '128', '12%', 'red', '/icons/Warning-Error.svg', 'up'], ['คำขอความช่วยเหลือ', '56', '8%', 'blue', '/icons/Help.svg', 'up'],
+  ['ยืนยันแล้ว', '42', '20%', 'green', '/icons/Selected.svg', 'up'], ['รอตรวจสอบ', '18', '15%', 'yellow', '/icons/Alert.svg', 'down'],
+  ['ผู้ใช้ทั้งหมด', '12,482', '5%', 'purple', '/icons/Users.svg', 'up'], ['คะแนนความน่าเชื่อถือ', '8.3/10', '0.4', 'green', '/icons/Selected.svg', 'up'],
 ]
 const incidents = [
-  ['ไฟป่าใกล้ดอยสุเทพ', 'สุเทพ, เชียงใหม่', 'อัคคีภัย', '/Fire.svg', 'สูง', 'รอตรวจสอบ', '28 นาทีที่แล้ว', 'red'],
-  ['ฝนหนักทำให้น้ำท่วมขัง', 'ช้างเผือก, เชียงใหม่', 'น้ำท่วม', '/Flood.svg', 'ปานกลาง', 'ยืนยันแล้ว', '1 ชั่วโมงที่แล้ว', 'blue'],
-  ['ต้นไม้ล้มกีดขวางถนน', 'สันทราย, เชียงใหม่', 'อุบัติเหตุ', '/Roadblock.svg', 'ปานกลาง', 'รอตรวจสอบ', '2 ชั่วโมงที่แล้ว', 'orange'],
-  ['ดินสไลด์หลังฝนตกหนัก', 'แม่ริม, เชียงใหม่', 'ดินถล่ม', '/Landslide-mudslide.svg', 'สูง', 'ยืนยันแล้ว', '3 ชั่วโมงที่แล้ว', 'yellow'],
-  ['รถชนบนถนนซูเปอร์ไฮเวย์', 'เมืองเชียงใหม่', 'ฉุกเฉิน', '/Health.svg', 'สูง', 'รอตรวจสอบ', '5 ชั่วโมงที่แล้ว', 'red'],
+  ['ไฟป่าใกล้ดอยสุเทพ', 'สุเทพ, เชียงใหม่', 'อัคคีภัย', '/icons/Fire.svg', 'สูง', 'รอตรวจสอบ', '28 นาทีที่แล้ว', 'red'],
+  ['ฝนหนักทำให้น้ำท่วมขัง', 'ช้างเผือก, เชียงใหม่', 'น้ำท่วม', '/icons/Flood.svg', 'ปานกลาง', 'ยืนยันแล้ว', '1 ชั่วโมงที่แล้ว', 'blue'],
+  ['ต้นไม้ล้มกีดขวางถนน', 'สันทราย, เชียงใหม่', 'อุบัติเหตุ', '/icons/Roadblock.svg', 'ปานกลาง', 'รอตรวจสอบ', '2 ชั่วโมงที่แล้ว', 'orange'],
+  ['ดินสไลด์หลังฝนตกหนัก', 'แม่ริม, เชียงใหม่', 'ดินถล่ม', '/icons/Landslide-mudslide.svg', 'สูง', 'ยืนยันแล้ว', '3 ชั่วโมงที่แล้ว', 'yellow'],
+  ['รถชนบนถนนซูเปอร์ไฮเวย์', 'เมืองเชียงใหม่', 'ฉุกเฉิน', '/icons/Health.svg', 'สูง', 'รอตรวจสอบ', '5 ชั่วโมงที่แล้ว', 'red'],
 ]
 const helpRequests = [
-  ['ต้องการอพยพ', 'ช้างคลาน', 4, 'เปิดอยู่', '35 นาทีที่แล้ว', '/Building.svg'], ['ตามหาหน้ากากอนามัย', 'สุเทพ', 2, 'กำลังรับเรื่อง', '1 ชั่วโมงที่แล้ว', '/Health.svg'],
-  ['ต้องการน้ำและอาหาร', 'สันทราย', 3, 'เปิดอยู่', '2 ชั่วโมงที่แล้ว', '/Water-source.svg'], ['ขอความช่วยเหลือทางการแพทย์', 'แม่ริม', 1, 'กำลังดำเนินการ', '4 ชั่วโมงที่แล้ว', '/Health.svg'],
-  ['ขอความช่วยเหลือด้านการเดินทาง', 'หางดง', 2, 'เปิดอยู่', '6 ชั่วโมงที่แล้ว', '/Car.svg'],
+  ['ต้องการอพยพ', 'ช้างคลาน', 4, 'เปิดอยู่', '35 นาทีที่แล้ว', '/icons/Building.svg'], ['ตามหาหน้ากากอนามัย', 'สุเทพ', 2, 'กำลังรับเรื่อง', '1 ชั่วโมงที่แล้ว', '/icons/Health.svg'],
+  ['ต้องการน้ำและอาหาร', 'สันทราย', 3, 'เปิดอยู่', '2 ชั่วโมงที่แล้ว', '/icons/Water-source.svg'], ['ขอความช่วยเหลือทางการแพทย์', 'แม่ริม', 1, 'กำลังดำเนินการ', '4 ชั่วโมงที่แล้ว', '/icons/Health.svg'],
+  ['ขอความช่วยเหลือด้านการเดินทาง', 'หางดง', 2, 'เปิดอยู่', '6 ชั่วโมงที่แล้ว', '/icons/Car.svg'],
 ]
 const types = [
-  ['น้ำท่วม', 38, 30, '/Flood.svg'], ['อัคคีภัย', 28, 22, '/Fire.svg'], ['อุบัติเหตุบนถนน', 18, 14, '/Roadblock.svg'],
-  ['ดินถล่ม', 16, 13, '/Landslide-mudslide.svg'], ['ฉุกเฉินทางการแพทย์', 14, 11, '/Health.svg'], ['อื่น ๆ', 14, 11, '/Alert.svg'],
+  ['น้ำท่วม', 38, 30, '/icons/Flood.svg'], ['อัคคีภัย', 28, 22, '/icons/Fire.svg'], ['อุบัติเหตุบนถนน', 18, 14, '/icons/Roadblock.svg'],
+  ['ดินถล่ม', 16, 13, '/icons/Landslide-mudslide.svg'], ['ฉุกเฉินทางการแพทย์', 14, 11, '/icons/Health.svg'], ['อื่น ๆ', 14, 11, '/icons/Alert.svg'],
 ]
-const services = [['บริการแผนที่', '/Map.svg'], ['ฐานข้อมูล', '/Data.svg'], ['บริการแจ้งเตือน', '/Notification.svg'], ['พื้นที่เก็บสื่อ', '/Folder.svg']]
+const services = [['บริการแผนที่', '/icons/Map.svg'], ['ฐานข้อมูล', '/icons/Data.svg'], ['บริการแจ้งเตือน', '/icons/Notification.svg'], ['พื้นที่เก็บสื่อ', '/icons/Folder.svg']]
 const mapMarkers = [
-  ['ไฟไหม้', '/Fire.svg', 'red', 'one'], ['น้ำท่วม', '/Flood.svg', 'blue', 'two'], ['อุบัติเหตุ', '/Roadblock.svg', 'orange', 'three'],
-  ['ฉุกเฉินทางการแพทย์', '/Health.svg', 'red', 'four'], ['ดินถล่ม', '/Landslide-mudslide.svg', 'orange', 'five'], ['พื้นที่ปลอดภัย', '/Environment.svg', 'green', 'six'],
+  ['ไฟไหม้', '/icons/Fire.svg', 'red', 'one'], ['น้ำท่วม', '/icons/Flood.svg', 'blue', 'two'], ['อุบัติเหตุ', '/icons/Roadblock.svg', 'orange', 'three'],
+  ['ฉุกเฉินทางการแพทย์', '/icons/Health.svg', 'red', 'four'], ['ดินถล่ม', '/icons/Landslide-mudslide.svg', 'orange', 'five'], ['พื้นที่ปลอดภัย', '/icons/Environment.svg', 'green', 'six'],
 ]
 const chart = [[43, 29, 16, 7, '21 ก.ย.'], [56, 31, 19, 8, '22 ก.ย.'], [56, 39, 18, 8, '23 ก.ย.'], [68, 37, 20, 8, '24 ก.ย.'], [88, 53, 25, 9, '25 ก.ย.'], [62, 29, 18, 7, '26 ก.ย.'], [72, 35, 21, 8, 'วันนี้']]
 const quickAction = (label) => { label === 'ตรวจสอบเหตุการณ์' ? navigateTo('/admin/incidents') : notice.value = `“${label}” เป็นเมนูโครงร่างที่ยังอยู่ระหว่างพัฒนา` }
@@ -40,7 +40,7 @@ const quickAction = (label) => { label === 'ตรวจสอบเหตุก
           </div><em>“เพื่อวันพรุ่งนี้ที่ปลอดภัยและรู้เท่าทันกว่าเดิม”</em>
         </section>
 
-        <p class="sample-banner"><img src="/Alert.svg" alt="">ข้อมูลบนแดชบอร์ดนี้เป็นข้อมูลตัวอย่างสำหรับการออกแบบ
+        <p class="sample-banner"><img src="/icons/Alert.svg" alt="">ข้อมูลบนแดชบอร์ดนี้เป็นข้อมูลตัวอย่างสำหรับการออกแบบ
           ยังไม่ใช่สถานการณ์ปัจจุบัน</p>
 
         <section class="summary" aria-label="สรุปสถานะระบบ">
@@ -58,7 +58,7 @@ const quickAction = (label) => { label === 'ตรวจสอบเหตุก
           <section class="main-grid">
             <article class="panel map-panel">
               <header>
-                <h2><img src="/Map.svg" alt="">เหตุการณ์ล่าสุดบนแผนที่</h2><button type="button"
+                <h2><img src="/icons/Map.svg" alt="">เหตุการณ์ล่าสุดบนแผนที่</h2><button type="button"
                   @click="quickAction('เหตุการณ์ทั้งหมด')">ดูทั้งหมด</button>
               </header>
               <div class="map" aria-label="แผนที่ภาพรวมเชียงใหม่ พร้อมตำแหน่งเหตุการณ์ตัวอย่าง">
@@ -70,8 +70,8 @@ const quickAction = (label) => { label === 'ตรวจสอบเหตุก
                   :class="`marker marker--${marker[2]} marker--${marker[3]}`" :aria-label="marker[0]"
                   @click="notice = `เลือกเหตุการณ์: ${marker[0]}`"><img :src="marker[1]" alt=""></button>
                 <aside class="legend"><strong>ชั้นข้อมูลตัวอย่าง</strong><span><i
-                      class="you" />ตำแหน่งตัวอย่าง</span><span><img src="/Fire.svg" alt="">อัคคีภัย</span><span><img
-                      src="/Flood.svg" alt="">น้ำท่วม</span><span><img src="/Roadblock.svg" alt="">อุบัติเหตุ</span>
+                      class="you" />ตำแหน่งตัวอย่าง</span><span><img src="/icons/Fire.svg" alt="">อัคคีภัย</span><span><img
+                      src="/icons/Flood.svg" alt="">น้ำท่วม</span><span><img src="/icons/Roadblock.svg" alt="">อุบัติเหตุ</span>
                 </aside>
                 <small class="scale"><i />0&nbsp;&nbsp;&nbsp;&nbsp; 5 กม.</small>
               </div>
@@ -80,7 +80,7 @@ const quickAction = (label) => { label === 'ตรวจสอบเหตุก
             <div class="side-stack">
               <article class="panel chart-panel">
                 <header>
-                  <h2><img src="/Chart.svg" alt="">สถิติเหตุการณ์</h2><button class="period" type="button">7
+                  <h2><img src="/icons/Chart.svg" alt="">สถิติเหตุการณ์</h2><button class="period" type="button">7
                     วันที่ผ่านมา
                     ⌄</button>
                 </header>
@@ -118,7 +118,7 @@ const quickAction = (label) => { label === 'ตรวจสอบเหตุก
                 </ul>
               </article>
               <article class="panel quick">
-                <h2><img src="/Help.svg" alt="">งานด่วน</h2><button
+                <h2><img src="/icons/Help.svg" alt="">งานด่วน</h2><button
                   v-for="action in ['ตรวจสอบเหตุการณ์', 'จัดการคำขอความช่วยเหลือ', 'ติดตามผู้ใช้งาน', 'จัดการกิจกรรม', 'แก้ไขคู่มือความปลอดภัย']"
                   :key="action" type="button" @click="quickAction(action)">{{ action }}</button>
               </article>
@@ -128,7 +128,7 @@ const quickAction = (label) => { label === 'ตรวจสอบเหตุก
           <section class="tables">
             <article class="panel data">
               <header>
-                <h2><img src="/Report.svg" alt="">เหตุการณ์ล่าสุด</h2><button type="button"
+                <h2><img src="/icons/Report.svg" alt="">เหตุการณ์ล่าสุด</h2><button type="button"
                   @click="quickAction('เหตุการณ์ทั้งหมด')">ดูทั้งหมด</button>
               </header>
               <div>
@@ -162,7 +162,7 @@ const quickAction = (label) => { label === 'ตรวจสอบเหตุก
             </article>
             <article class="panel data">
               <header>
-                <h2><img src="/Help.svg" alt="">คำขอความช่วยเหลือล่าสุด</h2><button type="button"
+                <h2><img src="/icons/Help.svg" alt="">คำขอความช่วยเหลือล่าสุด</h2><button type="button"
                   @click="quickAction('คำขอความช่วยเหลือทั้งหมด')">ดูทั้งหมด</button>
               </header>
               <div>
@@ -192,14 +192,14 @@ const quickAction = (label) => { label === 'ตรวจสอบเหตุก
             </article>
             <article class="panel community">
               <header>
-                <h2><img src="/Users.svg" alt="">ภาพรวมชุมชน</h2><button type="button"
+                <h2><img src="/icons/Users.svg" alt="">ภาพรวมชุมชน</h2><button type="button"
                   @click="quickAction('ภาพรวมชุมชน')">รายละเอียด</button>
               </header>
               <section>
-                <div><img src="/Users.svg" alt=""><strong>12,482</strong><span>ผู้ใช้ทั้งหมด</span></div>
-                <div><img src="/Selected.svg" alt=""><strong>8,320</strong><span>ผู้ใช้ที่เชื่อถือได้</span></div>
-                <div><img src="/Users.svg" alt=""><strong>1,420</strong><span>กำลังติดตาม</span></div>
-                <div><img src="/Warning-Error.svg" alt=""><strong>320</strong><span>ความเสี่ยงสูง</span></div>
+                <div><img src="/icons/Users.svg" alt=""><strong>12,482</strong><span>ผู้ใช้ทั้งหมด</span></div>
+                <div><img src="/icons/Selected.svg" alt=""><strong>8,320</strong><span>ผู้ใช้ที่เชื่อถือได้</span></div>
+                <div><img src="/icons/Users.svg" alt=""><strong>1,420</strong><span>กำลังติดตาม</span></div>
+                <div><img src="/icons/Warning-Error.svg" alt=""><strong>320</strong><span>ความเสี่ยงสูง</span></div>
               </section>
             </article>
           </section>

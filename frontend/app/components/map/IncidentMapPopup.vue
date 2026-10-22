@@ -32,12 +32,12 @@ const previewText = (incident) => String(incident?.description || '').trim()
     >
       <div class="incident-map-popup__media" :class="{ 'incident-map-popup__media--empty': !incident.imageUrl }">
         <img v-if="incident.imageUrl" :src="incident.imageUrl" :alt="incident.title" />
-        <img v-else :src="incident.iconUrl || '/Alert.svg'" alt="" />
+        <img v-else :src="incident.iconUrl || '/icons/Alert.svg'" alt="" />
       </div>
 
       <div class="incident-map-popup__content">
         <p class="incident-map-popup__category">
-          <img :src="incident.iconUrl || '/Alert.svg'" alt="" />
+          <img :src="incident.iconUrl || '/icons/Alert.svg'" alt="" />
           {{ incident.category || 'เหตุการณ์' }}
         </p>
         <h2 :title="previewText(incident)">{{ previewText(incident) }}</h2>
