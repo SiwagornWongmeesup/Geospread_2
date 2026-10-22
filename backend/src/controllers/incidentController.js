@@ -66,24 +66,6 @@ const getPublicMapItems = async (req, res, next) => {
     }
 };
 
-const getPublicIncidentDetail = async (req, res, next) => {
-    try {
-        const incident = await incidentService.getPublicIncidentDetail(req.params.incidentId);
-        res.json({ success: true, data: incident });
-    } catch (error) {
-        next(error);
-    }
-};
-
-const getPublicPendingReportDetail = async (req, res, next) => {
-    try {
-        const report = await incidentService.getPublicPendingReportDetail(req.params.reportId);
-        res.json({ success: true, data: report });
-    } catch (error) {
-        next(error);
-    }
-};
-
 const reportFalseIncident = async (req, res, next) => {
     try {
         const result = await incidentService.reportFalseIncident({
@@ -181,8 +163,6 @@ module.exports = {
     getIncidentTypeCatalog,
     getReportTypeSuggestionCache,
     getPublicMapItems,
-    getPublicIncidentDetail,
-    getPublicPendingReportDetail,
     reportFalseIncident,
     getAdminReviewQueue,
     reviewReportCandidate,

@@ -39,10 +39,4 @@ const createHelpRequestValidator = [
 
 module.exports = {
     createHelpRequestValidator,
-    helpRequestDetailValidator: [
-        param('helpRequestId')
-            .isInt({ min: 1 }).withMessage('รหัสคำขอความช่วยเหลือไม่ถูกต้อง')
-            .toInt(),
-        validateRequest,
-    ],
 }

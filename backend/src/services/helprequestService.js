@@ -47,21 +47,9 @@ const getActiveHelpRequestsService = async () => {
     return helpRequestRepository.getActiveHelpRequests();
 }
 
-const getPublicHelpRequestDetailService = async (helpRequestId) => {
-    const normalizedId = Number(helpRequestId);
-    if (!Number.isInteger(normalizedId) || normalizedId <= 0) {
-        throw new AppError('รหัสคำขอความช่วยเหลือไม่ถูกต้อง', 400);
-    }
-
-    const helpRequest = await helpRequestRepository.getPublicHelpRequestDetail(normalizedId);
-    if (!helpRequest) throw new AppError('ไม่พบคำขอความช่วยเหลือที่ต้องการ', 404);
-    return helpRequest;
-};
-
 module.exports = {
     createHelpRequestService,
     getActiveHelpRequestsService,
-    getPublicHelpRequestDetailService,
 }
 
 

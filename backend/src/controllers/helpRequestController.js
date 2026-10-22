@@ -35,17 +35,7 @@ const getActiveHelpRequests = async (req, res, next) => {
     }
 };
 
-const getPublicHelpRequestDetail = async (req, res, next) => {
-    try {
-        const helpRequest = await helpRequestService.getPublicHelpRequestDetailService(req.params.helpRequestId);
-        res.status(200).json({ success: true, data: helpRequest });
-    } catch (err) {
-        next(err);
-    }
-};
-
 module.exports = {
     createHelpRequest,
     getActiveHelpRequests,
-    getPublicHelpRequestDetail,
 }

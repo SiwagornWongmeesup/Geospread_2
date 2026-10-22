@@ -4,7 +4,6 @@ const helpRequestController = require('../controllers/helpRequestController');
 const authMiddleware = require('../middlewares/authMiddleware');
 const {
     createHelpRequestValidator,
-    helpRequestDetailValidator,
 } = require('../validators/helpRequestValidator');
 
 router.post('/',
@@ -14,10 +13,5 @@ router.post('/',
 
 router.get('/map',
     helpRequestController.getActiveHelpRequests);
-
-router.get('/:helpRequestId',
-    helpRequestDetailValidator,
-    helpRequestController.getPublicHelpRequestDetail);
-
 
 module.exports = router;

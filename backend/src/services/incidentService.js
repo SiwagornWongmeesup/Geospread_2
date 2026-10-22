@@ -193,28 +193,6 @@ const getReportTypeSuggestionCache = async () => {
 
 const getPublicMapItems = async () => incidentRepository.findPublicMapItems();
 
-const getPublicIncidentDetail = async (incidentId) => {
-    const normalizedIncidentId = Number(incidentId);
-    if (!Number.isInteger(normalizedIncidentId) || normalizedIncidentId <= 0) {
-        throw new AppError('รหัสเหตุการณ์ไม่ถูกต้อง', 400);
-    }
-
-    const incident = await incidentRepository.findPublicIncidentDetail(normalizedIncidentId);
-    if (!incident) throw new AppError('ไม่พบเหตุการณ์ที่ต้องการ', 404);
-    return incident;
-};
-
-const getPublicPendingReportDetail = async (reportId) => {
-    const normalizedReportId = Number(reportId);
-    if (!Number.isInteger(normalizedReportId) || normalizedReportId <= 0) {
-        throw new AppError('รหัสรายงานไม่ถูกต้อง', 400);
-    }
-
-    const report = await incidentRepository.findPublicPendingReportDetail(normalizedReportId);
-    if (!report) throw new AppError('ไม่พบรายงานที่ต้องการ', 404);
-    return report;
-};
-
 const reportFalseIncident = async ({ incidentId, userId }) => {
     const normalizedIncidentId = Number(incidentId);
     if (!Number.isInteger(normalizedIncidentId) || normalizedIncidentId <= 0) {
@@ -326,8 +304,6 @@ module.exports = {
     getIncidentTypeCatalog,
     getReportTypeSuggestionCache,
     getPublicMapItems,
-    getPublicIncidentDetail,
-    getPublicPendingReportDetail,
     reportFalseIncident,
     getAdminReviewQueue,
     reviewReportCandidate,

@@ -19,7 +19,7 @@
       <NuxtLink
         v-for="incident in incidents.slice(0, 4)"
         :key="incident.id"
-        :to="incidentDetailPath(incident)"
+        to="/incidents"
         class="incident-card"
         :class="{ 'incident-card--selected': selectedIncidentId === incident.id }"
         :aria-label="`เปิดเหตุการณ์ ${incident.title || 'ที่เลือก'}`"
@@ -67,7 +67,6 @@ const previewText = (incident) => String(incident?.description || '').trim()
   || incident?.title
   || 'ยังไม่มีรายละเอียดเพิ่มเติม'
 
-const incidentDetailPath = (incident) => `/incidents/${incident.sourceId}`
 </script>
 
 <style scoped>

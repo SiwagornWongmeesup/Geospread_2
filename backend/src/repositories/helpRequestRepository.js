@@ -97,31 +97,8 @@ const getActiveHelpRequests = async () => {
     return result.rows
 }
 
-const getPublicHelpRequestDetail = async (helpRequestId) => {
-    const result = await db.query(
-        `SELECT
-            help_request_id,
-            COALESCE(NULLIF(custom_help_type, ''), help_type, 'คำขอความช่วยเหลือ') AS title,
-            COALESCE(NULLIF(custom_help_type, ''), help_type, 'คำขอความช่วยเหลือ') AS type_name,
-            description,
-            people_count,
-            request_status,
-            expires_at,
-            created_at,
-            ST_Y(help_location) AS lat,
-            ST_X(help_location) AS lng
-         FROM tb_help_requests
-         WHERE help_request_id = $1
-           AND request_status = 'pending'
-           AND expires_at > NOW()`,
-        [helpRequestId],
-    );
-    return result.rows[0] ?? null;
-}
-
 module.exports = {
     createHelpRequest,
     createHelpRequestUpdate,
     getActiveHelpRequests,
-    getPublicHelpRequestDetail,
 };

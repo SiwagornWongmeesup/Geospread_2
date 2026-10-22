@@ -1,4 +1,5 @@
 import { getIncidentIconUrl } from '~/composables/useIncidentIcon'
+import { getHelpRequestIcon } from '~/composables/useHelpRequestIcon'
 
 const defaultMapCenter = [100.5018, 13.7563]
 const pendingMarkerColor = '#e8333c'
@@ -105,7 +106,6 @@ const normalizeIncident = (incident) => {
   return {
     id: `incident-${incident.incident_id}`,
     kind: 'incident',
-    sourceId: incident.incident_id,
     title: withoutStatusSuffix(incident.title, incident.type_name || 'เหตุการณ์'),
     description: incident.description,
     category: hasFinalType ? incident.type_name || 'เหตุการณ์' : 'รอตรวจสอบ',
@@ -137,7 +137,6 @@ const normalizeIncident = (incident) => {
 const normalizePendingReport = (report) => ({
   id: `report-${report.report_id}`,
   kind: 'pending_report',
-  sourceId: report.report_id,
   title: report.description || 'รายงานรอตรวจสอบ',
   description: report.description,
   category: 'รอตรวจสอบ',
@@ -163,7 +162,6 @@ const normalizePendingReport = (report) => ({
 const normalizeHelpRequest = (helpRequest) => ({
   id: `help-${helpRequest.help_request_id}`,
   kind: 'help_request',
-  sourceId: helpRequest.help_request_id,
   title: helpRequest.custom_help_type || helpRequest.help_type || 'คำขอความช่วยเหลือ',
   category: 'ขอความช่วยเหลือ',
   statusLabel: 'กำลังรอความช่วยเหลือ',
@@ -178,7 +176,8 @@ const normalizeHelpRequest = (helpRequest) => ({
   lat: toNumber(helpRequest.lat),
   lng: toNumber(helpRequest.lng),
   markerColor: '#f97316',
-  iconUrl: '/Life-saving.svg',
+  // "other" intentionally falls back to the existing generic help icon.
+  iconUrl: getHelpRequestIcon(helpRequest.help_type),
   imageUrl: null,
   reporterLabel: 'ชุมชน',
   location: formatCoordinate(helpRequest.lat, helpRequest.lng),

@@ -23,7 +23,8 @@ import AppBottomNav from '~/components/mobile/AppBottomNav.vue'
   flex-direction: column;
   background-color: #f8fafc;
   overflow: hidden;
-  /* เว้นพื้นที่ด้านล่างสำหรับ Bottom Nav */ padding-bottom: 64px;
+  /* เว้นพื้นที่ด้านล่างสำหรับ Bottom Nav และ safe area ของอุปกรณ์ */
+  padding-bottom: calc(4.45rem + env(safe-area-inset-bottom));
   box-sizing: border-box;
 }
 

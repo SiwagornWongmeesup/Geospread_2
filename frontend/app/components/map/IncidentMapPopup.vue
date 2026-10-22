@@ -12,12 +12,6 @@ const previewText = (incident) => String(incident?.description || '').trim()
   || incident?.title
   || 'ยังไม่มีรายละเอียดเพิ่มเติม'
 
-const incidentDetailPath = (incident) => {
-  if (incident?.kind === 'incident') return `/incidents/${incident.sourceId}`
-  if (incident?.kind === 'pending_report') return `/incidents/report-${incident.sourceId}`
-  if (incident?.kind === 'help_request') return `/incidents/help-${incident.sourceId}`
-  return '/'
-}
 </script>
 
 <template>
@@ -33,7 +27,7 @@ const incidentDetailPath = (incident) => {
 
     <NuxtLink
       class="incident-map-popup__open"
-      :to="incidentDetailPath(incident)"
+      to="/incidents"
       :aria-label="`เปิดเหตุการณ์ ${incident.title || 'ที่เลือก'}`"
     >
       <div class="incident-map-popup__media" :class="{ 'incident-map-popup__media--empty': !incident.imageUrl }">
