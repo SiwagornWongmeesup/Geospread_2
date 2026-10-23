@@ -7,9 +7,12 @@
         :show-geolocate-control="false"
         :map-items="publicMapItems"
         :selected-item-id="selectedIncident?.id"
+        :selected-item="selectedIncidentPreview"
+        :popup-padding="{ top: 280, right: 32, bottom: 48, left: 32 }"
         :reporter-location="userLocation"
         class="desktop-home__map-canvas"
         @select-item="selectIncident"
+        @close-popup="clearSelectedIncident"
       />
       <MapLocationSearch
         :is-locating="isLocating"
@@ -21,11 +24,6 @@
       <div v-if="mapError" class="desktop-home__map-status">
         {{ mapError }}
       </div>
-      <IncidentMapPopup
-        class="desktop-home__map-popup"
-        :incident="selectedIncidentPreview"
-        @close="clearSelectedIncident"
-      />
     </section>
 
     <NearbyIncidents
@@ -46,7 +44,6 @@
 <script setup>
 import { computed, ref } from 'vue'
 import MapboxMap from '~/components/map/MapboxMap.vue'
-import IncidentMapPopup from '~/components/map/IncidentMapPopup.vue'
 import HelpRequests from '~/components/dashboard/HelpRequests.vue'
 import NearbyIncidents from '~/components/dashboard/NearbyIncidents.vue'
 import RecentActivity from '~/components/dashboard/RecentActivity.vue'
@@ -153,14 +150,6 @@ onMounted(() => {
   font-size: 0.78rem;
   font-weight: 700;
   box-shadow: 0 4px 12px rgb(26 58 108 / 12%);
-}
-
-.desktop-home__map-popup {
-  position: absolute;
-  z-index: 2;
-  bottom: 1rem;
-  left: 1rem;
-  max-width: calc(100% - 2rem);
 }
 
 .desktop-home__lower-grid {

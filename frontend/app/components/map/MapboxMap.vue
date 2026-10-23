@@ -3,9 +3,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { createApp, ref, onMounted, onUnmounted, watch } from 'vue'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
+import IncidentMapPopup from './IncidentMapPopup.vue'
 
 const config = useRuntimeConfig()
 const mapContainer = ref(null)
@@ -15,6 +16,9 @@ let markers = []
 let editableMarker = null
 let reporterMarker = null
 let resizeObserver = null
+let incidentPopup = null
+let incidentPopupApp = null
+let notifyParentOnPopupClose = false
 
 const radiusSourceId = 'incident-radius-source'
 const radiusFillLayerId = 'incident-radius-fill'
@@ -27,12 +31,17 @@ const props = defineProps({
   showGeolocateControl: { type: Boolean, default: true },
   mapItems: { type: Array, default: () => [] },
   selectedItemId: { type: String, default: null },
+  selectedItem: { type: Object, default: null },
+  popupPadding: {
+    type: Object,
+    default: () => ({ top: 240, right: 32, bottom: 48, left: 32 }),
+  },
   editableLocation: { type: Object, default: null },
   reporterLocation: { type: Object, default: null },
   allowLocationSelection: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['select-item', 'location-select'])
+const emit = defineEmits(['select-item', 'location-select', 'close-popup'])
 
 const toNumber = (value) => {
   const number = Number(value)
@@ -43,6 +52,74 @@ const toLngLat = (item) => {
   const lng = toNumber(item?.lng)
   const lat = toNumber(item?.lat)
   return lng === null || lat === null ? null : [lng, lat]
+}
+
+const getPopupPadding = () => ({
+  top: Number(props.popupPadding?.top) || 0,
+  right: Number(props.popupPadding?.right) || 0,
+  bottom: Number(props.popupPadding?.bottom) || 0,
+  left: Number(props.popupPadding?.left) || 0,
+})
+
+const clearIncidentPopup = ({ notifyParent = false } = {}) => {
+  if (!incidentPopup) return
+
+  notifyParentOnPopupClose = notifyParent
+  incidentPopup.remove()
+}
+
+const renderIncidentPopup = () => {
+  if (!map || !isMapLoaded) return
+
+  const item = props.selectedItem
+  const lngLat = toLngLat(item)
+  if (!item || !lngLat) {
+    clearIncidentPopup()
+    return
+  }
+
+  clearIncidentPopup()
+
+  const popupContent = document.createElement('div')
+  const popup = new mapboxgl.Popup({
+    anchor: 'bottom',
+    closeButton: false,
+    closeOnClick: false,
+    closeOnMove: false,
+    focusAfterOpen: false,
+    maxWidth: 'none',
+    offset: 0,
+    className: 'geospread-incident-popup',
+  })
+
+  const popupApp = createApp(IncidentMapPopup, {
+    incident: item,
+    onClose: () => clearIncidentPopup({ notifyParent: true }),
+  })
+
+  incidentPopup = popup
+  incidentPopupApp = popupApp
+  popupApp.mount(popupContent)
+
+  popup.on('close', () => {
+    if (popup !== incidentPopup) {
+      popupApp.unmount()
+      return
+    }
+
+    const shouldNotifyParent = notifyParentOnPopupClose
+    notifyParentOnPopupClose = false
+    incidentPopup = null
+    incidentPopupApp = null
+    popupApp.unmount()
+
+    if (shouldNotifyParent) emit('close-popup')
+  })
+
+  popup
+    .setLngLat(lngLat)
+    .setDOMContent(popupContent)
+    .addTo(map)
 }
 
 const createRadiusPolygon = (center, radiusMeters, points = 64) => {
@@ -379,6 +456,7 @@ onMounted(() => {
       isMapLoaded = true
       renderMapItems()
       renderReportLocations()
+      renderIncidentPopup()
       if (props.allowLocationSelection) map.on('click', (event) => emitLocation(event.lngLat))
     })
 
@@ -392,6 +470,9 @@ onMounted(() => {
 
 onUnmounted(() => {
   clearMarkers()
+  clearIncidentPopup()
+  incidentPopupApp?.unmount()
+  incidentPopupApp = null
   editableMarker?.remove()
   reporterMarker?.remove()
   resizeObserver?.disconnect()
@@ -404,10 +485,10 @@ watch(
   [() => props.center, () => props.zoom],
   ([newCenter, newZoom]) => {
     if (map && Array.isArray(newCenter)) {
-      //flyToเลื่อน
       map.flyTo({
         center: newCenter,
         zoom: newZoom,
+        padding: props.selectedItem ? getPopupPadding() : { top: 0, right: 0, bottom: 0, left: 0 },
         duration: 900,
         essential: true,
         easing: (t) => t * (2 - t),
@@ -423,6 +504,10 @@ watch(() => props.mapItems, () => {
 watch(() => props.selectedItemId, () => {
   renderRadiusLayer()
 })
+
+watch(() => props.selectedItem, () => {
+  renderIncidentPopup()
+}, { deep: true })
 
 watch(() => [props.editableLocation, props.reporterLocation], () => {
   renderReportLocations()
@@ -545,5 +630,9 @@ watch(() => [props.editableLocation, props.reporterLocation], () => {
 :global(.report-map-marker--incident) { width:2.35rem; height:2.35rem; border-radius:50% 50% 50% 0; background:#e8343e; transform:rotate(-45deg) }
 :global(.report-map-marker--incident::after) { position:absolute; inset:.48rem; border-radius:50%; background:#fff; content:'' }
 :global(.report-map-marker--reporter) { background:#1479ef }
+
+:global(.geospread-incident-popup) { z-index:4; }
+:global(.geospread-incident-popup .mapboxgl-popup-content) { padding:1rem; border-radius:1rem; background:#fff; box-shadow:0 .85rem 2rem rgb(15 41 104 / 22%); }
+:global(.geospread-incident-popup .mapboxgl-popup-tip) { border-top-color:#fff; }
 
 </style>
