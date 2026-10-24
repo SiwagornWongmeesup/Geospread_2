@@ -43,6 +43,11 @@ const incidentSummary = (incident) => {
     <h2 :title="incidentTitle(incident)">{{ incidentTitle(incident) }}</h2>
     <p class="incident-map-popup__summary">{{ incidentSummary(incident) }}</p>
 
+    <p v-if="incident.ownerHasImage" class="incident-map-popup__attachment">
+      <img src="/icons/Photo.svg" alt="" aria-hidden="true" />
+      ผู้แจ้งคนแรกแนบรูปภาพ
+    </p>
+
     <p class="incident-map-popup__location">
       <img src="/icons/Location.svg" alt="" aria-hidden="true" />
       พื้นที่ที่รายงาน
@@ -158,6 +163,22 @@ const incidentSummary = (incident) => {
   line-height: 1.42;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+}
+.incident-map-popup__attachment {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 0;
+  color: #2d66a7;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+.incident-map-popup__attachment img {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  object-fit: contain;
 }
 .incident-map-popup__location,
 .incident-map-popup__meta {

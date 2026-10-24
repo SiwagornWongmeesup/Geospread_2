@@ -38,7 +38,7 @@ const formatImpactRadius = (radiusMeters) => {
   return `${Math.round(radius)} ม.`
 }
 
-const formatDistanceFromUser = (lat, lng, userLocation) => {
+const getDistanceInMeters = (lat, lng, userLocation) => {
   const incidentLat = toNumber(lat)
   const incidentLng = toNumber(lng)
   const userLat = toNumber(userLocation?.lat)
@@ -51,10 +51,20 @@ const formatDistanceFromUser = (lat, lng, userLocation) => {
   const longitudeDifference = toRadians(incidentLng - userLng)
   const distanceFactor = Math.sin(latitudeDifference / 2) ** 2
     + Math.cos(toRadians(userLat)) * Math.cos(toRadians(incidentLat)) * Math.sin(longitudeDifference / 2) ** 2
-  const distanceMeters = 6_371_000 * 2 * Math.atan2(Math.sqrt(distanceFactor), Math.sqrt(1 - distanceFactor))
+
+  return 6_371_000 * 2 * Math.atan2(Math.sqrt(distanceFactor), Math.sqrt(1 - distanceFactor))
+}
+
+const formatDistanceFromMeters = (distanceMeters) => {
+  if (distanceMeters === null) return null
 
   if (distanceMeters < 1000) return `${Math.max(10, Math.round(distanceMeters / 10) * 10)} ม. จากคุณ`
   return `${(distanceMeters / 1000).toFixed(distanceMeters < 10_000 ? 1 : 0)} กม. จากคุณ`
+}
+
+const formatDistanceFromUser = (lat, lng, userLocation) => {
+  const distanceMeters = getDistanceInMeters(lat, lng, userLocation)
+  return formatDistanceFromMeters(distanceMeters)
 }
 
 const toneFromColor = (color, fallback = 'blue') => {
@@ -126,6 +136,9 @@ const normalizeIncident = (incident) => {
     radiusLabel: formatImpactRadius(hasFinalType ? incident.radius_m : null),
     reportCount,
     imageUrl: getFirstImageUrl(incident),
+    originalReportId: incident.original_report_id ?? null,
+    originalReporterName: incident.original_reporter_name || null,
+    ownerHasImage: Boolean(incident.owner_has_image),
     reporterLabel: incident.reporter_name || 'ชุมชน',
     location: formatCoordinate(incident.lat, incident.lng),
     areaLabel: incident.location_name || incident.area_name || incident.province_name || 'พื้นที่ที่รายงาน',
@@ -254,13 +267,35 @@ export const useHomeDashboard = () => {
     }
   }
 
-  const nearbyIncidentCards = computed(() => publicMapItems.value
-    .filter((item) => item.kind === 'incident')
-    .slice(0, 6)
-    .map((item) => ({
-      ...item,
-      distanceFromUserLabel: formatDistanceFromUser(item.lat, item.lng, userLocation.value),
-    })))
+  const nearbyIncidentCards = computed(() => {
+    const cards = publicMapItems.value
+      .filter((item) => item.kind === 'incident')
+      .map((item) => {
+        const distanceMeters = getDistanceInMeters(
+          item.lat,
+          item.lng,
+          userLocation.value,
+        )
+
+        return {
+          ...item,
+          distanceMeters,
+          distanceFromUserLabel: formatDistanceFromMeters(distanceMeters),
+        }
+      })
+
+    const hasUserLocation = cards.some((item) => item.distanceMeters !== null)
+
+    if (hasUserLocation) {
+      cards.sort((firstCard, secondCard) => {
+        const firstDistance = firstCard.distanceMeters ?? Number.POSITIVE_INFINITY
+        const secondDistance = secondCard.distanceMeters ?? Number.POSITIVE_INFINITY
+        return firstDistance - secondDistance
+      })
+    }
+
+    return cards.slice(0, 2)
+  })
 
   const selectedIncidentPreview = computed(() => {
     if (!selectedIncident.value) return null

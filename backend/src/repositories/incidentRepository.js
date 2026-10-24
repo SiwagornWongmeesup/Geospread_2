@@ -1,39 +1,45 @@
-const db = require('../../db/db');
+const db = require("../../db/db");
 
 const configuredPositiveInteger = (value, fallback) => {
-    const parsed = Number(value);
-    return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 };
 
 // เก็บเป็น config เพื่อปรับหลัง MVP ได้ โดยไม่ทำให้ matching มีหลายระดับหรือมีคะแนน
 const matchingConfig = {
-    distanceMeters: configuredPositiveInteger(process.env.INCIDENT_MATCH_DISTANCE_M, 300),
-    timeMinutes: configuredPositiveInteger(process.env.INCIDENT_MATCH_TIME_MINUTES, 30),
+  distanceMeters: configuredPositiveInteger(
+    process.env.INCIDENT_MATCH_DISTANCE_M,
+    300,
+  ),
+  timeMinutes: configuredPositiveInteger(
+    process.env.INCIDENT_MATCH_TIME_MINUTES,
+    30,
+  ),
 };
 
 // บันทึกข้อมูลดิบที่ผู้ใช้รายงาน โดยไม่บังคับ Type หรือ Severity
 const createIncidentReport = async (reportData, queryable = db) => {
-    const {
-        user_id,
-        reporter_trust_score = 100,
-        incident_id,
-        description,
-        user_selected_type_id = null,
-        system_suggested_type_id = null,
-        final_type_id = null,
-        type_status = final_type_id ? 'confirmed' : 'pending',
-        report_status = 'pending',
-        lat,
-        lng,
-        incident_source = 'unknown',
-        reporter_lat = null,
-        reporter_lng = null,
-        reporter_accuracy_m = null,
-        reporter_captured_at = null
-    } = reportData;
+  const {
+    user_id,
+    reporter_trust_score = 100,
+    incident_id,
+    description,
+    user_selected_type_id = null,
+    system_suggested_type_id = null,
+    final_type_id = null,
+    type_status = final_type_id ? "confirmed" : "pending",
+    report_status = "pending",
+    lat,
+    lng,
+    incident_source = "unknown",
+    reporter_lat = null,
+    reporter_lng = null,
+    reporter_accuracy_m = null,
+    reporter_captured_at = null,
+  } = reportData;
 
-    const result = await queryable.query(
-        `INSERT INTO tb_incident_reports (
+  const result = await queryable.query(
+    `INSERT INTO tb_incident_reports (
             user_id, reporter_trust_score, incident_id, description,
             user_selected_type_id, system_suggested_type_id, final_type_id,
             type_status, report_status, incident_location, incident_location_source,
@@ -71,43 +77,43 @@ const createIncidentReport = async (reportData, queryable = db) => {
             reporter_captured_at,
             distance_from_reporter,
             created_at`,
-        [
-            user_id,
-            reporter_trust_score,
-            incident_id,
-            description,
-            user_selected_type_id,
-            system_suggested_type_id,
-            final_type_id,
-            type_status,
-            report_status,
-            lng,
-            lat,
-            incident_source,
-            reporter_lng,
-            reporter_lat,
-            reporter_accuracy_m,
-            reporter_captured_at
-        ]
-    );
+    [
+      user_id,
+      reporter_trust_score,
+      incident_id,
+      description,
+      user_selected_type_id,
+      system_suggested_type_id,
+      final_type_id,
+      type_status,
+      report_status,
+      lng,
+      lat,
+      incident_source,
+      reporter_lng,
+      reporter_lat,
+      reporter_accuracy_m,
+      reporter_captured_at,
+    ],
+  );
 
-    return result.rows[0];
+  return result.rows[0];
 };
 
 const createInitialIncident = async (incidentData, queryable = db) => {
-    const {
-        final_type_id = null,
-        title,
-        description,
-        lat,
-        lng,
-        display_mode,
-        radius_m = null,
-        report_count = 1,
-    } = incidentData;
+  const {
+    final_type_id = null,
+    title,
+    description,
+    lat,
+    lng,
+    display_mode,
+    radius_m = null,
+    report_count = 1,
+  } = incidentData;
 
-    const result = await queryable.query(
-        `INSERT INTO tb_incidents (
+  const result = await queryable.query(
+    `INSERT INTO tb_incidents (
             final_type_id, title, description, incident_location,
             display_mode, radius_m, report_count
         )
@@ -132,52 +138,64 @@ const createInitialIncident = async (incidentData, queryable = db) => {
             first_reported_at,
             last_reported_at,
             created_at`,
-        [final_type_id, title, description, lng, lat, display_mode, radius_m, report_count],
-    );
+    [
+      final_type_id,
+      title,
+      description,
+      lng,
+      lat,
+      display_mode,
+      radius_m,
+      report_count,
+    ],
+  );
 
-    return result.rows[0];
+  return result.rows[0];
 };
 
 const getReporterTrustScore = async (userId, queryable = db) => {
-    const result = await queryable.query(
-        `SELECT COALESCE(trust_score, 100) AS trust_score
+  const result = await queryable.query(
+    `SELECT COALESCE(trust_score, 100) AS trust_score
          FROM tb_users
          WHERE id = $1`,
-        [userId],
-    );
+    [userId],
+  );
 
-    return result.rows[0]?.trust_score ?? 100;
+  return result.rows[0]?.trust_score ?? 100;
 };
 
 const findActiveIncidentById = async (incidentId) => {
-    const result = await db.query(
-        `SELECT incident_id
+  const result = await db.query(
+    `SELECT incident_id
          FROM tb_incidents
          WHERE incident_id = $1
            AND incident_status = 'active'`,
-        [incidentId],
-    );
+    [incidentId],
+  );
 
-    return result.rows[0] ?? null;
+  return result.rows[0] ?? null;
 };
 
 const createFalseIncidentReport = async ({ incidentId, userId }) => {
-    const result = await db.query(
-        `INSERT INTO tb_incident_false_reports (incident_id, user_id)
+  const result = await db.query(
+    `INSERT INTO tb_incident_false_reports (incident_id, user_id)
          VALUES ($1, $2)
          ON CONFLICT (incident_id, user_id) DO NOTHING
          RETURNING false_report_id, incident_id, user_id, created_at`,
-        [incidentId, userId],
-    );
+    [incidentId, userId],
+  );
 
-    return result.rows[0] ?? null;
+  return result.rows[0] ?? null;
 };
 
 // referenceTime ทำให้การยืนยัน Type ภายหลังยังเทียบ "เวลาที่ Report ถูกส่ง" จริง ๆ
 // ไม่ใช่เวลาที่ Administrator มากดตรวจในภายหลัง
-const findActiveIncidentMatch = async ({ typeId, lat, lng, referenceTime = null }, queryable = db) => {
-    const result = await queryable.query(
-        `SELECT
+const findActiveIncidentMatch = async (
+  { typeId, lat, lng, referenceTime = null },
+  queryable = db,
+) => {
+  const result = await queryable.query(
+    `SELECT
             incident.incident_id,
             ROUND(ST_Distance(
                 incident.incident_location::geography,
@@ -200,15 +218,15 @@ const findActiveIncidentMatch = async ({ typeId, lat, lng, referenceTime = null 
             AND COALESCE($4::timestamp, CURRENT_TIMESTAMP) + INTERVAL '${matchingConfig.timeMinutes} minutes'
         ORDER BY distance_m ASC, time_difference_minutes ASC, incident.incident_id ASC
         LIMIT 1`,
-        [typeId, lng, lat, referenceTime],
-    );
+    [typeId, lng, lat, referenceTime],
+  );
 
-    return result.rows[0] ?? null;
+  return result.rows[0] ?? null;
 };
 
 const findNearbyActiveIncident = async ({ lat, lng }, queryable = db) => {
-    const result = await queryable.query(
-        `SELECT
+  const result = await queryable.query(
+    `SELECT
             incident.incident_id,
             ROUND(ST_Distance(
                 incident.incident_location::geography,
@@ -227,15 +245,15 @@ const findNearbyActiveIncident = async ({ lat, lng }, queryable = db) => {
           AND incident.last_reported_at >= CURRENT_TIMESTAMP - INTERVAL '${matchingConfig.timeMinutes} minutes'
         ORDER BY distance_m ASC, time_difference_minutes ASC, incident.incident_id ASC
         LIMIT 1`,
-        [lng, lat],
-    );
+    [lng, lat],
+  );
 
-    return result.rows[0] ?? null;
+  return result.rows[0] ?? null;
 };
 
 const updateIncidentForAutoMerge = async (incidentId, queryable = db) => {
-    const result = await queryable.query(
-        `UPDATE tb_incidents
+  const result = await queryable.query(
+    `UPDATE tb_incidents
          SET report_count = report_count + 1,
              last_reported_at = CURRENT_TIMESTAMP,
              updated_at = CURRENT_TIMESTAMP
@@ -258,15 +276,18 @@ const updateIncidentForAutoMerge = async (incidentId, queryable = db) => {
             first_reported_at,
             last_reported_at,
             created_at`,
-        [incidentId],
-    );
+    [incidentId],
+  );
 
-    return result.rows[0] ?? null;
+  return result.rows[0] ?? null;
 };
 
-const createReportCandidate = async ({ reportId, targetIncidentId, match }, queryable = db) => {
-    const result = await queryable.query(
-        `INSERT INTO tb_incident_report_candidates (
+const createReportCandidate = async (
+  { reportId, targetIncidentId, match },
+  queryable = db,
+) => {
+  const result = await queryable.query(
+    `INSERT INTO tb_incident_report_candidates (
             report_id, target_incident_id, distance_m, time_difference_minutes
         )
         VALUES ($1, $2, $3, $4)
@@ -278,20 +299,20 @@ const createReportCandidate = async ({ reportId, targetIncidentId, match }, quer
             time_difference_minutes,
             candidate_status,
             created_at`,
-        [
-            reportId,
-            targetIncidentId,
-            match.distance_m,
-            match.time_difference_minutes,
-        ],
-    );
+    [
+      reportId,
+      targetIncidentId,
+      match.distance_m,
+      match.time_difference_minutes,
+    ],
+  );
 
-    return result.rows[0];
+  return result.rows[0];
 };
 
 const findNearbyCandidateGroup = async ({ lat, lng }, queryable = db) => {
-    const result = await queryable.query(
-        `SELECT
+  const result = await queryable.query(
+    `SELECT
             candidate_group.candidate_group_id,
             ROUND(ST_Distance(
                 anchor_report.incident_location::geography,
@@ -313,15 +334,18 @@ const findNearbyCandidateGroup = async ({ lat, lng }, queryable = db) => {
            AND anchor_report.created_at >= CURRENT_TIMESTAMP - INTERVAL '${matchingConfig.timeMinutes} minutes'
          ORDER BY distance_m ASC, time_difference_minutes ASC, candidate_group.candidate_group_id ASC
          LIMIT 1`,
-        [lng, lat],
-    );
+    [lng, lat],
+  );
 
-    return result.rows[0] ?? null;
+  return result.rows[0] ?? null;
 };
 
-const findNearbyUngroupedUnclassifiedReport = async ({ reportId, lat, lng }, queryable = db) => {
-    const result = await queryable.query(
-        `SELECT
+const findNearbyUngroupedUnclassifiedReport = async (
+  { reportId, lat, lng },
+  queryable = db,
+) => {
+  const result = await queryable.query(
+    `SELECT
             report.report_id,
             ROUND(ST_Distance(
                 report.incident_location::geography,
@@ -345,43 +369,49 @@ const findNearbyUngroupedUnclassifiedReport = async ({ reportId, lat, lng }, que
            AND report.created_at >= CURRENT_TIMESTAMP - INTERVAL '${matchingConfig.timeMinutes} minutes'
          ORDER BY distance_m ASC, time_difference_minutes ASC, report.report_id ASC
          LIMIT 1`,
-        [reportId, lng, lat],
-    );
+    [reportId, lng, lat],
+  );
 
-    return result.rows[0] ?? null;
+  return result.rows[0] ?? null;
 };
 
-const createCandidateGroup = async ({ anchorReportId, reportId }, queryable = db) => {
-    const groupResult = await queryable.query(
-        `INSERT INTO tb_incident_candidate_groups (anchor_report_id)
+const createCandidateGroup = async (
+  { anchorReportId, reportId },
+  queryable = db,
+) => {
+  const groupResult = await queryable.query(
+    `INSERT INTO tb_incident_candidate_groups (anchor_report_id)
          VALUES ($1)
          RETURNING candidate_group_id, anchor_report_id, candidate_status, created_at`,
-        [anchorReportId],
-    );
-    const candidateGroup = groupResult.rows[0];
+    [anchorReportId],
+  );
+  const candidateGroup = groupResult.rows[0];
 
-    await queryable.query(
-        `INSERT INTO tb_incident_candidate_group_reports (candidate_group_id, report_id)
+  await queryable.query(
+    `INSERT INTO tb_incident_candidate_group_reports (candidate_group_id, report_id)
          VALUES ($1, $2), ($1, $3)`,
-        [candidateGroup.candidate_group_id, anchorReportId, reportId],
-    );
+    [candidateGroup.candidate_group_id, anchorReportId, reportId],
+  );
 
-    return candidateGroup;
+  return candidateGroup;
 };
 
-const addReportToCandidateGroup = async ({ candidateGroupId, reportId }, queryable = db) => {
-    await queryable.query(
-        `INSERT INTO tb_incident_candidate_group_reports (candidate_group_id, report_id)
+const addReportToCandidateGroup = async (
+  { candidateGroupId, reportId },
+  queryable = db,
+) => {
+  await queryable.query(
+    `INSERT INTO tb_incident_candidate_group_reports (candidate_group_id, report_id)
          VALUES ($1, $2)`,
-        [candidateGroupId, reportId],
-    );
-    return candidateGroupId;
+    [candidateGroupId, reportId],
+  );
+  return candidateGroupId;
 };
 
 const findPublicMapItems = async () => {
-    const [incidentsResult, pendingReportsResult] = await Promise.all([
-        db.query(
-            `SELECT
+  const [incidentsResult, pendingReportsResult] = await Promise.all([
+    db.query(
+      `SELECT
                 incident.incident_id,
                 incident.title,
                 incident.description,
@@ -399,7 +429,10 @@ const findPublicMapItems = async () => {
                 incident_type.icon_name,
                 incident_type.marker_color,
                 latest_report.reporter_name,
-                latest_report.image_url
+                latest_report.image_url,
+                original_report.report_id AS original_report_id,
+                original_report.reporter_name AS original_reporter_name,
+                original_report.owner_has_image
              FROM tb_incidents incident
              LEFT JOIN tb_incident_types incident_type ON incident_type.type_id = incident.final_type_id
              LEFT JOIN LATERAL (
@@ -419,11 +452,26 @@ const findPublicMapItems = async () => {
                 ORDER BY report.created_at DESC, report.report_id DESC
                 LIMIT 1
              ) latest_report ON TRUE
+            LEFT JOIN LATERAL (
+                SELECT report.report_id,
+                NULLIF(TRIM(CONCAT_WS(' ', reporter.name, reporter.lastname)), '') AS reporter_name,
+                EXISTS (
+                SELECT 1
+                FROM tb_incident_media media
+                WHERE media.report_id = report.report_id
+                    AND media.media_type = 'image'
+                ) AS owner_has_image
+                FROM tb_incident_reports AS report
+                LEFT JOIN tb_users reporter ON reporter.id = report.user_id
+                WHERE report.incident_id = incident.incident_id
+                ORDER BY report.created_at ASC, report.report_id ASC
+                LIMIT 1
+            ) original_report ON TRUE
              WHERE incident.incident_status = 'active'
              ORDER BY incident.last_reported_at DESC, incident.incident_id DESC`,
-        ),
-        db.query(
-            `SELECT
+    ),
+    db.query(
+      `SELECT
                 report.report_id,
                 report.description,
                 report.type_status,
@@ -446,13 +494,13 @@ const findPublicMapItems = async () => {
              WHERE report.incident_id IS NULL
                AND report.report_status = 'pending'
              ORDER BY report.created_at DESC, report.report_id DESC`,
-        ),
-    ]);
+    ),
+  ]);
 
-    return {
-        incidents: incidentsResult.rows,
-        pending_reports: pendingReportsResult.rows,
-    };
+  return {
+    incidents: incidentsResult.rows,
+    pending_reports: pendingReportsResult.rows,
+  };
 };
 
 const reportMediaJson = `COALESCE((
@@ -466,9 +514,10 @@ const reportMediaJson = `COALESCE((
 ), '[]'::json)`;
 
 const findAdminReviewQueue = async () => {
-    const [reportCandidatesResult, candidateGroupsResult, pendingReportsResult] = await Promise.all([
-        db.query(
-            `SELECT
+  const [reportCandidatesResult, candidateGroupsResult, pendingReportsResult] =
+    await Promise.all([
+      db.query(
+        `SELECT
                 candidate.candidate_id,
                 candidate.distance_m,
                 candidate.time_difference_minutes,
@@ -492,9 +541,9 @@ const findAdminReviewQueue = async () => {
              LEFT JOIN tb_incident_types target_type ON target_type.type_id = target.final_type_id
              WHERE candidate.candidate_status = 'pending'
              ORDER BY candidate.created_at DESC, candidate.candidate_id DESC`,
-        ),
-        db.query(
-            `SELECT
+      ),
+      db.query(
+        `SELECT
                 candidate_group.candidate_group_id,
                 candidate_group.anchor_report_id,
                 candidate_group.created_at,
@@ -516,9 +565,9 @@ const findAdminReviewQueue = async () => {
              WHERE candidate_group.candidate_status = 'pending'
              GROUP BY candidate_group.candidate_group_id, candidate_group.anchor_report_id, candidate_group.created_at
              ORDER BY candidate_group.created_at DESC, candidate_group.candidate_group_id DESC`,
-        ),
-        db.query(
-            `SELECT
+      ),
+      db.query(
+        `SELECT
                 report.report_id,
                 report.description,
                 report.user_selected_type_id,
@@ -536,22 +585,26 @@ const findAdminReviewQueue = async () => {
                AND candidate.report_id IS NULL
                AND member.report_id IS NULL
              ORDER BY report.created_at DESC, report.report_id DESC`,
-        ),
+      ),
     ]);
 
-    return {
-        report_candidates: reportCandidatesResult.rows,
-        candidate_groups: candidateGroupsResult.rows,
-        pending_reports: pendingReportsResult.rows,
-    };
+  return {
+    report_candidates: reportCandidatesResult.rows,
+    candidate_groups: candidateGroupsResult.rows,
+    pending_reports: pendingReportsResult.rows,
+  };
 };
 
-const acceptOrRejectReportCandidate = async ({ candidateId, adminId, action }) => {
-    const client = await db.pool.connect();
-    try {
-        await client.query('BEGIN');
-        const candidateResult = await client.query(
-            `SELECT
+const acceptOrRejectReportCandidate = async ({
+  candidateId,
+  adminId,
+  action,
+}) => {
+  const client = await db.pool.connect();
+  try {
+    await client.query("BEGIN");
+    const candidateResult = await client.query(
+      `SELECT
                 candidate.candidate_id,
                 candidate.report_id,
                 candidate.target_incident_id,
@@ -562,69 +615,83 @@ const acceptOrRejectReportCandidate = async ({ candidateId, adminId, action }) =
              JOIN tb_incidents target ON target.incident_id = candidate.target_incident_id
              WHERE candidate.candidate_id = $1
              FOR UPDATE OF candidate, target`,
-            [candidateId],
-        );
-        const candidate = candidateResult.rows[0];
-        if (!candidate || candidate.candidate_status !== 'pending') {
-            throw new Error('ไม่พบ Candidate ที่รอตรวจสอบ');
-        }
+      [candidateId],
+    );
+    const candidate = candidateResult.rows[0];
+    if (!candidate || candidate.candidate_status !== "pending") {
+      throw new Error("ไม่พบ Candidate ที่รอตรวจสอบ");
+    }
 
-        if (action === 'accepted') {
-            if (candidate.incident_status !== 'active' || !candidate.final_type_id) {
-                throw new Error('Incident เป้าหมายไม่พร้อมให้รวม Report');
-            }
-            await client.query(
-                `UPDATE tb_incident_reports
+    if (action === "accepted") {
+      if (candidate.incident_status !== "active" || !candidate.final_type_id) {
+        throw new Error("Incident เป้าหมายไม่พร้อมให้รวม Report");
+      }
+      await client.query(
+        `UPDATE tb_incident_reports
                  SET incident_id = $1,
                      final_type_id = $2,
                      type_status = 'confirmed',
                      report_status = 'verified',
                      updated_at = CURRENT_TIMESTAMP
                  WHERE report_id = $3`,
-                [candidate.target_incident_id, candidate.final_type_id, candidate.report_id],
-            );
-            await updateIncidentForAutoMerge(candidate.target_incident_id, client);
-        }
+        [
+          candidate.target_incident_id,
+          candidate.final_type_id,
+          candidate.report_id,
+        ],
+      );
+      await updateIncidentForAutoMerge(candidate.target_incident_id, client);
+    }
 
-        await client.query(
-            `UPDATE tb_incident_report_candidates
+    await client.query(
+      `UPDATE tb_incident_report_candidates
              SET candidate_status = $1,
                  decided_by = $2,
                  decided_at = CURRENT_TIMESTAMP,
                  updated_at = CURRENT_TIMESTAMP
              WHERE candidate_id = $3`,
-            [action, adminId, candidateId],
-        );
-        await client.query('COMMIT');
-        return { candidate_id: candidateId, report_id: candidate.report_id, action };
-    } catch (error) {
-        await client.query('ROLLBACK');
-        throw error;
-    } finally {
-        client.release();
-    }
+      [action, adminId, candidateId],
+    );
+    await client.query("COMMIT");
+    return {
+      candidate_id: candidateId,
+      report_id: candidate.report_id,
+      action,
+    };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
-const acceptOrRejectCandidateGroup = async ({ candidateGroupId, adminId, action, selectedType, targetIncidentId = null }) => {
-    const client = await db.pool.connect();
-    try {
-        await client.query('BEGIN');
-        const groupResult = await client.query(
-            `SELECT candidate_group_id, candidate_status
+const acceptOrRejectCandidateGroup = async ({
+  candidateGroupId,
+  adminId,
+  action,
+  selectedType,
+  targetIncidentId = null,
+}) => {
+  const client = await db.pool.connect();
+  try {
+    await client.query("BEGIN");
+    const groupResult = await client.query(
+      `SELECT candidate_group_id, candidate_status
              FROM tb_incident_candidate_groups
              WHERE candidate_group_id = $1
              FOR UPDATE`,
-            [candidateGroupId],
-        );
-        const candidateGroup = groupResult.rows[0];
-        if (!candidateGroup || candidateGroup.candidate_status !== 'pending') {
-            throw new Error('ไม่พบ Candidate Group ที่รอตรวจสอบ');
-        }
+      [candidateGroupId],
+    );
+    const candidateGroup = groupResult.rows[0];
+    if (!candidateGroup || candidateGroup.candidate_status !== "pending") {
+      throw new Error("ไม่พบ Candidate Group ที่รอตรวจสอบ");
+    }
 
-        let incident = null;
-        if (action === 'accepted') {
-            const reportsResult = await client.query(
-                `SELECT
+    let incident = null;
+    if (action === "accepted") {
+      const reportsResult = await client.query(
+        `SELECT
                     report.report_id,
                     report.description,
                     report.created_at,
@@ -635,105 +702,127 @@ const acceptOrRejectCandidateGroup = async ({ candidateGroupId, adminId, action,
                  WHERE member.candidate_group_id = $1
                  ORDER BY report.created_at, report.report_id
                  FOR UPDATE OF report`,
-                [candidateGroupId],
-            );
-            const reports = reportsResult.rows;
-            if (!reports.length) throw new Error('Candidate Group ไม่มี Report ให้ยืนยัน');
+        [candidateGroupId],
+      );
+      const reports = reportsResult.rows;
+      if (!reports.length)
+        throw new Error("Candidate Group ไม่มี Report ให้ยืนยัน");
 
-            if (targetIncidentId) {
-                const targetResult = await client.query(
-                    `SELECT incident_id, final_type_id, incident_status
+      if (targetIncidentId) {
+        const targetResult = await client.query(
+          `SELECT incident_id, final_type_id, incident_status
                      FROM tb_incidents
                      WHERE incident_id = $1
                      FOR UPDATE`,
-                    [targetIncidentId],
-                );
-                incident = targetResult.rows[0] ?? null;
-                if (!incident || incident.incident_status !== 'active' || incident.final_type_id !== selectedType.type_id) {
-                    throw new Error('Incident เป้าหมายต้อง active และมี Type ที่ Administrator เลือก');
-                }
-            } else {
-                const anchor = reports[0];
-                const matchingIncident = await findActiveIncidentMatch({
-                    typeId: selectedType.type_id,
-                    lat: anchor.lat,
-                    lng: anchor.lng,
-                    referenceTime: anchor.created_at,
-                }, client);
+          [targetIncidentId],
+        );
+        incident = targetResult.rows[0] ?? null;
+        if (
+          !incident ||
+          incident.incident_status !== "active" ||
+          incident.final_type_id !== selectedType.type_id
+        ) {
+          throw new Error(
+            "Incident เป้าหมายต้อง active และมี Type ที่ Administrator เลือก",
+          );
+        }
+      } else {
+        const anchor = reports[0];
+        const matchingIncident = await findActiveIncidentMatch(
+          {
+            typeId: selectedType.type_id,
+            lat: anchor.lat,
+            lng: anchor.lng,
+            referenceTime: anchor.created_at,
+          },
+          client,
+        );
 
-                if (matchingIncident) {
-                    const matchingResult = await client.query(
-                        `SELECT incident_id, final_type_id, incident_status
+        if (matchingIncident) {
+          const matchingResult = await client.query(
+            `SELECT incident_id, final_type_id, incident_status
                          FROM tb_incidents
                          WHERE incident_id = $1
                            AND incident_status = 'active'
                          FOR UPDATE`,
-                        [matchingIncident.incident_id],
-                    );
-                    incident = matchingResult.rows[0] ?? null;
-                    if (!incident || incident.final_type_id !== selectedType.type_id) {
-                        throw new Error('Incident ที่ตรงเงื่อนไขไม่พร้อมให้รวม Candidate Group');
-                    }
-                } else {
-                    incident = await createInitialIncident({
-                        final_type_id: selectedType.type_id,
-                        title: `${selectedType.type_name} — รอตรวจสอบ`,
-                        description: anchor.description,
-                        lat: anchor.lat,
-                        lng: anchor.lng,
-                        display_mode: selectedType.display_mode,
-                        radius_m: selectedType.display_mode === 'marker' ? null : selectedType.default_radius_m,
-                        report_count: 0,
-                    }, client);
-                }
-            }
+            [matchingIncident.incident_id],
+          );
+          incident = matchingResult.rows[0] ?? null;
+          if (!incident || incident.final_type_id !== selectedType.type_id) {
+            throw new Error(
+              "Incident ที่ตรงเงื่อนไขไม่พร้อมให้รวม Candidate Group",
+            );
+          }
+        } else {
+          incident = await createInitialIncident(
+            {
+              final_type_id: selectedType.type_id,
+              title: `${selectedType.type_name} — รอตรวจสอบ`,
+              description: anchor.description,
+              lat: anchor.lat,
+              lng: anchor.lng,
+              display_mode: selectedType.display_mode,
+              radius_m:
+                selectedType.display_mode === "marker"
+                  ? null
+                  : selectedType.default_radius_m,
+              report_count: 0,
+            },
+            client,
+          );
+        }
+      }
 
-            const reportIds = reports.map((report) => report.report_id);
-            await client.query(
-                `UPDATE tb_incident_reports
+      const reportIds = reports.map((report) => report.report_id);
+      await client.query(
+        `UPDATE tb_incident_reports
                  SET incident_id = $1,
                      final_type_id = $2,
                      type_status = 'confirmed',
                      report_status = 'verified',
                      updated_at = CURRENT_TIMESTAMP
                  WHERE report_id = ANY($3::int[])`,
-                [incident.incident_id, selectedType.type_id, reportIds],
-            );
-            await client.query(
-                `UPDATE tb_incidents
+        [incident.incident_id, selectedType.type_id, reportIds],
+      );
+      await client.query(
+        `UPDATE tb_incidents
                  SET report_count = report_count + $2,
                      last_reported_at = CURRENT_TIMESTAMP,
                      updated_at = CURRENT_TIMESTAMP
                  WHERE incident_id = $1`,
-                [incident.incident_id, reportIds.length],
-            );
-        }
+        [incident.incident_id, reportIds.length],
+      );
+    }
 
-        await client.query(
-            `UPDATE tb_incident_candidate_groups
+    await client.query(
+      `UPDATE tb_incident_candidate_groups
              SET candidate_status = $1,
                  decided_by = $2,
                  decided_at = CURRENT_TIMESTAMP,
                  updated_at = CURRENT_TIMESTAMP
              WHERE candidate_group_id = $3`,
-            [action, adminId, candidateGroupId],
-        );
-        await client.query('COMMIT');
-        return { candidate_group_id: candidateGroupId, incident, action };
-    } catch (error) {
-        await client.query('ROLLBACK');
-        throw error;
-    } finally {
-        client.release();
-    }
+      [action, adminId, candidateGroupId],
+    );
+    await client.query("COMMIT");
+    return { candidate_group_id: candidateGroupId, incident, action };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
-const createIncidentFromPendingReport = async ({ reportId, adminId, selectedType }) => {
-    const client = await db.pool.connect();
-    try {
-        await client.query('BEGIN');
-        const reportResult = await client.query(
-            `SELECT
+const createIncidentFromPendingReport = async ({
+  reportId,
+  adminId,
+  selectedType,
+}) => {
+  const client = await db.pool.connect();
+  try {
+    await client.query("BEGIN");
+    const reportResult = await client.query(
+      `SELECT
                 report_id,
                 description,
                 report_status,
@@ -744,67 +833,77 @@ const createIncidentFromPendingReport = async ({ reportId, adminId, selectedType
              FROM tb_incident_reports
              WHERE report_id = $1
              FOR UPDATE`,
-            [reportId],
-        );
-        const report = reportResult.rows[0];
-        if (!report || report.report_status !== 'pending' || report.incident_id) {
-            throw new Error('Report นี้ไม่พร้อมให้ยืนยัน Type');
-        }
+      [reportId],
+    );
+    const report = reportResult.rows[0];
+    if (!report || report.report_status !== "pending" || report.incident_id) {
+      throw new Error("Report นี้ไม่พร้อมให้ยืนยัน Type");
+    }
 
-        // หลัง Administrator ยืนยัน Type ให้ Report เดิมกลับมาใช้กติกาเดียวกับ Report
-        // ที่ผู้ใช้ยืนยัน Type ตั้งแต่แรก โดยใช้เวลาที่ Report ถูกส่งจริง
-        const matchingIncident = await findActiveIncidentMatch({
-            typeId: selectedType.type_id,
+    // หลัง Administrator ยืนยัน Type ให้ Report เดิมกลับมาใช้กติกาเดียวกับ Report
+    // ที่ผู้ใช้ยืนยัน Type ตั้งแต่แรก โดยใช้เวลาที่ Report ถูกส่งจริง
+    const matchingIncident = await findActiveIncidentMatch(
+      {
+        typeId: selectedType.type_id,
+        lat: report.lat,
+        lng: report.lng,
+        referenceTime: report.created_at,
+      },
+      client,
+    );
+    const incident = matchingIncident
+      ? await updateIncidentForAutoMerge(matchingIncident.incident_id, client)
+      : await createInitialIncident(
+          {
+            final_type_id: selectedType.type_id,
+            title: `${selectedType.type_name} — รอตรวจสอบ`,
+            description: report.description,
             lat: report.lat,
             lng: report.lng,
-            referenceTime: report.created_at,
-        }, client);
-        const incident = matchingIncident
-            ? await updateIncidentForAutoMerge(matchingIncident.incident_id, client)
-            : await createInitialIncident({
-                final_type_id: selectedType.type_id,
-                title: `${selectedType.type_name} — รอตรวจสอบ`,
-                description: report.description,
-                lat: report.lat,
-                lng: report.lng,
-                display_mode: selectedType.display_mode,
-                radius_m: selectedType.display_mode === 'marker' ? null : selectedType.default_radius_m,
-            }, client);
+            display_mode: selectedType.display_mode,
+            radius_m:
+              selectedType.display_mode === "marker"
+                ? null
+                : selectedType.default_radius_m,
+          },
+          client,
+        );
 
-        if (!incident) throw new Error('Incident ที่ตรงเงื่อนไขไม่พร้อมให้รวม Report');
-        await client.query(
-            `UPDATE tb_incident_reports
+    if (!incident)
+      throw new Error("Incident ที่ตรงเงื่อนไขไม่พร้อมให้รวม Report");
+    await client.query(
+      `UPDATE tb_incident_reports
              SET incident_id = $1,
                  final_type_id = $2,
                  type_status = 'confirmed',
                  report_status = 'verified',
                  updated_at = CURRENT_TIMESTAMP
              WHERE report_id = $3`,
-            [incident.incident_id, selectedType.type_id, reportId],
-        );
-        await client.query('COMMIT');
-        return {
-            incident,
-            report_id: reportId,
-            merge_status: matchingIncident ? 'auto_merged' : 'created',
-            reviewed_by: adminId,
-        };
-    } catch (error) {
-        await client.query('ROLLBACK');
-        throw error;
-    } finally {
-        client.release();
-    }
+      [incident.incident_id, selectedType.type_id, reportId],
+    );
+    await client.query("COMMIT");
+    return {
+      incident,
+      report_id: reportId,
+      merge_status: matchingIncident ? "auto_merged" : "created",
+      reviewed_by: adminId,
+    };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 // ใช้กับ Report เดี่ยวในคิวเท่านั้น; Candidate มีการตัดสินของตัวเองเพื่อไม่ให้สับสนว่า
 // “ปฏิเสธความสัมพันธ์” กับ “ปฏิเสธ Report” คือสิ่งเดียวกัน
 const rejectStandalonePendingReport = async ({ reportId, adminId }) => {
-    const client = await db.pool.connect();
-    try {
-        await client.query('BEGIN');
-        const reportResult = await client.query(
-            `SELECT report.report_id
+  const client = await db.pool.connect();
+  try {
+    await client.query("BEGIN");
+    const reportResult = await client.query(
+      `SELECT report.report_id
              FROM tb_incident_reports report
              WHERE report.report_id = $1
                AND report.incident_id IS NULL
@@ -824,35 +923,43 @@ const rejectStandalonePendingReport = async ({ reportId, adminId }) => {
                    WHERE member.report_id = report.report_id
                )
              FOR UPDATE`,
-            [reportId],
-        );
-        if (!reportResult.rows[0]) {
-            throw new Error('Report นี้ไม่ใช่รายการเดี่ยวที่รอตรวจสอบ');
-        }
+      [reportId],
+    );
+    if (!reportResult.rows[0]) {
+      throw new Error("Report นี้ไม่ใช่รายการเดี่ยวที่รอตรวจสอบ");
+    }
 
-        await client.query(
-            `UPDATE tb_incident_reports
+    await client.query(
+      `UPDATE tb_incident_reports
              SET report_status = 'rejected',
                  updated_at = CURRENT_TIMESTAMP
              WHERE report_id = $1`,
-            [reportId],
-        );
-        await client.query('COMMIT');
-        return { report_id: reportId, report_status: 'rejected', reviewed_by: adminId };
-    } catch (error) {
-        await client.query('ROLLBACK');
-        throw error;
-    } finally {
-        client.release();
-    }
+      [reportId],
+    );
+    await client.query("COMMIT");
+    return {
+      report_id: reportId,
+      report_status: "rejected",
+      reviewed_by: adminId,
+    };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
-const separateReportFromIncident = async ({ reportId, adminId, selectedType }) => {
-    const client = await db.pool.connect();
-    try {
-        await client.query('BEGIN');
-        const reportResult = await client.query(
-            `SELECT
+const separateReportFromIncident = async ({
+  reportId,
+  adminId,
+  selectedType,
+}) => {
+  const client = await db.pool.connect();
+  try {
+    await client.query("BEGIN");
+    const reportResult = await client.query(
+      `SELECT
                 report.report_id,
                 report.description,
                 report.incident_id,
@@ -863,168 +970,215 @@ const separateReportFromIncident = async ({ reportId, adminId, selectedType }) =
              JOIN tb_incidents source_incident ON source_incident.incident_id = report.incident_id
              WHERE report.report_id = $1
              FOR UPDATE OF report, source_incident`,
-            [reportId],
-        );
-        const report = reportResult.rows[0];
-        if (!report || report.report_count <= 1) {
-            throw new Error('แยก Report ไม่ได้ เพราะ Incident เดิมต้องมี Report เหลืออย่างน้อยหนึ่งรายการ');
-        }
+      [reportId],
+    );
+    const report = reportResult.rows[0];
+    if (!report || report.report_count <= 1) {
+      throw new Error(
+        "แยก Report ไม่ได้ เพราะ Incident เดิมต้องมี Report เหลืออย่างน้อยหนึ่งรายการ",
+      );
+    }
 
-        const incident = await createInitialIncident({
-            final_type_id: selectedType.type_id,
-            title: `${selectedType.type_name} — รอตรวจสอบ`,
-            description: report.description,
-            lat: report.lat,
-            lng: report.lng,
-            display_mode: selectedType.display_mode,
-            radius_m: selectedType.display_mode === 'marker' ? null : selectedType.default_radius_m,
-        }, client);
-        await client.query(
-            `UPDATE tb_incident_reports
+    const incident = await createInitialIncident(
+      {
+        final_type_id: selectedType.type_id,
+        title: `${selectedType.type_name} — รอตรวจสอบ`,
+        description: report.description,
+        lat: report.lat,
+        lng: report.lng,
+        display_mode: selectedType.display_mode,
+        radius_m:
+          selectedType.display_mode === "marker"
+            ? null
+            : selectedType.default_radius_m,
+      },
+      client,
+    );
+    await client.query(
+      `UPDATE tb_incident_reports
              SET incident_id = $1,
                  final_type_id = $2,
                  type_status = 'confirmed',
                  report_status = 'verified',
                  updated_at = CURRENT_TIMESTAMP
              WHERE report_id = $3`,
-            [incident.incident_id, selectedType.type_id, reportId],
-        );
-        await client.query(
-            `UPDATE tb_incidents
+      [incident.incident_id, selectedType.type_id, reportId],
+    );
+    await client.query(
+      `UPDATE tb_incidents
              SET report_count = report_count - 1,
                  updated_at = CURRENT_TIMESTAMP
              WHERE incident_id = $1`,
-            [report.incident_id],
-        );
-        await client.query('COMMIT');
-        return { incident, report_id: reportId, reviewed_by: adminId };
-    } catch (error) {
-        await client.query('ROLLBACK');
-        throw error;
-    } finally {
-        client.release();
-    }
+      [report.incident_id],
+    );
+    await client.query("COMMIT");
+    return { incident, report_id: reportId, reviewed_by: adminId };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 const saveIncidentMedia = async ({ reportId, media }, queryable = db) => {
-    const savedMedia = [];
+  const savedMedia = [];
 
-    for (const file of media) {
-        const result = await queryable.query(
-            `INSERT INTO tb_incident_media (report_id, media_type, media_url)
+  for (const file of media) {
+    const result = await queryable.query(
+      `INSERT INTO tb_incident_media (report_id, media_type, media_url)
              VALUES ($1, $2, $3)
              RETURNING media_id, report_id, media_type, media_url, created_at`,
-            [reportId, file.media_type, file.media_url],
-        );
-        savedMedia.push(result.rows[0]);
-    }
+      [reportId, file.media_type, file.media_url],
+    );
+    savedMedia.push(result.rows[0]);
+  }
 
-    return savedMedia;
+  return savedMedia;
 };
 
 // Incident, Report, Candidate และ metadata ของไฟล์แนบต้องสำเร็จพร้อมกัน หรือไม่บันทึกทั้งชุด
-const createIncidentReportWithMerge = async ({ incidentData, reportData, media = [] }) => {
-    const client = await db.pool.connect();
+const createIncidentReportWithMerge = async ({
+  incidentData,
+  reportData,
+  media = [],
+}) => {
+  const client = await db.pool.connect();
 
-    try {
-        await client.query('BEGIN');
-        const reporterTrustScore = await getReporterTrustScore(reportData.user_id, client);
-        const typeStatus = reportData.type_status ?? (reportData.final_type_id ? 'confirmed' : 'pending');
-        const canAutoMerge = typeStatus === 'confirmed' && reportData.final_type_id;
-        const matchingIncident = canAutoMerge
-            ? await findActiveIncidentMatch({
-                typeId: reportData.final_type_id,
-                lat: reportData.lat,
-                lng: reportData.lng,
-            }, client)
-            : null;
+  try {
+    await client.query("BEGIN");
+    const reporterTrustScore = await getReporterTrustScore(
+      reportData.user_id,
+      client,
+    );
+    const typeStatus =
+      reportData.type_status ??
+      (reportData.final_type_id ? "confirmed" : "pending");
+    const canAutoMerge = typeStatus === "confirmed" && reportData.final_type_id;
+    const matchingIncident = canAutoMerge
+      ? await findActiveIncidentMatch(
+          {
+            typeId: reportData.final_type_id,
+            lat: reportData.lat,
+            lng: reportData.lng,
+          },
+          client,
+        )
+      : null;
 
-        let incident = null;
-        let resultStatus = 'pending';
-        let reportCandidate = null;
-        let candidateGroup = null;
+    let incident = null;
+    let resultStatus = "pending";
+    let reportCandidate = null;
+    let candidateGroup = null;
 
-        if (canAutoMerge && matchingIncident) {
-            incident = await updateIncidentForAutoMerge(matchingIncident.incident_id, client);
-            if (!incident) {
-                throw new Error('ไม่สามารถรวมรายงานเข้ากับ Incident ที่เลือกได้');
-            }
-            resultStatus = 'auto_merged';
-        } else if (canAutoMerge) {
-            incident = await createInitialIncident(incidentData, client);
-            resultStatus = 'created';
-        }
-
-        const report = await createIncidentReport({
-            ...reportData,
-            incident_id: incident?.incident_id ?? null,
-            reporter_trust_score: reporterTrustScore,
-            type_status: typeStatus,
-            report_status: 'pending',
-        }, client);
-
-        // ไม่เลือก Type: หา Incident ใกล้ที่สุดก่อน ถ้าไม่มีจึงรวมเป็น Candidate Group กับ Report ที่ยังไม่จัดประเภท
-        if (!canAutoMerge && typeStatus === 'pending') {
-            const nearbyIncident = await findNearbyActiveIncident({ lat: reportData.lat, lng: reportData.lng }, client);
-            if (nearbyIncident) {
-                reportCandidate = await createReportCandidate({
-                    reportId: report.report_id,
-                    targetIncidentId: nearbyIncident.incident_id,
-                    match: nearbyIncident,
-                }, client);
-                resultStatus = 'candidate';
-            } else {
-                const nearbyGroup = await findNearbyCandidateGroup({ lat: reportData.lat, lng: reportData.lng }, client);
-                if (nearbyGroup) {
-                    await addReportToCandidateGroup({
-                        candidateGroupId: nearbyGroup.candidate_group_id,
-                        reportId: report.report_id,
-                    }, client);
-                    candidateGroup = nearbyGroup;
-                    resultStatus = 'candidate_group';
-                } else {
-                    const nearbyReport = await findNearbyUngroupedUnclassifiedReport({
-                        reportId: report.report_id,
-                        lat: reportData.lat,
-                        lng: reportData.lng,
-                    }, client);
-                    if (nearbyReport) {
-                        candidateGroup = await createCandidateGroup({
-                            anchorReportId: nearbyReport.report_id,
-                            reportId: report.report_id,
-                        }, client);
-                        resultStatus = 'candidate_group';
-                    }
-                }
-            }
-        }
-
-        const savedMedia = await saveIncidentMedia({
-            reportId: report.report_id,
-            media,
-        }, client);
-
-        await client.query('COMMIT');
-        return {
-            ...report,
-            incident,
-            media: savedMedia,
-            merge_status: resultStatus,
-            candidate: reportCandidate,
-            candidate_group: candidateGroup,
-        };
-    } catch (error) {
-        await client.query('ROLLBACK');
-        throw error;
-    } finally {
-        client.release();
+    if (canAutoMerge && matchingIncident) {
+      incident = await updateIncidentForAutoMerge(
+        matchingIncident.incident_id,
+        client,
+      );
+      if (!incident) {
+        throw new Error("ไม่สามารถรวมรายงานเข้ากับ Incident ที่เลือกได้");
+      }
+      resultStatus = "auto_merged";
+    } else if (canAutoMerge) {
+      incident = await createInitialIncident(incidentData, client);
+      resultStatus = "created";
     }
+
+    const report = await createIncidentReport(
+      {
+        ...reportData,
+        incident_id: incident?.incident_id ?? null,
+        reporter_trust_score: reporterTrustScore,
+        type_status: typeStatus,
+        report_status: "pending",
+      },
+      client,
+    );
+
+    // ไม่เลือก Type: หา Incident ใกล้ที่สุดก่อน ถ้าไม่มีจึงรวมเป็น Candidate Group กับ Report ที่ยังไม่จัดประเภท
+    if (!canAutoMerge && typeStatus === "pending") {
+      const nearbyIncident = await findNearbyActiveIncident(
+        { lat: reportData.lat, lng: reportData.lng },
+        client,
+      );
+      if (nearbyIncident) {
+        reportCandidate = await createReportCandidate(
+          {
+            reportId: report.report_id,
+            targetIncidentId: nearbyIncident.incident_id,
+            match: nearbyIncident,
+          },
+          client,
+        );
+        resultStatus = "candidate";
+      } else {
+        const nearbyGroup = await findNearbyCandidateGroup(
+          { lat: reportData.lat, lng: reportData.lng },
+          client,
+        );
+        if (nearbyGroup) {
+          await addReportToCandidateGroup(
+            {
+              candidateGroupId: nearbyGroup.candidate_group_id,
+              reportId: report.report_id,
+            },
+            client,
+          );
+          candidateGroup = nearbyGroup;
+          resultStatus = "candidate_group";
+        } else {
+          const nearbyReport = await findNearbyUngroupedUnclassifiedReport(
+            {
+              reportId: report.report_id,
+              lat: reportData.lat,
+              lng: reportData.lng,
+            },
+            client,
+          );
+          if (nearbyReport) {
+            candidateGroup = await createCandidateGroup(
+              {
+                anchorReportId: nearbyReport.report_id,
+                reportId: report.report_id,
+              },
+              client,
+            );
+            resultStatus = "candidate_group";
+          }
+        }
+      }
+    }
+
+    const savedMedia = await saveIncidentMedia(
+      {
+        reportId: report.report_id,
+        media,
+      },
+      client,
+    );
+
+    await client.query("COMMIT");
+    return {
+      ...report,
+      incident,
+      media: savedMedia,
+      merge_status: resultStatus,
+      candidate: reportCandidate,
+      candidate_group: candidateGroup,
+    };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 // คืนประเภทที่มี keyword อยู่ในข้อความ โดยให้คำที่เฉพาะเจาะจงกว่ามาก่อน
 const findSuggestedTypes = async (description, limit) => {
-    const result = await db.query(
-        `WITH matching_keywords AS (
+  const result = await db.query(
+    `WITH matching_keywords AS (
             SELECT
                 keyword.type_id,
                 MAX(CHAR_LENGTH(keyword.keyword)) AS matched_keyword_length
@@ -1052,27 +1206,27 @@ const findSuggestedTypes = async (description, limit) => {
           AND category.is_active = TRUE
         ORDER BY matching_keywords.matched_keyword_length DESC, incident_type.sort_order, incident_type.type_id
         LIMIT $2`,
-        [description, limit]
-    );
+    [description, limit],
+  );
 
-    return result.rows;
+  return result.rows;
 };
 
 const findActiveIncidentTypeIds = async (typeIds) => {
-    const result = await db.query(
-        `SELECT type_id
+  const result = await db.query(
+    `SELECT type_id
          FROM tb_incident_types
          WHERE is_active = TRUE
            AND type_id = ANY($1::int[])`,
-        [typeIds],
-    );
+    [typeIds],
+  );
 
-    return result.rows.map((row) => row.type_id);
+  return result.rows.map((row) => row.type_id);
 };
 
 const findActiveIncidentTypeById = async (typeId) => {
-    const result = await db.query(
-        `SELECT
+  const result = await db.query(
+    `SELECT
             incident_type.type_id,
             incident_type.type_name,
             incident_type.display_mode,
@@ -1082,16 +1236,16 @@ const findActiveIncidentTypeById = async (typeId) => {
          WHERE incident_type.type_id = $1
            AND incident_type.is_active = TRUE
            AND category.is_active = TRUE`,
-        [typeId],
-    );
+    [typeId],
+  );
 
-    return result.rows[0] ?? null;
+  return result.rows[0] ?? null;
 };
 
 // catalog สำหรับหน้าเลือกประเภท: แหล่งข้อมูลเดียวคือ Category และ Type ที่ active ในฐานข้อมูล
 const findActiveIncidentCatalogRows = async () => {
-    const result = await db.query(
-        `SELECT
+  const result = await db.query(
+    `SELECT
             category.category_id,
             category.category_code,
             category.category_name,
@@ -1110,17 +1264,17 @@ const findActiveIncidentCatalogRows = async () => {
         JOIN tb_incident_types incident_type ON incident_type.category_id = category.category_id
         WHERE category.is_active = TRUE
           AND incident_type.is_active = TRUE
-        ORDER BY category.sort_order, category.category_id, incident_type.sort_order, incident_type.type_id`
-    );
+        ORDER BY category.sort_order, category.category_id, incident_type.sort_order, incident_type.type_id`,
+  );
 
-    return result.rows;
+  return result.rows;
 };
 
 // Cache สำหรับหน้า Report: Database ยังคงเป็นแหล่งข้อมูลจริง แต่ frontend ใช้ข้อมูลชุดนี้
 // จับ keyword ในหน่วยความจำระหว่างผู้ใช้กำลังพิมพ์ได้โดยไม่ต้อง query ซ้ำ
 const findActiveIncidentKeywordRows = async () => {
-    const result = await db.query(
-        `SELECT
+  const result = await db.query(
+    `SELECT
             keyword.keyword,
             incident_type.type_id,
             incident_type.type_code,
@@ -1138,27 +1292,27 @@ const findActiveIncidentKeywordRows = async () => {
            AND category.is_active = TRUE
          -- เรียงเหมือน findSuggestedTypes เพื่อให้ Warning ฝั่งหน้าและการตรวจ Conflict ฝั่ง server เห็น Type แรกตรงกัน
          ORDER BY CHAR_LENGTH(keyword.keyword) DESC, incident_type.sort_order, incident_type.type_id, keyword.keyword`,
-    );
+  );
 
-    return result.rows;
+  return result.rows;
 };
 
 module.exports = {
-    createIncidentReport,
-    createIncident: createIncidentReport,
-    createIncidentReportWithMerge,
-    findActiveIncidentById,
-    createFalseIncidentReport,
-    findSuggestedTypes,
-    findActiveIncidentTypeIds,
-    findActiveIncidentTypeById,
-    findActiveIncidentCatalogRows,
-    findActiveIncidentKeywordRows,
-    findPublicMapItems,
-    findAdminReviewQueue,
-    acceptOrRejectReportCandidate,
-    acceptOrRejectCandidateGroup,
-    createIncidentFromPendingReport,
-    rejectStandalonePendingReport,
-    separateReportFromIncident,
+  createIncidentReport,
+  createIncident: createIncidentReport,
+  createIncidentReportWithMerge,
+  findActiveIncidentById,
+  createFalseIncidentReport,
+  findSuggestedTypes,
+  findActiveIncidentTypeIds,
+  findActiveIncidentTypeById,
+  findActiveIncidentCatalogRows,
+  findActiveIncidentKeywordRows,
+  findPublicMapItems,
+  findAdminReviewQueue,
+  acceptOrRejectReportCandidate,
+  acceptOrRejectCandidateGroup,
+  createIncidentFromPendingReport,
+  rejectStandalonePendingReport,
+  separateReportFromIncident,
 };
