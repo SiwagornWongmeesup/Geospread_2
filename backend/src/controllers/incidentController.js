@@ -66,6 +66,22 @@ const getPublicMapItems = async (req, res, next) => {
     }
 };
 
+const getIncidentDetail  = async (req, res, next) => {
+    try {
+        const incidentDetail = await incidentService.getIncidentDetail(
+            req.params.incidentId,
+        );
+
+        res.json({
+            success: true,
+            data: incidentDetail,
+        });
+
+    } catch (error) {
+        next(error);
+    }
+}
+
 const reportFalseIncident = async (req, res, next) => {
     try {
         const result = await incidentService.reportFalseIncident({
@@ -170,4 +186,5 @@ module.exports = {
     createIncidentFromPendingReport,
     rejectStandalonePendingReport,
     separateReportFromIncident,
+    getIncidentDetail
 };

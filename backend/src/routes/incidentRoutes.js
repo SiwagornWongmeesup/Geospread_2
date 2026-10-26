@@ -10,7 +10,7 @@ const {
     candidateDecisionValidator,
     candidateGroupDecisionValidator,
     createIncidentFromPendingReportValidator,
-    falseIncidentReportValidator,
+    incidentIdValidator,
     incidentCatalogValidator,
     publicMapValidator,
     rejectStandalonePendingReportValidator,
@@ -25,8 +25,9 @@ router.get('/catalog', incidentCatalogValidator, incidentController.getIncidentT
 router.get('/report-type-cache', reportTypeSuggestionCacheValidator, incidentController.getReportTypeSuggestionCache);
 router.get('/suggestions', suggestedTypesValidator, incidentController.getSuggestedIncidentTypes);
 router.get('/map', publicMapValidator, incidentController.getPublicMapItems);
+router.get('/:incidentId', incidentIdValidator, incidentController.getIncidentDetail);
 
-router.post('/:incidentId/false-reports', authMiddleware, reportRateLimit, falseIncidentReportValidator, incidentController.reportFalseIncident);
+router.post('/:incidentId/false-reports', authMiddleware, reportRateLimit, incidentIdValidator, incidentController.reportFalseIncident);
 
 // Candidate และ Candidate Group เป็นข้อมูลตรวจสอบภายใน ไม่เปิดให้ Community User เห็น
 router.get('/admin/review-queue', authMiddleware, checkRole('admin'), adminReviewQueueValidator, incidentController.getAdminReviewQueue);

@@ -95,7 +95,7 @@ const useCurrentLocation = async () => {
   padding: 0 .7rem;
   border: 0;
   border-radius: .45rem;
-  background: #1479ef;
+  background: #eb2631;
   color: #fff;
   font: inherit;
   font-size: .73rem;

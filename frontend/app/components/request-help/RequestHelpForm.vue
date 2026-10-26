@@ -187,7 +187,7 @@ defineExpose({ submit, isSubmitting, feedback })
   margin-right: .5rem;
   place-items: center;
   border-radius: 50%;
-  background: #1479ef;
+  background: #eb2631;
   color: #fff;
 }
 

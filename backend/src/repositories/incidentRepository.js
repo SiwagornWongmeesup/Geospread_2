@@ -408,6 +408,65 @@ const addReportToCandidateGroup = async (
   return candidateGroupId;
 };
 
+const findPublicIncidentDetailById = async (incidentId) => {
+  const incidentResult = await db.query(
+    `SELECT
+        incident.incident_id,
+                incident.title,
+                incident.final_type_id,
+                incident.display_mode,
+                incident.radius_m,
+                incident.report_count,
+                incident.verification_status,
+                incident.incident_status,
+                incident.last_reported_at,
+                ST_Y(incident.incident_location) AS lat,
+                ST_X(incident.incident_location) AS lng,
+                incident_type.type_code,
+                incident_type.type_name,
+                incident_type.icon_name
+                FROM tb_incidents incident
+  
+              LEFT JOIN tb_incident_types incident_type
+                ON incident_type.type_id = incident.final_type_id
+              WHERE incident.incident_id = $1
+                AND incident.incident_status = 'active'
+              LIMIT 1
+    `,
+    [incidentId],
+  );
+
+  const incident = incidentResult.rows[0];
+  if (!incident) return null;
+
+  const reportsResult = await db.query(
+    `SELECT
+    report.report_id,
+    report.description,
+    report.created_at,
+               COALESCE(
+        NULLIF(TRIM(CONCAT_WS(' ', reporter.name, reporter.lastname)), ''),
+        'ไม่ระบุชื่อ'
+    ) AS reporter_name,
+    (
+      SELECT COUNT(*)::int
+      FROM tb_incident_media media 
+      WHERE media.report_id = report.report_id
+       AND media.media_type = 'image'
+    ) AS image_count
+     FROM tb_incident_reports report
+   LEFT JOIN tb_users reporter ON reporter.id = report.user_id
+   WHERE report.incident_id = $1
+   ORDER BY report.created_at DESC, report.report_id DESC`,
+    [incidentId],
+  );
+
+  return {
+    incident,
+    reports: reportsResult.rows,
+  };
+};
+
 const findPublicMapItems = async () => {
   const [incidentsResult, pendingReportsResult] = await Promise.all([
     db.query(
@@ -427,46 +486,9 @@ const findPublicMapItems = async () => {
                 incident_type.type_code,
                 incident_type.type_name,
                 incident_type.icon_name,
-                incident_type.marker_color,
-                latest_report.reporter_name,
-                latest_report.image_url,
-                original_report.report_id AS original_report_id,
-                original_report.reporter_name AS original_reporter_name,
-                original_report.owner_has_image
+                incident_type.marker_color
              FROM tb_incidents incident
              LEFT JOIN tb_incident_types incident_type ON incident_type.type_id = incident.final_type_id
-             LEFT JOIN LATERAL (
-                SELECT
-                    NULLIF(TRIM(CONCAT_WS(' ', reporter.name, reporter.lastname)), '') AS reporter_name,
-                    (
-                        SELECT media.media_url
-                        FROM tb_incident_media media
-                        WHERE media.report_id = report.report_id
-                          AND media.media_type = 'image'
-                        ORDER BY media.media_id ASC
-                        LIMIT 1
-                    ) AS image_url
-                FROM tb_incident_reports report
-                LEFT JOIN tb_users reporter ON reporter.id = report.user_id
-                WHERE report.incident_id = incident.incident_id
-                ORDER BY report.created_at DESC, report.report_id DESC
-                LIMIT 1
-             ) latest_report ON TRUE
-            LEFT JOIN LATERAL (
-                SELECT report.report_id,
-                NULLIF(TRIM(CONCAT_WS(' ', reporter.name, reporter.lastname)), '') AS reporter_name,
-                EXISTS (
-                SELECT 1
-                FROM tb_incident_media media
-                WHERE media.report_id = report.report_id
-                    AND media.media_type = 'image'
-                ) AS owner_has_image
-                FROM tb_incident_reports AS report
-                LEFT JOIN tb_users reporter ON reporter.id = report.user_id
-                WHERE report.incident_id = incident.incident_id
-                ORDER BY report.created_at ASC, report.report_id ASC
-                LIMIT 1
-            ) original_report ON TRUE
              WHERE incident.incident_status = 'active'
              ORDER BY incident.last_reported_at DESC, incident.incident_id DESC`,
     ),
@@ -1315,4 +1337,5 @@ module.exports = {
   createIncidentFromPendingReport,
   rejectStandalonePendingReport,
   separateReportFromIncident,
+  findPublicIncidentDetailById,
 };

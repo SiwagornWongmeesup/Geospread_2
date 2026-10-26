@@ -19,7 +19,7 @@ const incidentCatalogValidator = [validateRequest];
 const reportTypeSuggestionCacheValidator = [validateRequest];
 const publicMapValidator = [validateRequest];
 const adminReviewQueueValidator = [validateRequest];
-const falseIncidentReportValidator = [
+const incidentIdValidator  = [
     param('incidentId')
         .isInt({ min: 1 }).withMessage('รหัสเหตุการณ์ไม่ถูกต้อง')
         .toInt(),
@@ -152,7 +152,7 @@ module.exports = {
     reportTypeSuggestionCacheValidator,
     publicMapValidator,
     adminReviewQueueValidator,
-    falseIncidentReportValidator,
+    incidentIdValidator,
     reportValidator,
     candidateDecisionValidator,
     candidateGroupDecisionValidator,
