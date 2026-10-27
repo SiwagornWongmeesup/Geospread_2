@@ -50,6 +50,7 @@
         :map-items="publicMapItems"
         :selected-item-id="selectedIncident?.id"
         :selected-item="selectedIncidentPreview"
+        :selected-incident-detail="selectedIncidentDetail"
         :popup-padding="{ top: 260, right: 16, bottom: 72, left: 16 }"
         :reporter-location="userLocation"
         class="mobile-home__map"
@@ -174,6 +175,7 @@ import { useGeolocation } from "~/composables/useGeolocation";
 const {
   selectedIncident,
   selectedIncidentPreview,
+  selectedIncidentDetail,
   publicMapItems,
   userLocation,
   nearbyIncidentCards,
@@ -206,6 +208,7 @@ const clearAreaSelection = () => {
   selectedArea.value = null;
   clearSelectedIncident();
 };
+
 const focusCurrentLocation = async () => {
   try {
     const location = await getCurrentLocation();

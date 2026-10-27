@@ -223,7 +223,20 @@ const  getIncidentDetail = async (incidentId) => {
     }
 
     return incidentDetail;
-}
+};
+
+const getReportDetail = async (incidentId, reportId) => {
+    const reportDetail = await incidentRepository.findPublicReportById(
+        incidentId,
+        reportId,
+    );
+
+    if (!reportDetail) {
+        throw new AppError('ไม่พบรายงานนี้', 404);
+    }
+    return reportDetail;
+};
+
 
 const getAdminReviewQueue = async () => incidentRepository.findAdminReviewQueue();
 
@@ -323,5 +336,6 @@ module.exports = {
     createIncidentFromPendingReport,
     rejectStandalonePendingReport,
     separateReportFromIncident,
-    getIncidentDetail
+    getIncidentDetail,
+    getReportDetail,
 };

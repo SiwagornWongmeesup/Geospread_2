@@ -32,6 +32,7 @@ const props = defineProps({
   mapItems: { type: Array, default: () => [] },
   selectedItemId: { type: String, default: null },
   selectedItem: { type: Object, default: null },
+  selectedIncidentDetail: { type: Object, default: null },
   popupPadding: {
     type: Object,
     default: () => ({ top: 240, right: 32, bottom: 48, left: 32 }),
@@ -94,6 +95,7 @@ const renderIncidentPopup = () => {
 
   const popupApp = createApp(IncidentMapPopup, {
     incident: item,
+    incidentDetail: props.selectedIncidentDetail,
     onClose: () => clearIncidentPopup({ notifyParent: true }),
   })
 
@@ -506,6 +508,10 @@ watch(() => props.selectedItemId, () => {
 })
 
 watch(() => props.selectedItem, () => {
+  renderIncidentPopup()
+}, { deep: true })
+
+watch(() => props.selectedIncidentDetail, () => {
   renderIncidentPopup()
 }, { deep: true })
 

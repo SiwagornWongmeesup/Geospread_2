@@ -441,23 +441,23 @@ const findPublicIncidentDetailById = async (incidentId) => {
 
   const reportsResult = await db.query(
     `SELECT
-    report.report_id,
-    report.description,
-    report.created_at,
-               COALESCE(
-        NULLIF(TRIM(CONCAT_WS(' ', reporter.name, reporter.lastname)), ''),
-        'ไม่ระบุชื่อ'
-    ) AS reporter_name,
-    (
-      SELECT COUNT(*)::int
-      FROM tb_incident_media media 
-      WHERE media.report_id = report.report_id
-       AND media.media_type = 'image'
-    ) AS image_count
-     FROM tb_incident_reports report
-   LEFT JOIN tb_users reporter ON reporter.id = report.user_id
-   WHERE report.incident_id = $1
-   ORDER BY report.created_at DESC, report.report_id DESC`,
+              report.report_id,
+              report.description,
+              report.created_at,
+                        COALESCE(
+                  NULLIF(TRIM(CONCAT_WS(' ', reporter.name, reporter.lastname)), ''),
+                  'ไม่ระบุชื่อ'
+              ) AS reporter_name,
+              (
+                SELECT COUNT(*)::int
+                FROM tb_incident_media media 
+                WHERE media.report_id = report.report_id
+                AND media.media_type = 'image'
+              ) AS image_count
+              FROM tb_incident_reports report
+            LEFT JOIN tb_users reporter ON reporter.id = report.user_id
+            WHERE report.incident_id = $1
+            ORDER BY report.created_at DESC, report.report_id DESC`,
     [incidentId],
   );
 
@@ -465,6 +465,27 @@ const findPublicIncidentDetailById = async (incidentId) => {
     incident,
     reports: reportsResult.rows,
   };
+};
+
+const findPublicReportById = async (incidentId, reportId) => {
+  const reportById = await db.query(
+    `SELECT
+              report.report_id,
+              report.description,
+              report.type_status,
+              report.report_status,
+              report.created_at,
+                ST_Y(report.incident_location) AS lat,
+                ST_X(report.incident_location) AS lng,
+                NULLIF(TRIM(CONCAT_WS(' ', reporter.name, reporter.lastname)), '') AS reporter_name,
+                ${reportMediaJson} AS media
+             FROM tb_incident_reports report
+             LEFT JOIN tb_users reporter ON reporter.id = report.user_id
+            WHERE report.incident_id = $1 AND report.report_id = $2 `,
+    [incidentId, reportId],
+  );
+
+  return reportById.rows[0] ?? null;
 };
 
 const findPublicMapItems = async () => {
@@ -1338,4 +1359,5 @@ module.exports = {
   rejectStandalonePendingReport,
   separateReportFromIncident,
   findPublicIncidentDetailById,
+  findPublicReportById,
 };

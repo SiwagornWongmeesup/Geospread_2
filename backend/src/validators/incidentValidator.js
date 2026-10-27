@@ -26,6 +26,16 @@ const incidentIdValidator  = [
     validateRequest,
 ];
 
+const incidentReportIdValidator = [
+    param('incidentId')
+        .isInt({ min: 1 }).withMessage('รหัสเหตุการณ์ไม่ถูกต้อง')
+        .toInt(),
+    param('reportId')
+        .isInt({ min: 1 }).withMessage('รหัสรายงานไม่ถูกต้อง')
+        .toInt(),
+    validateRequest,
+];
+
 const reportValidator = [
     body('description')
         .trim()
@@ -153,6 +163,7 @@ module.exports = {
     publicMapValidator,
     adminReviewQueueValidator,
     incidentIdValidator,
+    incidentReportIdValidator,
     reportValidator,
     candidateDecisionValidator,
     candidateGroupDecisionValidator,

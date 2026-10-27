@@ -82,6 +82,22 @@ const getIncidentDetail  = async (req, res, next) => {
     }
 }
 
+const getReportDetail = async (req, res, next) => {
+    try {
+        const reportDetail = await incidentService.getReportDetail(
+            req.params.incidentId,
+            req.params.reportId,
+        );
+
+        res.json({
+            success: true,
+            data: reportDetail,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 const reportFalseIncident = async (req, res, next) => {
     try {
         const result = await incidentService.reportFalseIncident({
@@ -186,5 +202,6 @@ module.exports = {
     createIncidentFromPendingReport,
     rejectStandalonePendingReport,
     separateReportFromIncident,
-    getIncidentDetail
+    getIncidentDetail,
+    getReportDetail,
 };

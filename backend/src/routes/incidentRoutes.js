@@ -11,6 +11,7 @@ const {
     candidateGroupDecisionValidator,
     createIncidentFromPendingReportValidator,
     incidentIdValidator,
+    incidentReportIdValidator,
     incidentCatalogValidator,
     publicMapValidator,
     rejectStandalonePendingReportValidator,
@@ -25,6 +26,7 @@ router.get('/catalog', incidentCatalogValidator, incidentController.getIncidentT
 router.get('/report-type-cache', reportTypeSuggestionCacheValidator, incidentController.getReportTypeSuggestionCache);
 router.get('/suggestions', suggestedTypesValidator, incidentController.getSuggestedIncidentTypes);
 router.get('/map', publicMapValidator, incidentController.getPublicMapItems);
+router.get('/:incidentId/reports/:reportId', incidentReportIdValidator, incidentController.getReportDetail);
 router.get('/:incidentId', incidentIdValidator, incidentController.getIncidentDetail);
 
 router.post('/:incidentId/false-reports', authMiddleware, reportRateLimit, incidentIdValidator, incidentController.reportFalseIncident);

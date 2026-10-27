@@ -85,16 +85,18 @@ const toneFromColor = (color, fallback = 'blue') => {
   }
 
   return fallback
-}
+} 
 
-const getFirstImageUrl = (item) => {
-  if (item.image_url) return item.image_url
+const getImageCount  = (item) => {
+  if(!Array.isArray(item.media)) {
+    return 0
+  }
 
-  const firstImage = Array.isArray(item.media)
-    ? item.media.find((media) => media?.media_type === 'image' && media?.media_url)
-    : null
+  const images = item.media.filter((media) => {
+    return media.media_type === 'image' && media.media_url
+  })
 
-  return firstImage?.media_url || item.media_url || item.thumbnail_url || null
+  return images.length
 }
 
 const withoutStatusSuffix = (title, fallback) => {
@@ -114,7 +116,10 @@ const normalizeIncident = (incident) => {
   const statusLabel = isVerified ? 'ยืนยันแล้ว' : hasFinalType ? 'กำลังดำเนินการ' : 'รอตรวจสอบ'
 
   return {
+    // ใช้เลือกmarkerหน้าเว็ป
     id: `incident-${incident.incident_id}`,
+    // ใช้เรียกapiตอนเลือกmarker
+    incidentId:incident.incident_id,
     kind: 'incident',
     title: withoutStatusSuffix(incident.title, incident.type_name || 'เหตุการณ์'),
     description: incident.description,
@@ -135,10 +140,7 @@ const normalizeIncident = (incident) => {
     radiusM: hasFinalType ? toNumber(incident.radius_m) : null,
     radiusLabel: formatImpactRadius(hasFinalType ? incident.radius_m : null),
     reportCount,
-    imageUrl: getFirstImageUrl(incident),
-    originalReportId: incident.original_report_id ?? null,
-    originalReporterName: incident.original_reporter_name || null,
-    ownerHasImage: Boolean(incident.owner_has_image),
+    imageCount: getImageCount(incident),
     reporterLabel: incident.reporter_name || 'ชุมชน',
     location: formatCoordinate(incident.lat, incident.lng),
     areaLabel: incident.location_name || incident.area_name || incident.province_name || 'พื้นที่ที่รายงาน',
@@ -165,7 +167,7 @@ const normalizePendingReport = (report) => ({
   radiusM: null,
   radiusLabel: 'ไม่ระบุ',
   reportCount: 1,
-  imageUrl: getFirstImageUrl(report),
+  imageCount: getImageCount(report),
   reporterLabel: report.reporter_name || 'ชุมชน',
   location: formatCoordinate(report.lat, report.lng),
   areaLabel: report.location_name || report.area_name || report.province_name || 'พื้นที่ที่รายงาน',
@@ -206,10 +208,17 @@ export const useHomeDashboard = () => {
   const publicMapItems = useState('home-public-map-items', () => [])
   const userLocation = useState('home-user-location', () => null)
   const isLoadingMap = useState('home-map-loading', () => false)
+  const isLoadingIncidentDetail = useState('home-incident-detail-loading', () => false)
   const mapError = useState('home-map-error', () => null)
+  // ที่เก็บข้อมูลรายระเอียดของ Marker ที่กำลังกด 
+  const selectedIncidentDetail = useState('home-selected-incident-detail',() => null,)
 
-  const selectIncident = (incident) => {
+  const selectIncident = async (incident) => {
     selectedIncident.value = incident
+    // เหตุการณ์ต้องเป็น incident ที่รวมแล้วไม่ใช่pending
+    if (incident.kind == 'incident') {
+      await fetchIncidentDetail (incident.incidentId) 
+    }
   }
 
   const clearSelectedIncident = () => {
@@ -270,10 +279,13 @@ export const useHomeDashboard = () => {
   const nearbyIncidentCards = computed(() => {
     const cards = publicMapItems.value
       .filter((item) => item.kind === 'incident')
+      
       .map((item) => {
         const distanceMeters = getDistanceInMeters(
+          // ตำแหน่งจาก api
           item.lat,
           item.lng,
+          // ตำแหน่งปัจจุบันจากBrowser GPS
           userLocation.value,
         )
 
@@ -285,9 +297,10 @@ export const useHomeDashboard = () => {
       })
 
     const hasUserLocation = cards.some((item) => item.distanceMeters !== null)
-
+    //เงื่อนไขเช็คว่ามีระยะคำนวนอย่างน้อย1เหตุไหม
     if (hasUserLocation) {
       cards.sort((firstCard, secondCard) => {
+        // ระยะของแต่ละเหตุการณ์จากผู้ใช้คนนั้นมาเทียบกัน
         const firstDistance = firstCard.distanceMeters ?? Number.POSITIVE_INFINITY
         const secondDistance = secondCard.distanceMeters ?? Number.POSITIVE_INFINITY
         return firstDistance - secondDistance
@@ -317,6 +330,21 @@ export const useHomeDashboard = () => {
       : defaultMapCenter
   })
 
+  const fetchIncidentDetail = async (incidentId) =>  {
+    isLoadingIncidentDetail.value = true
+    mapError.value = null
+    try {
+      const response = await $fetch(`${apiBase}/incidents/${incidentId}`,)
+      //รายงานของคนที่อยู่ในmarkerนั้น
+      selectedIncidentDetail.value = response.data
+    } catch (error) {
+      console.error('โหลดรายละเอียดเหตุการณ์ไม่สำเร็จ', error)
+      selectedIncidentDetail.value = null
+    } finally {
+      isLoadingIncidentDetail.value = false
+    }
+  }
+
   return {
     selectedIncident,
     selectedIncidentPreview,
@@ -324,11 +352,14 @@ export const useHomeDashboard = () => {
     userLocation,
     nearbyIncidentCards,
     isLoadingMap,
+    isLoadingIncidentDetail,
     mapError,
     mapCenter,
     selectIncident,
+    selectedIncidentDetail,
     clearSelectedIncident,
     setUserLocation,
     fetchPublicMapItems,
+    fetchIncidentDetail
   }
 }

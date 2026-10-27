@@ -2,13 +2,17 @@
 import IncidentCard from '~/components/incidents/IncidentCard.vue';
 import IncidentFilter from '~/components/incidents/IncidentFilter.vue';
 
+const route = useRoute();
+
 definePageMeta({
   showRightPanel: false
 });
 </script>
 
 <template>
-  <section class="dashboard-page">
+  <NuxtPage v-if="route.path !== '/incidents'" />
+
+  <section v-else class="dashboard-page">
     <header class="dashboard-page__header">
       <h1>เหตุการณ์</h1>
       <p>ค้นหาและติดตามเหตุการณ์ตามพื้นที่ของคุณ</p>
