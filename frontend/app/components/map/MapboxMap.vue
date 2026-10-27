@@ -7,8 +7,12 @@ import { createApp, ref, onMounted, onUnmounted, watch } from 'vue'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import IncidentMapPopup from './IncidentMapPopup.vue'
+import { usePlaceNames } from '~/composables/usePlaceNames'
 
 const config = useRuntimeConfig()
+// popup สร้างด้วย createApp แยกต่างหาก เรียก composable ของ Nuxt เองไม่ได้
+// จึงหาชื่อสถานที่ที่นี่ แล้วส่งเข้า popup เป็น prop
+const { loadPlaceNames, getPlaceLabel } = usePlaceNames()
 const mapContainer = ref(null)
 let map = null
 let isMapLoaded = false
@@ -23,7 +27,11 @@ let notifyParentOnPopupClose = false
 const radiusSourceId = 'incident-radius-source'
 const radiusFillLayerId = 'incident-radius-fill'
 const radiusLineLayerId = 'incident-radius-line'
-const clusterRadiusPx = 30
+// ระยะ (px บนจอ) ที่หมุดจะถูกรวมเป็นกลุ่ม ต้องไม่น้อยกว่าความกว้างหมุด (~42px)
+// ไม่งั้นหมุดที่ห่างกันน้อยกว่าขนาดตัวเองจะวาดทับกัน และหมุดข้างล่างจะถูกบังจนมองไม่เห็น
+const clusterRadiusPx = 44
+// ซูมถึงระดับนี้แล้วกลุ่มที่ยังไม่แยก จะกางหมุดออกเป็นวงรอบจุดแทน
+const spiderfyZoom = 16
 
 const props = defineProps({
   center: { type: Array, default: () => [100.5018, 13.7563] },
@@ -42,7 +50,7 @@ const props = defineProps({
   allowLocationSelection: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['select-item', 'location-select', 'close-popup'])
+const emit = defineEmits(['select-item', 'location-select', 'close-popup','open-report'])
 
 const toNumber = (value) => {
   const number = Number(value)
@@ -79,6 +87,10 @@ const renderIncidentPopup = () => {
     return
   }
 
+  // หาชื่อสถานที่ของหมุดนี้จาก Mapbox (ถ้าเคยหาแล้วจะไม่ถามซ้ำ)
+  // popup จะอัปเดตชื่อเองเมื่อได้ชื่อมา ไม่ต้องสร้าง popup ใหม่
+  loadPlaceNames([item])
+
   clearIncidentPopup()
 
   const popupContent = document.createElement('div')
@@ -92,11 +104,13 @@ const renderIncidentPopup = () => {
     offset: 0,
     className: 'geospread-incident-popup',
   })
-
+// ส่งไปใช้ต่อหน้าdestop
   const popupApp = createApp(IncidentMapPopup, {
     incident: item,
     incidentDetail: props.selectedIncidentDetail,
+    getPlaceLabel,
     onClose: () => clearIncidentPopup({ notifyParent: true }),
+    onOpenReport: ({ incidentId, reportId }) => {emit('open-report', { incidentId, reportId })},
   })
 
   incidentPopup = popup
@@ -198,7 +212,8 @@ const createMarkerElement = (item) => {
   marker.type = 'button'
   marker.className = `incident-map-marker incident-map-marker--${markerKind}`
   marker.style.setProperty('--marker-color', item.markerColor || fallbackMarkerColor)
-  marker.setAttribute('aria-label', badgeLabel ? `${badgeLabel}: ${item.title || 'ตำแหน่งบนแผนที่'}` : (item.title || 'ตำแหน่งเหตุการณ์'))
+  const ariaCount = Number(item.reportCount) > 1 ? ` (${Number(item.reportCount)} รายงาน)` : ''
+  marker.setAttribute('aria-label', (badgeLabel ? `${badgeLabel}: ${item.title || 'ตำแหน่งบนแผนที่'}` : (item.title || 'ตำแหน่งเหตุการณ์')) + ariaCount)
 
   const pin = document.createElement('span')
   pin.className = 'incident-map-marker__pin'
@@ -209,6 +224,25 @@ const createMarkerElement = (item) => {
   icon.alt = ''
   icon.setAttribute('aria-hidden', 'true')
   pin.appendChild(icon)
+
+  // จำนวนรายงานของจุดนี้ (ถ้าไม่มีข้อมูล ให้ถือว่าเป็น 1)
+  const reportCount = Number(item.reportCount) || 1
+
+  // แสดงตัวเลขบนหมุด เฉพาะเมื่อมีมากกว่า 1 รายงาน
+  if (reportCount > 1) {
+    // ถ้าเกิน 99 ให้แสดงเป็น "99+" จะได้ไม่ล้นหมุด
+    let label = String(reportCount)
+    if (reportCount > 99) {
+      label = '99+'
+    }
+
+    // สร้างป้ายตัวเลข แล้วใส่ลงในหมุด
+    const badge = document.createElement('span')
+    badge.className = 'incident-map-marker__count'
+    badge.textContent = label
+    badge.setAttribute('aria-hidden', 'true') // ไม่ให้โปรแกรมอ่านหน้าจออ่านตัวเลขนี้
+    pin.appendChild(badge)
+  }
 
   marker.appendChild(pin)
 
@@ -269,25 +303,26 @@ const zoomToCluster = (cluster) => {
   const hasSingleLocation = west === east && south === north
   if (hasSingleLocation) {
     // หมุดที่พิกัดเดียวกันไม่มีวันแยกด้วยการซูมปกติ จึงซูมถึงระดับที่จะแตกเป็นวงรอบจุด
-    map.easeTo({ center: cluster.center, zoom: Math.max(Math.min(map.getZoom() + 3, 18), 16), duration: 350 })
+    map.easeTo({ center: cluster.center, zoom: Math.max(Math.min(map.getZoom() + 3, 18), spiderfyZoom), duration: 350 })
     return
   }
 
+  // ซูมได้สูงสุดแค่ระดับที่กลุ่มจะถูกกางออก ถ้ายังไม่แยก renderMapItems จะกางหมุดเป็นวงให้เอง
   map.fitBounds(bounds, {
     padding: 72,
-    maxZoom: 16,
+    maxZoom: spiderfyZoom,
     duration: 350,
   })
 }
 
-const clusterHasSingleLocation = (cluster) => cluster.items.every((item) => {
-  const [lng, lat] = toLngLat(item)
-  return lng === cluster.center[0] && lat === cluster.center[1]
-})
-
+// ตำแหน่งของหมุดแต่ละอันตอนกางเป็นวงรอบจุดกลาง
 const getSpiderOffset = (index, count) => {
   const angle = -Math.PI / 2 + (2 * Math.PI * index / count)
-  const radius = Math.max(30, Math.min(52, count * 7))
+
+  // ให้วงใหญ่ขึ้นตามจำนวนหมุด ระยะห่างตามขอบวงจะได้ไม่น้อยกว่าความกว้างหมุด (~48px รวมช่องว่าง)
+  const spacingPerPin = 48
+  const radius = Math.max(36, (count * spacingPerPin) / (2 * Math.PI))
+
   return [Math.cos(angle) * radius, Math.sin(angle) * radius]
 }
 
@@ -394,7 +429,10 @@ const renderMapItems = () => {
 
   buildMapItemClusters().forEach((cluster) => {
     const isCluster = cluster.items.length > 1
-    const shouldSpiderfy = isCluster && clusterHasSingleLocation(cluster) && map.getZoom() >= 16
+
+    // ซูมลึกพอแล้วแต่ยังเป็นกลุ่มอยู่ = หมุดอยู่ใกล้กันมาก (หรือพิกัดเดียวกัน) ให้กางออกเป็นวง
+    // (เดิมกางเฉพาะกลุ่มที่ทุกหมุดพิกัดตรงกันเป๊ะ กลุ่มที่ห่างกันไม่กี่เมตรจึงกดซูมเท่าไหร่ก็ไม่แยก)
+    const shouldSpiderfy = isCluster && map.getZoom() >= spiderfyZoom
 
     if (shouldSpiderfy) {
       cluster.items.forEach((item, index) => {
@@ -564,6 +602,27 @@ watch(() => [props.editableLocation, props.reporterLocation], () => {
   height: 1.2rem;
   object-fit: contain;
   filter: brightness(0) invert(1);
+  pointer-events: none;
+}
+
+:global(.incident-map-marker__count) {
+  position: absolute;
+  top: -0.55rem;
+  right: -0.6rem;
+  z-index: 2;
+  display: grid;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  place-items: center;
+  padding: 0 0.28rem;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: #102968;
+  color: #fff;
+  font-size: 0.66rem;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 2px 6px rgb(15 23 42 / 25%);
   pointer-events: none;
 }
 

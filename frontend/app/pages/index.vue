@@ -12,6 +12,16 @@ definePageMeta({
       if (isAdmin.value) {
         return navigateTo('/admin')
       }
+    },
+    // เลือก layout ตอนเข้าหน้านี้: มือถือใช้ 'mobile' คอมใช้ 'default'
+    // ตั้งใน middleware เพื่อให้มีผลกับหน้านี้หน้าเดียว ไม่ติดไปหน้าอื่น
+    function () {
+      const viewMode = useState('responsive-view')
+      if (viewMode.value === 'mobile') {
+        setPageLayout('mobile')
+      } else {
+        setPageLayout('default')
+      }
     }
   ]
 })

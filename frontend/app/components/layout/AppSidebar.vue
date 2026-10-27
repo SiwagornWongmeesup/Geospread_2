@@ -58,8 +58,16 @@ const accountItems = [
 
 <template>
   <aside class="app-sidebar" :class="{ 'app-sidebar--collapsed': collapsed }">
+    <!-- โลโก้อยู่บนสุดของ sidebar (ย้ายมาจาก header) ตอนพับจะเหลือแค่รูปโลโก้ -->
     <div class="app-sidebar__topbar">
-      <span v-if="!collapsed" class="app-sidebar__label">เมนู</span>
+      <NuxtLink to="/" class="app-sidebar__brand" aria-label="GeoSpread หน้าหลัก">
+        <img src="/logos/logo.png" alt="" class="app-sidebar__logo" />
+
+        <span v-if="!collapsed" class="app-sidebar__brand-text">
+          <span class="app-sidebar__brand-name">GeoSpread</span>
+          <span class="app-sidebar__brand-tagline">Safer Communities Together</span>
+        </span>
+      </NuxtLink>
 
       <button
         type="button"
@@ -190,15 +198,51 @@ const accountItems = [
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 2.25rem;
-  padding: 0 0.25rem 0 0.75rem;
+  gap: 8px;
+  min-height: 56px;
+  padding: 0 4px 12px 4px;
+  border-bottom: 1px solid #edf2f8;
 }
 
-.app-sidebar__label {
-  color: #334e80;
-  font-size: 0.78rem;
+.app-sidebar__brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  text-decoration: none;
+}
+
+/* ไฟล์ logo.png มีพื้นที่ว่างรอบรูปเยอะ จึงต้องตั้งขนาดใหญ่กว่าที่เห็นจริง */
+.app-sidebar__logo {
+  width: 76px;
+  height: 76px;
+  margin: -14px -12px -14px -14px;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+
+.app-sidebar__brand-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.1;
+}
+
+.app-sidebar__brand-name {
+  color: #071b72;
+  font-size: 21px;
   font-weight: 800;
-  letter-spacing: 0.04em;
+  letter-spacing: -0.6px;
+}
+
+.app-sidebar__brand-tagline {
+  margin-top: 2px;
+  overflow: hidden;
+  color: #4f6397;
+  font-size: 10px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .app-sidebar__toggle {
@@ -469,9 +513,17 @@ const accountItems = [
   padding-left: 0.65rem;
 }
 
+/* ตอนพับ: วางโลโก้กับปุ่มขยายเรียงลงมา เพราะความกว้างไม่พอวางข้างกัน */
 .app-sidebar--collapsed .app-sidebar__topbar {
+  flex-direction: column;
   justify-content: center;
-  padding: 0;
+  padding: 0 0 12px;
+}
+
+.app-sidebar--collapsed .app-sidebar__logo {
+  width: 56px;
+  height: 56px;
+  margin: -6px 0;
 }
 
 .app-sidebar--collapsed .app-sidebar__toggle svg {

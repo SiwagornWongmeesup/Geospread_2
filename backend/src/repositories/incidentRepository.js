@@ -507,9 +507,31 @@ const findPublicMapItems = async () => {
                 incident_type.type_code,
                 incident_type.type_name,
                 incident_type.icon_name,
-                incident_type.marker_color
+                incident_type.marker_color,
+                cover_image.image_url,
+                image_stats.image_count
              FROM tb_incidents incident
              LEFT JOIN tb_incident_types incident_type ON incident_type.type_id = incident.final_type_id
+             -- รูปปกของการ์ด: รูปจากรายงานล่าสุดในเหตุการณ์นี้ที่มีรูป (ไม่เอารายงานที่ถูกปฏิเสธ)
+             LEFT JOIN LATERAL (
+                SELECT media.media_url AS image_url
+                FROM tb_incident_reports report
+                JOIN tb_incident_media media ON media.report_id = report.report_id
+                WHERE report.incident_id = incident.incident_id
+                  AND report.report_status <> 'rejected'
+                  AND media.media_type = 'image'
+                ORDER BY report.created_at DESC, media.media_id ASC
+                LIMIT 1
+             ) cover_image ON TRUE
+             -- จำนวนรูปทั้งหมดในเหตุการณ์นี้ ใช้แสดงป้าย  บนการ์ด
+             LEFT JOIN LATERAL (
+                SELECT COUNT(*)::int AS image_count
+                FROM tb_incident_reports report
+                JOIN tb_incident_media media ON media.report_id = report.report_id
+                WHERE report.incident_id = incident.incident_id
+                  AND report.report_status <> 'rejected'
+                  AND media.media_type = 'image'
+             ) image_stats ON TRUE
              WHERE incident.incident_status = 'active'
              ORDER BY incident.last_reported_at DESC, incident.incident_id DESC`,
     ),

@@ -1,25 +1,26 @@
 <template>
-  <header class="app-header">
-    <NuxtLink to="/" class="app-header__brand">
-      <img src="/logos/logo.png" alt="GeoSpread Logo" class="app-header__logo-img" />
-
-      <div class="app-header__brand-text">
-        <span class="app-header__name">GeoSpread</span>
-        <span class="app-header__tagline">Safer Communities Together</span>
-      </div>
+  <header class="app-header" :class="{ 'app-header--standalone': standalone }">
+    <!-- หน้าที่ไม่มี sidebar (login, register): แสดงโลโก้เต็มแทนชื่อหน้า -->
+    <NuxtLink v-if="standalone" to="/" class="app-header__brand">
+      <img src="/logos/logo.png" alt="" class="app-header__brand-logo" />
+      <span class="app-header__brand-text">
+        <span class="app-header__brand-name">GeoSpread</span>
+        <span class="app-header__brand-tagline">Safer Communities Together</span>
+      </span>
     </NuxtLink>
+
+    <!-- ชื่อหน้าที่กำลังเปิดอยู่ -->
+    <h1 v-else class="app-header__title">{{ pageTitle }}</h1>
 
     <div class="app-header__search">
       <span class="search-icon">⌕</span>
       <input
         type="text"
-        placeholder="Search locations, incidents, or help requests (e.g. Chiang Mai, flood, fire...)"
+        placeholder="ค้นหาสถานที่ เหตุการณ์..."
+        aria-label="ค้นหาสถานที่ เหตุการณ์ หรือคำขอช่วยเหลือ"
       />
     </div>
 
-   
-
-  
     <template v-if="isLoggedIn">
       <button class="notification-button" aria-label="Notifications">
         ♧
@@ -56,8 +57,42 @@
 import { computed } from 'vue'
 import { useAuth } from '~/composables/useAuth'
 
+defineProps({
+  // true = ใช้ในหน้าที่ไม่มี sidebar (login, register) จะแสดงโลโก้เต็มและเป็นแถบเต็มความกว้าง
+  standalone: { type: Boolean, default: false },
+})
+
 const router = useRouter()
+const route = useRoute()
 const { isLoggedIn, getUser, logout } = useAuth()
+
+// ชื่อหน้าที่แสดงใน header ใช้ชื่อเดียวกับเมนูใน sidebar
+const pageTitles = {
+  '/': 'หน้าหลัก',
+  '/incidents': 'ดูเหตุการณ์',
+  '/help-requests': 'ดูคำขอช่วยเหลือ',
+  '/report-incident': 'แจ้งเหตุใหม่',
+  '/request-help': 'ขอความช่วยเหลือ',
+  '/followed-locations': 'พื้นที่ติดตาม',
+  '/notifications': 'การแจ้งเตือน',
+  '/safety-guide': 'คู่มือความปลอดภัย',
+  '/profile': 'โปรไฟล์',
+  '/settings': 'ตั้งค่า',
+}
+
+const pageTitle = computed(() => {
+  const title = pageTitles[route.path]
+  if (title) {
+    return title
+  }
+
+  // หน้ารายละเอียดรายงาน เช่น /incidents/30/reports/61
+  if (route.path.startsWith('/incidents/')) {
+    return 'รายละเอียดรายงาน'
+  }
+
+  return 'GeoSpread'
+})
 
 const goToLogin = () => {
   navigateTo('/login') 
@@ -82,33 +117,45 @@ const handleLogout = () => {
 </script>
 
 <style scoped>
+/* header เป็นการ์ดสีขาวมุมโค้ง ลอยอยู่เหนือเนื้อหา (อยู่ด้านขวาของ sidebar) */
 .app-header {
-  position: sticky;
-  top: 0;
   z-index: 100;
-  height: 72px;
+  flex: 0 0 auto;
+  height: 64px;
   display: flex;
   align-items: center;
-  gap: 18px;
-  padding: 0 18px 0 14px;
+  gap: 16px;
+  margin: 12px 16px 12px;
+  padding: 0 16px 0 24px;
+  border: 1px solid #e8eef8;
+  border-radius: 14px;
   background: #ffffff;
-  border-bottom: 1px solid #e8eef8;
   box-shadow: 0 2px 10px rgba(31, 74, 142, 0.05);
   font-family: "Noto Sans Thai", Inter, sans-serif;
 }
 
-/* Logo */
+/* แบบ standalone (login, register): เป็นแถบเต็มความกว้างติดขอบบน */
+.app-header--standalone {
+  height: 72px;
+  margin: 0;
+  padding: 0 18px 0 8px;
+  border-width: 0 0 1px;
+  border-radius: 0;
+}
 
 .app-header__brand {
   display: flex;
+  flex: 1;
   align-items: center;
-  gap: 8px;
-  min-width: 242px;
+  gap: 4px;
+  min-width: 0;
   text-decoration: none;
 }
 
-.app-header__logo-img {
-  width: 90px;
+/* ไฟล์ logo.png มีพื้นที่ว่างรอบรูปเยอะ จึงต้องตั้งขนาดใหญ่กว่าที่เห็นจริง */
+.app-header__brand-logo {
+  width: 72px;
+  height: 72px;
   object-fit: contain;
 }
 
@@ -118,24 +165,39 @@ const handleLogout = () => {
   line-height: 1.1;
 }
 
-.app-header__name {
+.app-header__brand-name {
   color: #071b72;
   font-size: 25px;
   font-weight: 800;
   letter-spacing: -0.8px;
 }
 
-.app-header__tagline {
+.app-header__brand-tagline {
   margin-top: 3px;
   color: #4f6397;
   font-size: 11px;
   font-weight: 500;
 }
 
+/* ชื่อหน้า */
+
+.app-header__title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: #071b72;
+  font-size: 22px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Search */
 
 .app-header__search {
-  flex: 1;
+  flex: 0 1 280px;
+  min-width: 160px;
   height: 40px;
   display: flex;
   align-items: center;
@@ -308,4 +370,5 @@ const handleLogout = () => {
   font-size: 18px;
   font-weight: 700;
 }
+
 </style>

@@ -4,9 +4,32 @@ import { computed } from "vue";
 const props = defineProps({
   incident: { type: Object, required: true },
   incidentDetail: { type: Object, default: null },
+  // ฟังก์ชันจาก usePlaceNames ที่ MapboxMap ส่งมาให้ ใช้หาชื่อสถานที่ของหมุด
+  getPlaceLabel: { type: Function, default: null },
 });
 
-defineEmits(["close"]);
+// ชื่อสถานที่ของหมุดนี้ พอ Mapbox ส่งชื่อมา ค่านี้จะเปลี่ยนเองอัตโนมัติ
+const placeLabel = computed(() => {
+  if (!props.getPlaceLabel) {
+    return "พื้นที่ที่รายงาน";
+  }
+  return props.getPlaceLabel(props.incident);
+});
+
+const emit = defineEmits(["close","open-report"]);
+
+const openReport = (report) => {
+  // ID ของกลุ่ม Marker
+  const incidentId = props.incident.incidentId
+  // ID ของรายงานคนนั้น
+  const reportId = report.report_id
+  // ส่งข้อมูลไปให้หน้าอื่นใช้งาน
+  emit('open-report',
+  {
+    incidentId,
+    reportId
+  })
+}
 
 const reports = computed(() => {
   const reportList = props.incidentDetail?.reports;
@@ -85,10 +108,14 @@ const incidentSummary = (incident) => {
     >
       <p>
         <img src="/icons/Location.svg" alt="" aria-hidden="true" />
-        พื้นที่ที่รายงาน
+        {{ placeLabel }}
       </p>
-      <p class="incident-map-popup__distance">
-        {{ props.incident.distanceFromUserLabel || "750 ม. จากคุณ" }}
+      <!-- แสดงระยะทางเฉพาะเมื่อรู้ตำแหน่งผู้ใช้แล้ว -->
+      <p
+        v-if="props.incident.distanceFromUserLabel"
+        class="incident-map-popup__distance"
+      >
+        {{ props.incident.distanceFromUserLabel }}
       </p>
     </section>
 
@@ -97,16 +124,13 @@ const incidentSummary = (incident) => {
       class="incident-map-popup__reports"
       aria-label="รายงานในกลุ่มเหตุการณ์"
     >
-      <div class="incident-map-popup__reports-heading">
-        <span>รายงานจากชุมชน</span>
-        <span>ล่าสุดก่อน</span>
-      </div>
+      <span class="incident-map-popup__reports-heading">ล่าสุดก่อน</span>
 
       <p v-if="!reports.length" class="incident-map-popup__loading">
         กำลังโหลดรายงาน…
       </p>
 
-      <article
+      <div
         v-for="report in reports"
         :key="report.report_id"
         class="incident-map-popup__report"
@@ -144,12 +168,13 @@ const incidentSummary = (incident) => {
             <button 
               class="incident-map-popup__report-link"
               type="button"
+              @click="openReport(report)"
               >
               ดูรายละเอียดเพิ่มเติม
             </button>
           </div>
         </div>
-      </article>
+      </div>
     </section>
 
     <section v-else class="incident-map-popup__single-report">
@@ -272,17 +297,15 @@ const incidentSummary = (incident) => {
   scrollbar-color: #b7cbe4 transparent;
 }
 .incident-map-popup__reports-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  color: #6480a8;
+  display: block;
   padding: 12px 0 8px;
-  color: #6a84a6;
   font-size: 12px;
   font-weight: 750;
-}
-.incident-map-popup__reports-heading span:last-child {
-  color: #2378df;
-}
+  text-align: right;
+  justify-content: space-between;
+  color: #6a84a6;
+  }
 .incident-map-popup__loading {
   margin: 0;
   padding: 18px 0;
@@ -389,6 +412,17 @@ const incidentSummary = (incident) => {
 
 .incident-map-popup__report-link{
   margin-left: auto;
+  padding: 3px 0;
+  border: 0;
+  background: transparent;
+  color: #2378df;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.25;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 .incident-map-popup__single-report {
   margin-top: 14px;

@@ -26,6 +26,24 @@
     >
       {{ errorMessage }}
     </p>
+
+    <!-- ยังไม่รู้ตำแหน่งผู้ใช้: ไม่แสดงการ์ด เพราะคำนวณระยะทางจริงไม่ได้ -->
+    <div
+      v-else-if="!hasUserLocation"
+      class="nearby-incidents__state nearby-incidents__state--location"
+    >
+      <p>{{ locationError || "เปิดตำแหน่งปัจจุบันเพื่อดูเหตุการณ์ที่อยู่ใกล้คุณ" }}</p>
+      <button
+        type="button"
+        class="nearby-incidents__location-button"
+        :disabled="isLocating"
+        @click="$emit('request-location')"
+      >
+        <span v-if="isLocating">กำลังหาตำแหน่ง...</span>
+        <span v-else>ใช้ตำแหน่งปัจจุบัน</span>
+      </button>
+    </div>
+
     <p v-else-if="!incidents.length" class="nearby-incidents__state">
       ยังไม่มีเหตุการณ์ที่แสดงบนแผนที่
     </p>
@@ -52,17 +70,24 @@
             :src="incident.imageUrl"
             :alt="incident.title"
           />
-          <div
+          <!-- ถ้าเหตุการณ์นี้ไม่มีรูปเลย ให้แสดงไอคอนประเภทเหตุการณ์แทน -->
+          <img
             v-else
-            class="incident-card__empty-media"
-            aria-label="ไม่มีรูปภาพ"
+            class="incident-card__type-icon"
+            :src="incident.iconUrl || '/icons/Alert.svg'"
+            alt=""
+            aria-hidden="true"
+          />
+
+          <!-- ป้ายบอกจำนวนรูปทั้งหมดในเหตุการณ์ แสดงเมื่อมีมากกว่า 1 รูป -->
+          <span
+            v-if="incident.imageCount > 1"
+            class="incident-card__photo-count"
+            :aria-label="`มีรูปทั้งหมด ${incident.imageCount} รูป`"
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <rect x="3" y="4" width="18" height="16" rx="2" />
-              <circle cx="8.5" cy="9" r="1.5" />
-              <path d="m4 18 5.2-5.2 3.1 3.1 2.4-2.4L20 18" />
-            </svg>
-          </div>
+            <img src="/icons/Photo.svg" alt="" aria-hidden="true" />
+            {{ incident.imageCount }}
+          </span>
         </div>
 
         <div class="incident-card__body">
@@ -82,13 +107,18 @@
               <path d="M12 21s6-5.1 6-11a6 6 0 1 0-12 0c0 5.9 6 11 6 11Z" />
               <circle cx="12" cy="10" r="2" />
             </svg>
-            พื้นที่ที่รายงาน
+            {{ getPlaceLabel(incident) }}
           </p>
           <div class="incident-card__meta">
             <span>{{ distanceLabel(incident) }}</span>
             <span aria-hidden="true">·</span>
             <span>{{ incident.time || "เมื่อสักครู่" }}</span>
           </div>
+
+          <!-- จำนวนรายงานที่ถูกรวมอยู่ในเหตุการณ์นี้ -->
+          <p class="incident-card__report-count">
+            {{ incident.reportCount || 1 }} รายงาน
+          </p>
         </div>
       </button>
     </div>
@@ -96,8 +126,13 @@
 </template>
 
 <script setup>
-defineEmits(['select'])
-defineProps({
+import { usePlaceNames } from "~/composables/usePlaceNames";
+
+defineEmits(['select', 'request-location'])
+const props = defineProps({
+  hasUserLocation: { type: Boolean, default: false },
+  isLocating: { type: Boolean, default: false },
+  locationError: { type: String, default: "" },
   title: { type: String, default: "เหตุการณ์ใกล้คุณ" },
   viewAllTo: { type: String, default: "/incidents" },
   selectedIncidentId: { type: String, default: null },
@@ -105,8 +140,6 @@ defineProps({
   isLoading: { type: Boolean, default: false },
   errorMessage: { type: String, default: null },
 });
-
-const MOCK_DISTANCE_LABEL = "750 ม. จากคุณ";
 
 const incidentTitle = (incident) =>
   String(incident?.title || "").trim() || "เหตุการณ์ที่รายงาน";
@@ -118,8 +151,23 @@ const incidentSummary = (incident) => {
     : "ยังไม่มีรายละเอียดเพิ่มเติม";
 };
 
+const { loadPlaceNames, getPlaceLabel } = usePlaceNames();
+
+// ทุกครั้งที่รายการการ์ดเปลี่ยน ให้หาชื่อสถานที่ของการ์ดที่แสดงอยู่ (2 ใบแรก)
+// ถ้ายังไม่รู้ตำแหน่งผู้ใช้ การ์ดถูกซ่อนอยู่ จึงยังไม่ต้องถาม Mapbox (ประหยัดโควตา)
+watch(
+  () => [props.incidents, props.hasUserLocation],
+  () => {
+    if (!props.hasUserLocation) {
+      return;
+    }
+    loadPlaceNames(props.incidents.slice(0, 2));
+  },
+  { immediate: true },
+);
+
 const distanceLabel = (incident) =>
-  incident?.distanceFromUserLabel || MOCK_DISTANCE_LABEL;
+  incident?.distanceFromUserLabel || "ไม่ทราบระยะทาง";
 </script>
 
 <style scoped>
@@ -191,6 +239,34 @@ const distanceLabel = (incident) =>
   font-size: 0.82rem;
   font-weight: 700;
 }
+.nearby-incidents__state--location {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.nearby-incidents__state--location p {
+  margin: 0;
+}
+.nearby-incidents__location-button {
+  padding: 7px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: #2563eb;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+}
+.nearby-incidents__location-button:hover {
+  background: #164ec2;
+}
+.nearby-incidents__location-button:disabled {
+  background: #93b4f0;
+  cursor: wait;
+}
 .nearby-incidents__state--error {
   border-color: #fecaca;
   background: #fff7f7;
@@ -221,6 +297,7 @@ const distanceLabel = (incident) =>
   transform: translateY(-2px);
 }
 .incident-card__media {
+  position: relative;
   display: grid;
   min-height: 100%;
   place-items: center;
@@ -233,17 +310,31 @@ const distanceLabel = (incident) =>
   height: 100%;
   object-fit: cover;
 }
-.incident-card__empty-media {
-  color: #8494b2;
+.incident-card__type-icon {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
 }
-.incident-card__empty-media svg {
-  width: 2rem;
-  height: 2rem;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.6;
+.incident-card__photo-count {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgb(15 23 42 / 70%);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+.incident-card__photo-count img {
+  width: 14px;
+  height: 10px;
+  /* ไฟล์ Photo.svg เป็นสีดำ เปลี่ยนเป็นสีขาวให้เห็นบนพื้นเข้ม */
+  filter: brightness(0) invert(1);
 }
 .incident-card__body {
   display: grid;
@@ -346,6 +437,17 @@ const distanceLabel = (incident) =>
 .incident-card__meta span {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.incident-card__report-count {
+  justify-self: start;
+  margin: 0;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #eef6ff;
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
 }
 @media (max-width: 46rem) {
   .nearby-incidents__list {

@@ -1,5 +1,8 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
+import VueEasyLightbox from 'vue-easy-lightbox'
+import { getIncidentIconUrl } from '~/composables/useIncidentIcon'
+import { usePlaceNames } from '~/composables/usePlaceNames'
 
 definePageMeta({
   showRightPanel: false,
@@ -9,17 +12,81 @@ const route = useRoute()
 const config = useRuntimeConfig()
 const apiBase = config.public.apiBase || 'http://localhost:5000'
 
+const incident = ref(null)
 const report = ref(null)
 const isLoading = ref(true)
 const errorMessage = ref('')
+const isLightboxVisible = ref(false)
+const lightboxIndex = ref(0)
 
 const incidentId = computed(() => Number(route.params.incidentId))
 const reportId = computed(() => Number(route.params.reportId))
+
+const incidentTitle = computed(() => {
+  const title = String(incident.value?.title || '').trim()
+  if (!title) return incident.value?.type_name || 'เหตุการณ์ที่รายงาน'
+
+  return title.replace(/\s*—\s*รอตรวจสอบ$/, '')
+})
+
+const incidentTypeName = computed(() => incident.value?.type_name || 'เหตุการณ์')
+
+const incidentIconUrl = computed(() => {
+  return getIncidentIconUrl({
+    typeCode: incident.value?.type_code,
+    iconName: incident.value?.icon_name,
+  })
+})
+
+const { loadPlaceNames, getPlaceLabel } = usePlaceNames()
+
+// ตำแหน่งของรายงานนี้ ในรูปแบบที่ usePlaceNames ใช้ (ต้องมี id, lat, lng)
+const reportPlace = computed(() => {
+  if (!report.value) {
+    return null
+  }
+
+  return {
+    id: `report-${report.value.report_id}`,
+    lat: Number(report.value.lat),
+    lng: Number(report.value.lng),
+  }
+})
+
+// ชื่อสถานที่ของรายงานนี้ พอ Mapbox ส่งชื่อมา ค่านี้จะเปลี่ยนเองอัตโนมัติ
+const reportPlaceLabel = computed(() => {
+  if (!reportPlace.value) {
+    return 'พื้นที่ที่รายงาน'
+  }
+  return getPlaceLabel(reportPlace.value)
+})
+
+// โหลดรายงานเสร็จเมื่อไหร่ ให้หาชื่อสถานที่ของรายงานนั้น
+watch(reportPlace, (place) => {
+  if (!place) {
+    return
+  }
+  if (!Number.isFinite(place.lat) || !Number.isFinite(place.lng)) {
+    return
+  }
+  loadPlaceNames([place])
+})
+
+const reporterInitial = computed(() => {
+  const name = String(report.value?.reporter_name || '').trim()
+  return name ? name.slice(0, 1).toUpperCase() : '?'
+})
 
 const mediaList = computed(() => {
   if (!Array.isArray(report.value?.media)) return []
 
   return report.value.media.filter((media) => media?.media_url)
+})
+
+const imageUrls = computed(() => {
+  return mediaList.value
+    .filter((media) => media.media_type === 'image')
+    .map((media) => media.media_url)
 })
 
 const formattedCreatedAt = computed(() => {
@@ -38,7 +105,31 @@ const getMediaLabel = (media) => {
   return 'ไฟล์แนบจากผู้รายงาน'
 }
 
+const openImageLightbox = (media) => {
+  const imageIndex = imageUrls.value.indexOf(media.media_url)
+
+  if (imageIndex === -1) return
+
+  lightboxIndex.value = imageIndex
+  isLightboxVisible.value = true
+}
+
+const closeImageLightbox = () => {
+  isLightboxVisible.value = false
+}
+
+const handleLightboxIndexChange = (oldIndex, newIndex) => {
+  lightboxIndex.value = newIndex
+}
+
+const goToLightboxImage = (index) => {
+  if (index < 0 || index >= imageUrls.value.length) return
+  lightboxIndex.value = index
+}
+
 const loadReport = async () => {
+  closeImageLightbox()
+  incident.value = null
   report.value = null
   errorMessage.value = ''
 
@@ -51,10 +142,13 @@ const loadReport = async () => {
   isLoading.value = true
 
   try {
-    const response = await $fetch(
-      `${apiBase}/incidents/${incidentId.value}/reports/${reportId.value}`,
-    )
-    report.value = response.data
+    const [reportResponse, incidentResponse] = await Promise.all([
+      $fetch(`${apiBase}/incidents/${incidentId.value}/reports/${reportId.value}`),
+      $fetch(`${apiBase}/incidents/${incidentId.value}`),
+    ])
+
+    report.value = reportResponse.data
+    incident.value = incidentResponse.data?.incident || null
   } catch (error) {
     console.error('ไม่สามารถโหลดรายละเอียดรายงานได้', error)
     errorMessage.value = 'ไม่พบรายงานนี้ หรือรายงานอาจไม่อยู่ในกลุ่มเหตุการณ์นี้'
@@ -64,15 +158,15 @@ const loadReport = async () => {
 }
 
 const goBackToMap = () => {
-  void navigateTo('/')
+  navigateTo('/')
 }
 
 onMounted(() => {
-  void loadReport()
+  loadReport()
 })
 
 watch([incidentId, reportId], () => {
-  void loadReport()
+  loadReport()
 })
 </script>
 
@@ -80,7 +174,7 @@ watch([incidentId, reportId], () => {
   <main class="report-detail-page">
     <section class="report-detail-page__content" aria-labelledby="report-detail-title">
       <button type="button" class="report-detail-page__back" @click="goBackToMap">
-        <span aria-hidden="true">←</span>
+        <img src="/icons/Previous-item.svg" alt="" aria-hidden="true">
         กลับไปแผนที่เหตุการณ์
       </button>
 
@@ -94,41 +188,72 @@ watch([incidentId, reportId], () => {
         <button type="button" class="report-detail-page__retry" @click="loadReport">ลองอีกครั้ง</button>
       </section>
 
-      <article v-else-if="report" class="report-detail">
-        <header class="report-detail__header">
-          <div class="report-detail__avatar" aria-hidden="true">
-            {{ String(report.reporter_name || '?').slice(0, 1).toUpperCase() }}
+      <article v-else-if="report && incident" class="report-detail">
+        <header class="report-detail__hero">
+          <div class="report-detail__type-row">
+            <div class="report-detail__type-icon" aria-hidden="true">
+              <img :src="incidentIconUrl" alt="">
+            </div>
+            <h1 id="report-detail-title">{{ incidentTitle }}</h1>
+            <span>รอตรวจสอบ</span>
           </div>
 
-          <div class="report-detail__reporter">
-            <p>รายงานโดย</p>
-            <h1 id="report-detail-title">{{ report.reporter_name || 'ไม่ระบุชื่อผู้รายงาน' }}</h1>
-            <time :datetime="report.created_at">{{ formattedCreatedAt }}</time>
-          </div>
 
-          <span class="report-detail__status">รอตรวจสอบ</span>
+          <div class="report-detail__byline">
+            <div class="report-detail__avatar" aria-hidden="true">
+              <img v-if="report.reporter_profile" :src="report.reporter_profile" alt="">
+              <span v-else>{{ reporterInitial }}</span>
+            </div>
+
+            <strong>{{ report.reporter_name || 'ไม่ระบุชื่อผู้รายงาน' }}</strong>
+            <span class="report-detail__separator" aria-hidden="true">•</span>
+            <time :datetime="report.created_at">รายงานเมื่อ {{ formattedCreatedAt }}</time>
+            <span class="report-detail__separator" aria-hidden="true">•</span>
+            <span class="report-detail__location">
+              <img src="/icons/Location.svg" alt="" aria-hidden="true">
+              {{ reportPlaceLabel }}
+            </span>
+          </div>
         </header>
 
-        <section class="report-detail__section" aria-labelledby="report-description-title">
-          <h2 id="report-description-title">รายละเอียดที่รายงาน</h2>
-          <p class="report-detail__description">{{ report.description || 'ผู้รายงานไม่ได้ระบุรายละเอียดเพิ่มเติม' }}</p>
+        <section class="report-detail__body" aria-labelledby="report-description-title">
+          <h2 id="report-description-title">รายละเอียดเหตุการณ์</h2>
+          <p class="report-detail__description">
+            {{ report.description || 'ผู้รายงานไม่ได้ระบุรายละเอียดเพิ่มเติม' }}
+          </p>
         </section>
 
-        <section class="report-detail__section" aria-labelledby="report-media-title">
-          <div class="report-detail__section-heading">
-            <h2 id="report-media-title">รูปภาพและสื่อแนบ</h2>
-            <span>{{ mediaList.length }} ไฟล์</span>
+        <section class="report-detail__media-section" aria-labelledby="report-media-title">
+          <div class="report-detail__media-heading">
+            <h2 id="report-media-title">สื่อที่แนบ</h2>
+            <span v-if="mediaList.length">{{ mediaList.length }} ไฟล์</span>
           </div>
 
-          <p v-if="!mediaList.length" class="report-detail__empty">ไม่มีสื่อแนบในรายงานนี้</p>
+          <p v-if="!mediaList.length" class="report-detail__empty">
+            ไม่มีรูปภาพหรือสื่อแนบในรายงานนี้
+          </p>
 
           <div v-else class="report-detail__media-grid">
-            <figure v-for="media in mediaList" :key="media.media_id" class="report-detail__media">
-              <img
+            <figure
+              v-for="(media, index) in mediaList.slice(0, 3)"
+              :key="media.media_id"
+              class="report-detail__media"
+            >
+              <button
                 v-if="media.media_type === 'image'"
-                :src="media.media_url"
-                :alt="getMediaLabel(media)"
+                type="button"
+                class="report-detail__media-button"
+                :aria-label="`เปิด${getMediaLabel(media)}แบบเต็มหน้าจอ`"
+                @click="openImageLightbox(media)"
               >
+                <img
+                  :src="media.media_url"
+                  :alt="getMediaLabel(media)"
+                >
+                <span v-if="index === 2 && mediaList.length > 3" class="report-detail__more-media">
+                  + {{ mediaList.length - 3 }}
+                </span>
+              </button>
               <video
                 v-else-if="media.media_type === 'video'"
                 :src="media.media_url"
@@ -140,56 +265,443 @@ watch([incidentId, reportId], () => {
               <a v-else :href="media.media_url" target="_blank" rel="noopener noreferrer">
                 เปิด{{ getMediaLabel(media) }}
               </a>
+              <span v-if="media.media_type !== 'image' && index === 2 && mediaList.length > 3" class="report-detail__more-media">
+                + {{ mediaList.length - 3 }}
+              </span>
             </figure>
           </div>
         </section>
-
-        <footer class="report-detail__footer">
-          <span>เลขที่รายงาน #{{ report.report_id }}</span>
-          <span>เหตุการณ์ #{{ incidentId }}</span>
-        </footer>
       </article>
     </section>
+
+    <VueEasyLightbox
+      :visible="isLightboxVisible"
+      :imgs="imageUrls"
+      :index="lightboxIndex"
+      @hide="closeImageLightbox"
+      @on-index-change="handleLightboxIndexChange"
+    >
+      <template #toolbar>
+        <div
+          v-if="imageUrls.length > 1"
+          class="lightbox-dots"
+          role="tablist"
+          aria-label="เลือกรูปภาพ"
+        >
+          <button
+            v-for="(image, index) in imageUrls"
+            :key="image"
+            type="button"
+            class="dot"
+            :class="{ active: index === lightboxIndex }"
+            role="tab"
+            :aria-selected="index === lightboxIndex"
+            :aria-label="`รูปที่ ${index + 1} จาก ${imageUrls.length}`"
+            @click="goToLightboxImage(index)"
+          />
+        </div>
+      </template>
+    </VueEasyLightbox>
   </main>
 </template>
 
 <style scoped>
-.report-detail-page { min-height: 100%; padding: 28px; background: #f2f7fd; }
-.report-detail-page__content { width: min(860px, 100%); margin: 0 auto; }
-.report-detail-page__back { display: inline-flex; align-items: center; gap: 8px; padding: 8px 0; border: 0; background: transparent; color: #225ea9; cursor: pointer; font: inherit; font-size: 14px; font-weight: 800; }
-.report-detail-page__back:hover { color: #0a4f9f; text-decoration: underline; text-underline-offset: 3px; }
-.report-detail-page__back:focus-visible, .report-detail-page__retry:focus-visible { outline: 3px solid rgb(37 99 235 / 35%); outline-offset: 3px; }
-.report-detail-page__state { margin: 20px 0 0; padding: 28px; border-radius: 14px; background: #ffffff; color: #50729f; font-size: 15px; font-weight: 700; text-align: center; }
-.report-detail-page__state--error h1 { margin: 0; color: #153d77; font-size: 20px; }
-.report-detail-page__state--error p { margin: 8px 0 0; }
-.report-detail-page__retry { margin-top: 18px; padding: 10px 16px; border: 0; border-radius: 10px; background: #1672dc; color: #ffffff; cursor: pointer; font: inherit; font-size: 14px; font-weight: 800; }
-.report-detail { margin-top: 16px; overflow: hidden; border-radius: 16px; background: #ffffff; box-shadow: 0 12px 28px rgb(22 64 118 / 12%); }
-.report-detail__header { display: flex; align-items: center; gap: 12px; padding: 24px; background: #f8fbff; }
-.report-detail__avatar { display: grid; width: 50px; height: 50px; flex: 0 0 auto; place-items: center; border-radius: 50%; background: #dcecff; color: #1c5dac; font-size: 20px; font-weight: 850; }
-.report-detail__reporter { min-width: 0; }
-.report-detail__reporter p { margin: 0; color: #6d86a9; font-size: 13px; font-weight: 700; }
-.report-detail__reporter h1 { margin: 2px 0; overflow: hidden; color: #123b78; font-size: 22px; font-weight: 850; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
-.report-detail__reporter time { color: #6680a4; font-size: 13px; font-weight: 650; }
-.report-detail__status { margin-left: auto; padding: 7px 10px; border-radius: 999px; background: #fff0d5; color: #996007; font-size: 12px; font-weight: 850; white-space: nowrap; }
-.report-detail__section { padding: 24px; border-top: 1px solid #e3edf8; }
-.report-detail__section h2 { margin: 0; color: #183f7a; font-size: 17px; font-weight: 850; line-height: 1.3; }
-.report-detail__description { margin: 12px 0 0; color: #32557e; font-size: 16px; font-weight: 550; line-height: 1.7; white-space: pre-wrap; }
-.report-detail__section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.report-detail__section-heading span { color: #6380a8; font-size: 13px; font-weight: 750; }
-.report-detail__empty { margin: 12px 0 0; color: #6d86a9; font-size: 14px; }
-.report-detail__media-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
-.report-detail__media { min-width: 0; margin: 0; overflow: hidden; border-radius: 12px; background: #eaf2fb; }
-.report-detail__media img, .report-detail__media video { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
-.report-detail__media a { display: block; padding: 18px; color: #176bd0; font-size: 14px; font-weight: 800; text-decoration: none; }
-.report-detail__media a:hover { text-decoration: underline; text-underline-offset: 3px; }
-.report-detail__footer { display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 16px 24px; color: #6a82a2; border-top: 1px solid #e3edf8; font-size: 12px; font-weight: 700; }
+.report-detail-page {
+  min-height: 100%;
+  padding: 30px;
+  background: #f5f9fe;
+}
 
-@media (max-width: 640px) {
-  .report-detail-page { padding: 16px; }
-  .report-detail__header { align-items: flex-start; padding: 18px; }
-  .report-detail__status { margin-left: 0; }
-  .report-detail__section { padding: 18px; }
-  .report-detail__media-grid { grid-template-columns: 1fr; }
-  .report-detail__footer { padding: 14px 18px; }
+.report-detail-page__content {
+  width: min(1040px, 100%);
+  margin: 0 auto;
+}
+
+.report-detail-page__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border: 0;
+  background: transparent;
+  color: #176bd0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.report-detail-page__back img {
+  width: 20px;
+  height: 20px;
+}
+
+.report-detail-page__back:hover {
+  color: #0b55ae;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.report-detail-page__back:focus-visible,
+.report-detail-page__retry:focus-visible {
+  outline: 3px solid rgb(37 99 235 / 35%);
+  outline-offset: 3px;
+}
+
+.report-detail-page__state {
+  margin: 24px 0 0;
+  padding: 32px;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #52749f;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.report-detail-page__state--error h1 {
+  margin: 0;
+  color: #163e78;
+  font-size: 22px;
+}
+
+.report-detail-page__state--error p {
+  margin: 8px 0 0;
+}
+
+.report-detail-page__retry {
+  margin-top: 18px;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 10px;
+  background: #1672dc;
+  color: #ffffff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.report-detail {
+  margin-top: 16px;
+  overflow: hidden;
+  border: 1px solid #dce8f5;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 16px 32px rgb(25 69 125 / 10%);
+}
+
+.report-detail__hero {
+  padding: 34px 34px 28px;
+}
+
+.report-detail__type-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+.report-detail__type-icon {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: #e7f1ff;
+}
+
+.report-detail__type-icon img {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+}
+
+.report-detail__type-row p {
+  margin: 0;
+  color: #1a5ea8;
+  font-size: 19px;
+  font-weight: 850;
+}
+
+.report-detail__type-row span {
+  flex: 0 0 auto;
+  padding: 7px 11px;
+  border-radius: 999px;
+  background: #fff0d5;
+  color: #9a6108;
+  font-size: 12px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.report-detail__type-row h1 {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: #102e61;
+  font-size: clamp(30px, 4vw, 48px);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1.12;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.report-detail__byline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px;
+  margin-top: 22px;
+  color: #5e799f;
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.report-detail__avatar {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  overflow: hidden;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: #dcecff;
+  color: #1b5cad;
+  font-size: 16px;
+  font-weight: 850;
+}
+
+.report-detail__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.report-detail__byline strong {
+  color: #183e78;
+  font-weight: 850;
+}
+
+.report-detail__separator {
+  color: #a1b2c7;
+}
+
+.report-detail__location {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.report-detail__location img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+.report-detail__body,
+.report-detail__media-section {
+  padding: 28px 34px;
+  border-top: 1px solid #dfebf7;
+}
+
+.report-detail__body h2,
+.report-detail__media-heading h2 {
+  margin: 0;
+  color: #163e78;
+  font-size: 23px;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+}
+
+.report-detail__description {
+  max-width: 800px;
+  margin: 14px 0 0;
+  color: #375a85;
+  font-size: 17px;
+  font-weight: 550;
+  line-height: 1.75;
+  white-space: pre-wrap;
+}
+
+.report-detail__media-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.report-detail__media-heading span {
+  color: #6280a8;
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.report-detail__empty {
+  margin: 14px 0 0;
+  color: #6681a5;
+  font-size: 15px;
+}
+
+.report-detail__media-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  grid-auto-rows: 172px;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.report-detail__media {
+  position: relative;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #eaf2fb;
+}
+
+.report-detail__media:first-child:nth-last-child(1) {
+  grid-column: 1 / -1;
+}
+
+.report-detail__media:first-child:nth-last-child(n + 3) {
+  grid-row: span 2;
+}
+
+.report-detail__media-button {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+}
+
+.report-detail__media-button:focus-visible {
+  outline: 3px solid #176bd0;
+  outline-offset: -3px;
+}
+
+.report-detail__media-button img,
+.report-detail__media video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.report-detail__media a {
+  display: block;
+  padding: 18px;
+  color: #176bd0;
+  font-size: 14px;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.report-detail__more-media {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgb(7 28 58 / 55%);
+  color: #ffffff;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.report-detail__footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 16px 34px;
+  color: #6b84a3;
+  border-top: 1px solid #dfebf7;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.lightbox-dots {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transform: translateX(-50%);
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background-color: #e6e6e6;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.dot.active {
+  background-color: #ffab00;
+}
+
+.dot:focus-visible {
+  outline: 2px solid #ffab00;
+  outline-offset: 3px;
+}
+
+@media (max-width: 700px) {
+  .report-detail-page {
+    padding: 16px;
+  }
+
+  .report-detail__hero,
+  .report-detail__body,
+  .report-detail__media-section {
+    padding: 22px 20px;
+  }
+
+  .report-detail__type-row h1 {
+    font-size: 32px;
+  }
+
+  .report-detail__byline {
+    gap: 7px;
+    font-size: 14px;
+  }
+
+  .report-detail__separator {
+    display: none;
+  }
+
+  .report-detail__location {
+    width: 100%;
+    margin-left: 51px;
+  }
+
+  .report-detail__description {
+    font-size: 16px;
+  }
+
+  .report-detail__media-grid {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+    grid-auto-rows: 118px;
+  }
+
+  .report-detail__media:first-child:nth-last-child(1) {
+    grid-row: span 2;
+  }
+
+  .report-detail__footer {
+    padding: 16px 20px;
+  }
 }
 </style>

@@ -14,6 +14,7 @@
         class="desktop-home__map-canvas"
         @select-item="selectIncident"
         @close-popup="clearSelectedIncident"
+        @open-report="openReportDetail"
       />
       <MapLocationSearch
         :is-locating="isLocating"
@@ -32,7 +33,11 @@
       :incidents="nearbyIncidentCards"
       :is-loading="isLoadingMap"
       :error-message="mapError"
+      :has-user-location="Boolean(userLocation)"
+      :is-locating="isLocating"
+      :location-error="locationError"
       @select="selectIncident"
+      @request-location="focusCurrentLocation"
     />
 
     <div class="desktop-home__lower-grid">
@@ -87,6 +92,10 @@ const selectArea = (area) => {
 const clearAreaSelection = () => {
   selectedArea.value = null
   clearSelectedIncident()
+}
+
+const openReportDetail = ({incidentId, reportId}) => {
+  navigateTo(`/incidents/${incidentId}/reports/${reportId}`)
 }
 
 const focusCurrentLocation = async () => {

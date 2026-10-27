@@ -1,6 +1,6 @@
 <template>
   <main class="login-page">
-    <AppHeader />
+    <AppHeader standalone />
     <div class="login-layout">
     <section class="visual" aria-labelledby="visual-title">
       <img src="/images/login-community-background.png" alt="ภาพชุมชนไทยและสถานการณ์ภัยพิบัติ" />

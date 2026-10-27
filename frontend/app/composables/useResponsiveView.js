@@ -7,8 +7,12 @@ export const useResponsiveView = (options = {}) => {
   const isMobile = computed(() => viewMode.value === 'mobile')
 
   if (options.syncLayout) {
-    watchEffect(() => {
-      setPageLayout(isMobile.value ? 'mobile' : 'default')
+    // สลับ layout เฉพาะตอนขนาดจอเปลี่ยนหลังโหลดหน้าแล้ว
+    // layout ตอนโหลดครั้งแรกให้ตั้งใน middleware ของหน้าแทน (ดู pages/index.vue)
+    // เพราะถ้าเรียก setPageLayout ระหว่างโหลดหน้า Nuxt จะเอา layout นี้ไปใส่ให้หน้าถัดไปด้วย
+    // ทำให้หน้า login ที่ไม่มี layout ถูกครอบด้วย sidebar และ header ซ้อนกัน
+    watch(isMobile, (mobile) => {
+      setPageLayout(mobile ? 'mobile' : 'default')
     })
   }
 

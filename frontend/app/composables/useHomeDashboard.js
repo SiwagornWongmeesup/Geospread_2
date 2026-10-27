@@ -140,7 +140,9 @@ const normalizeIncident = (incident) => {
     radiusM: hasFinalType ? toNumber(incident.radius_m) : null,
     radiusLabel: formatImpactRadius(hasFinalType ? incident.radius_m : null),
     reportCount,
-    imageCount: getImageCount(incident),
+    // รูปปกและจำนวนรูปทั้งหมด backend คำนวณมาจากทุกรายงานในเหตุการณ์นี้แล้ว
+    imageUrl: incident.image_url || null,
+    imageCount: Number(incident.image_count) || 0,
     reporterLabel: incident.reporter_name || 'ชุมชน',
     location: formatCoordinate(incident.lat, incident.lng),
     areaLabel: incident.location_name || incident.area_name || incident.province_name || 'พื้นที่ที่รายงาน',

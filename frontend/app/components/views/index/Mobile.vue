@@ -1,44 +1,5 @@
 <template>
   <div class="mobile-home">
-    <header class="mobile-home__header">
-      <NuxtLink
-        to="/"
-        class="mobile-home__brand"
-        aria-label="GeoSpread หน้าหลัก"
-      >
-        <img src="/logos/logo.png" alt="" aria-hidden="true" />
-        <span
-          ><strong>GeoSpread</strong><small>ชุมชนปลอดภัย ไปด้วยกัน</small></span
-        >
-      </NuxtLink>
-      <button
-        type="button"
-        class="mobile-home__menu-button"
-        aria-label="เปิดเมนูเพิ่มเติม"
-        :aria-expanded="isMenuOpen"
-        @click="isMenuOpen = !isMenuOpen"
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M4 7h16M4 12h16M4 17h16" />
-        </svg>
-      </button>
-      <nav
-        v-if="isMenuOpen"
-        class="mobile-home__menu"
-        aria-label="เมนูเพิ่มเติม"
-      >
-        <NuxtLink to="/followed-locations" @click="isMenuOpen = false"
-          >พื้นที่ที่ติดตาม</NuxtLink
-        >
-        <NuxtLink to="/safety-guide" @click="isMenuOpen = false"
-          >คู่มือความปลอดภัย</NuxtLink
-        >
-        <NuxtLink to="/settings" @click="isMenuOpen = false"
-          >การตั้งค่า</NuxtLink
-        >
-      </nav>
-    </header>
-
     <section
       class="mobile-home__map-section"
       :class="{ 'mobile-home__map-section--popup-open': selectedIncident }"
@@ -51,11 +12,12 @@
         :selected-item-id="selectedIncident?.id"
         :selected-item="selectedIncidentPreview"
         :selected-incident-detail="selectedIncidentDetail"
-        :popup-padding="{ top: 260, right: 16, bottom: 72, left: 16 }"
+        :popup-padding="{ top: 174, right: 16, bottom: 72, left: 16 }"
         :reporter-location="userLocation"
         class="mobile-home__map"
         @select-item="selectIncident"
         @close-popup="clearSelectedIncident"
+        @open-report="openReportDetail"
       />
       <MapLocationSearch
         class="mobile-home__location-search"
@@ -88,6 +50,24 @@
       >
         {{ mapError }}
       </p>
+
+      <!-- ยังไม่รู้ตำแหน่งผู้ใช้: ไม่แสดงการ์ด เพราะคำนวณระยะทางจริงไม่ได้ -->
+      <div
+        v-else-if="!userLocation"
+        class="mobile-home__state mobile-home__state--location"
+      >
+        <p>{{ locationError || "เปิดตำแหน่งปัจจุบันเพื่อดูเหตุการณ์ที่อยู่ใกล้คุณ" }}</p>
+        <button
+          type="button"
+          class="mobile-home__location-button"
+          :disabled="isLocating"
+          @click="focusCurrentLocation"
+        >
+          <span v-if="isLocating">กำลังหาตำแหน่ง...</span>
+          <span v-else>ใช้ตำแหน่งปัจจุบัน</span>
+        </button>
+      </div>
+
       <p v-else-if="!nearbyIncidentCards.length" class="mobile-home__state">
         ยังไม่มีเหตุการณ์ใกล้พื้นที่นี้
       </p>
@@ -133,7 +113,7 @@
                 <path
                   d="M12 21s6-5.1 6-11a6 6 0 1 0-12 0c0 5.9 6 11 6 11Zm0-8.5a2.5 2.5 0 1 1 0-5"
                 /></svg
-              >{{ incident.areaLabel || "พื้นที่ที่รายงาน" }}
+              >{{ getPlaceLabel(incident) }}
             </p>
             <p class="mobile-incident__meta">
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -167,10 +147,11 @@
 </template>
 
 <script setup>
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import MapboxMap from "~/components/map/MapboxMap.vue";
 import MapLocationSearch from "~/components/map/MapLocationSearch.vue";
 import { useGeolocation } from "~/composables/useGeolocation";
+import { usePlaceNames } from "~/composables/usePlaceNames";
 
 const {
   selectedIncident,
@@ -188,8 +169,22 @@ const {
   fetchPublicMapItems,
 } = useHomeDashboard();
 const { getCurrentLocation, isLocating, locationError } = useGeolocation();
+const { loadPlaceNames, getPlaceLabel } = usePlaceNames();
+
+// หาชื่อสถานที่ของการ์ดที่แสดงอยู่ (4 ใบแรก) เมื่อรู้ตำแหน่งผู้ใช้แล้วเท่านั้น
+// ถ้ายังไม่รู้ตำแหน่ง การ์ดถูกซ่อนอยู่ จึงยังไม่ต้องถาม Mapbox (ประหยัดโควตา)
+watch(
+  () => [nearbyIncidentCards.value, userLocation.value],
+  () => {
+    if (!userLocation.value) {
+      return;
+    }
+    loadPlaceNames(nearbyIncidentCards.value.slice(0, 4));
+  },
+  { immediate: true },
+);
+
 const selectedArea = ref(null);
-const isMenuOpen = ref(false);
 const activeMapCenter = computed(() => {
   if (selectedIncident.value)
     return [selectedIncident.value.lng, selectedIncident.value.lat];
@@ -208,6 +203,11 @@ const clearAreaSelection = () => {
   selectedArea.value = null;
   clearSelectedIncident();
 };
+
+const openReportDetail = ({incidentId, reportId}) => {
+  navigateTo(`/incidents/${incidentId}/reports/${reportId}`)
+}
+
 
 const focusCurrentLocation = async () => {
   try {
@@ -232,94 +232,6 @@ onMounted(() => {
   background: #dceef1;
   color: #102968;
 }
-.mobile-home__header {
-  position: absolute;
-  z-index: 20;
-  top: 0;
-  right: 0;
-  left: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 5.4rem;
-  padding: max(0.75rem, env(safe-area-inset-top)) 1rem 0.7rem;
-  background: rgb(255 255 255 / 97%);
-  box-shadow: 0 0.25rem 1rem rgb(16 41 104 / 8%);
-}
-.mobile-home__brand {
-  display: inline-flex;
-  min-width: 0;
-  align-items: center;
-  gap: 0.55rem;
-  color: #102968;
-  text-decoration: none;
-}
-.mobile-home__brand img {
-  width: 2.7rem;
-  height: 2.7rem;
-  object-fit: contain;
-}
-.mobile-home__brand span {
-  display: grid;
-  min-width: 0;
-}
-.mobile-home__brand strong {
-  font-size: 1.45rem;
-  font-weight: 900;
-  letter-spacing: -0.055em;
-  line-height: 1;
-}
-.mobile-home__brand small {
-  margin-top: 0.2rem;
-  color: #5b7096;
-  font-size: 0.69rem;
-  font-weight: 700;
-  white-space: nowrap;
-}
-.mobile-home__menu-button {
-  display: grid;
-  width: 2.75rem;
-  height: 2.75rem;
-  flex: 0 0 auto;
-  padding: 0;
-  place-items: center;
-  border: 0;
-  border-radius: 0.75rem;
-  background: #f1f6fc;
-  color: #102968;
-  cursor: pointer;
-}
-.mobile-home__menu-button svg {
-  width: 1.55rem;
-  height: 1.55rem;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-width: 2.5;
-}
-.mobile-home__menu {
-  position: absolute;
-  top: calc(100% - 0.15rem);
-  right: 0.85rem;
-  display: grid;
-  min-width: 11.5rem;
-  padding: 0.45rem;
-  border-radius: 0.85rem;
-  background: #fff;
-  box-shadow: 0 0.75rem 1.75rem rgb(16 41 104 / 20%);
-}
-.mobile-home__menu a {
-  padding: 0.72rem 0.82rem;
-  border-radius: 0.55rem;
-  color: #183c75;
-  font-size: 0.83rem;
-  font-weight: 800;
-  text-decoration: none;
-}
-.mobile-home__menu a:active {
-  background: #edf5ff;
-  color: #146ee7;
-}
 .mobile-home__map-section {
   position: absolute;
   inset: 0;
@@ -336,8 +248,9 @@ onMounted(() => {
   border-radius: 0 !important;
   box-shadow: none !important;
 }
+/* ช่องค้นหาอยู่บนสุดของจอ (เดิมอยู่ใต้แถบโลโก้ซึ่งเอาออกแล้ว) */
 .mobile-home__location-search:deep(.map-location-tools) {
-  top: 6.05rem;
+  top: max(12px, env(safe-area-inset-top));
   left: 0.9rem;
   width: calc(100% - 5.9rem);
 }
@@ -356,7 +269,7 @@ onMounted(() => {
 }
 .mobile-home__map-error {
   position: absolute;
-  top: 10rem;
+  top: 4.6rem;
   right: 1rem;
   left: 1rem;
   z-index: 6;
@@ -435,6 +348,27 @@ onMounted(() => {
   color: #58729a;
   font-size: 0.8rem;
   font-weight: 750;
+}
+.mobile-home__state--location {
+  display: grid;
+  gap: 10px;
+}
+.mobile-home__state--location p {
+  margin: 0;
+}
+.mobile-home__location-button {
+  justify-self: start;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: #2563eb;
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+}
+.mobile-home__location-button:disabled {
+  background: #93b4f0;
 }
 .mobile-home__state--error {
   background: #fff1f1;
@@ -586,22 +520,15 @@ onMounted(() => {
   stroke-linejoin: round;
   stroke-width: 2.2;
 }
-.mobile-home__menu-button:focus-visible,
-.mobile-home__menu a:focus-visible,
 .mobile-home__view-all:focus-visible,
 .mobile-incident:focus-visible {
   outline: 3px solid rgb(20 110 231 / 35%);
   outline-offset: 3px;
 }
-.mobile-home__menu-button:active,
 .mobile-incident:active {
   transform: scale(0.985);
 }
 @media (min-width: 30rem) {
-  .mobile-home__header {
-    padding-right: 1.25rem;
-    padding-left: 1.25rem;
-  }
   .mobile-home__location-search:deep(.map-location-tools) {
     left: 1.25rem;
     width: calc(100% - 6.5rem);
