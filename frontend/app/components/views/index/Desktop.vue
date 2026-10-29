@@ -123,7 +123,7 @@ onMounted(() => {
   gap: 1rem;
   min-height: 100%;
   padding: 1.25rem;
-  background: #f5f8fc;
+  background: var(--gs-paper);
 }
 
 .desktop-home__map {
@@ -136,10 +136,9 @@ onMounted(() => {
   /* แผนที่จะไม่เตี้ยกว่า550px */
   min-height: 550px;
   overflow: hidden;
-  border: 1px solid #dce6f2;
-  border-radius: 1rem;
-  background: #dceef1;
-  box-shadow: 0 8px 24px rgb(36 75 122 / 10%);
+  border: 1px solid var(--gs-line-strong);
+  border-radius: var(--gs-radius);
+  background: #e9e7e0;
 }
 
 .desktop-home__map-canvas {
@@ -155,9 +154,9 @@ onMounted(() => {
   max-width: min(22rem, calc(100% - 2rem));
   padding: 0.65rem 0.8rem;
   border: 1px solid #fecaca;
-  border-radius: 0.625rem;
-  background: rgb(255 255 255 / 94%);
-  color: #b91c1c;
+  border-radius: var(--gs-radius-sm);
+  background: var(--gs-surface);
+  color: var(--gs-danger);
   font-size: 0.78rem;
   font-weight: 700;
   box-shadow: 0 4px 12px rgb(26 58 108 / 12%);

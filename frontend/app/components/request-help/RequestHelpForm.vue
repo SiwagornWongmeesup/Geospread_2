@@ -23,8 +23,22 @@
     </section>
     <section>
       <h2><b>3</b> จำนวนผู้ที่ต้องการความช่วยเหลือ</h2>
-      <div class="people"><button v-for="amount in ['1', '2', '3', '4+']" :key="amount" type="button"
-          :class="{ selected: people === amount }" @click="people = amount">{{ amount }} คน</button></div>
+      <!-- ช่องระบุจำนวนคนเป็นตัวเลข ค่านี้ส่งไป API เป็น people_count -->
+      <label class="people-custom">
+        ระบุจำนวนคน
+        <span class="people-custom__field">
+          <input
+            v-model="peopleCount"
+            type="number"
+            min="1"
+            max="999"
+            step="1"
+            inputmode="numeric"
+            placeholder="เช่น 3"
+          />
+          <span class="people-custom__unit">คน</span>
+        </span>
+      </label>
     </section>
     <section class="media-upload">
       <h2><b>4</b> เพิ่มรูปภาพ <span>(ไม่บังคับ)</span></h2>
@@ -57,8 +71,10 @@ const config = useRuntimeConfig()
 const apiBase = config.public.apiBase || 'http://localhost:5000'
 const { getToken } = useAuth()
 const types = [{ id: 'evacuation', label: 'อพยพ', desc: 'ต้องการย้ายไปที่ปลอดภัย', icon: '↗' }, { id: 'medical', label: 'การแพทย์', desc: 'ต้องการการดูแล', icon: '+' }, { id: 'food', label: 'อาหารและน้ำ', desc: 'ต้องการเสบียง', icon: '▤' }, { id: 'shelter', label: 'ที่พักพิง', desc: 'ต้องการที่พัก', icon: '⌂' }, { id: 'vehicle', label: 'พาหนะ', desc: 'ต้องการการเดินทาง', icon: '▰' }, { id: 'other', label: 'อื่น ๆ', desc: 'ระบุความต้องการ', icon: '•••' }]
-const type = ref('evacuation'); const customType = ref(''); const details = ref(''); const people = ref('1'); const fileInput = ref(null); const selectedFiles = ref([]); const feedback = ref('')
+const type = ref('evacuation'); const customType = ref(''); const details = ref(''); const fileInput = ref(null); const selectedFiles = ref([]); const feedback = ref('')
 const isSubmitting = ref(false)
+// จำนวนคนที่ต้องการความช่วยเหลือ (ผู้ใช้พิมพ์เอง เริ่มต้นที่ 1)
+const peopleCount = ref(1)
 const maxImageFiles = 5
 const maxImageFileSizeBytes = 20 * 1024 * 1024
 const selectedMediaLabel = computed(() => {
@@ -118,6 +134,13 @@ const submit = async () => {
     return
   }
 
+  // จำนวนคนต้องเป็นเลขจำนวนเต็ม 1–999 (ตรงกับที่ backend รับ)
+  const people = Number(peopleCount.value)
+  if (!Number.isInteger(people) || people < 1 || people > 999) {
+    feedback.value = 'กรุณาระบุจำนวนผู้ที่ต้องการความช่วยเหลือเป็นตัวเลข 1 ถึง 999 คน'
+    return
+  }
+
   const authToken = getToken()
   if (!authToken) {
     feedback.value = 'กรุณาเข้าสู่ระบบก่อนส่งคำขอความช่วยเหลือ'
@@ -135,7 +158,7 @@ const submit = async () => {
         help_type: type.value,
         custom_help_type: type.value === 'other' ? customType.value.trim() : null,
         description,
-        people_count: people.value === '4+' ? 4 : Number(people.value),
+        people_count: people,
         lat: location.lat,
         lng: location.lng,
         location_source: location.source ?? 'unknown',
@@ -278,27 +301,29 @@ textarea {
   font-size: .7rem;
 }
 
-.people {
+/* ช่องระบุจำนวนคน */
+.people-custom {
+  display: grid;
+  gap: 6px;
+  color: #355477;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.people-custom__field {
   display: flex;
-  flex-wrap: wrap;
-  gap: .55rem;
+  align-items: center;
+  gap: 8px;
 }
 
-.people button {
-  min-width: 4.5rem;
-  padding: .65rem;
-  border: 1px solid #c8d8e8;
-  border-radius: 2rem;
-  background: #fff;
+.help-form .people-custom__field input {
+  width: 140px;
+}
+
+.people-custom__unit {
   color: #274166;
-  font: inherit;
+  font-size: 15px;
   font-weight: 800;
-}
-
-.people button.selected {
-  border-color: #1479ef;
-  background: hsl(212, 87%, 51%);
-  color: #fff;
 }
 
 .upload {

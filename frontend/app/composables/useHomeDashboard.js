@@ -1,5 +1,5 @@
 import { getIncidentIconUrl } from '~/composables/useIncidentIcon'
-import { getHelpRequestIcon } from '~/composables/useHelpRequestIcon'
+import { getHelpRequestIcon, getHelpRequestLabel } from '~/composables/useHelpRequestIcon'
 
 const defaultMapCenter = [100.5018, 13.7563]
 const pendingMarkerColor = '#e8333c'
@@ -148,6 +148,7 @@ const normalizeIncident = (incident) => {
     areaLabel: incident.location_name || incident.area_name || incident.province_name || 'พื้นที่ที่รายงาน',
     distance: `${reportCount} รายงาน`,
     time: formatRelativeTime(incident.last_reported_at),
+    occurredAt: incident.last_reported_at || null,
   }
 }
 
@@ -175,11 +176,12 @@ const normalizePendingReport = (report) => ({
   areaLabel: report.location_name || report.area_name || report.province_name || 'พื้นที่ที่รายงาน',
   distance: 'รายงานใหม่',
   time: formatRelativeTime(report.created_at),
+  occurredAt: report.created_at || null,
 })
 const normalizeHelpRequest = (helpRequest) => ({
   id: `help-${helpRequest.help_request_id}`,
   kind: 'help_request',
-  title: helpRequest.custom_help_type || helpRequest.help_type || 'คำขอความช่วยเหลือ',
+  title: helpRequest.custom_help_type || getHelpRequestLabel(helpRequest.help_type),
   category: 'ขอความช่วยเหลือ',
   statusLabel: 'กำลังรอความช่วยเหลือ',
   tone: 'orange',
@@ -189,6 +191,8 @@ const normalizeHelpRequest = (helpRequest) => ({
   radiusLabel: 'ไม่ระบุ',
   reportCount: 1,
   distance: `${helpRequest.people_count} คนต้องการความช่วยเหลือ`,
+  // จำนวนคนเป็นตัวเลข ใช้แสดงใน popup ขอความช่วยเหลือ
+  peopleCount: Number(helpRequest.people_count) || 1,
   description: helpRequest.description,
   lat: toNumber(helpRequest.lat),
   lng: toNumber(helpRequest.lng),
@@ -200,7 +204,20 @@ const normalizeHelpRequest = (helpRequest) => ({
   location: formatCoordinate(helpRequest.lat, helpRequest.lng),
   areaLabel: helpRequest.location_name || helpRequest.area_name || helpRequest.province_name || 'พื้นที่ที่รายงาน',
   time: formatRelativeTime(helpRequest.created_at),
+  occurredAt: helpRequest.created_at || null,
 })
+
+// สถานะของรายงานแต่ละชิ้นใน popup (มาจาก report.report_status)
+export const getReportStatus = (reportStatus) => {
+  if (reportStatus === 'verified') return { tone: 'verified', label: 'ยืนยันแล้ว' }
+  if (reportStatus === 'rejected') return { tone: 'rejected', label: 'ไม่ผ่านการตรวจสอบ' }
+  return { tone: 'pending', label: 'รอตรวจสอบ' }
+}
+
+const isSameLocalDay = (value, now = new Date()) => {
+  const date = new Date(value)
+  return !Number.isNaN(date.getTime()) && date.toDateString() === now.toDateString()
+}
 
 export const useHomeDashboard = () => {
   const config = useRuntimeConfig()
@@ -212,6 +229,8 @@ export const useHomeDashboard = () => {
   const isLoadingMap = useState('home-map-loading', () => false)
   const isLoadingIncidentDetail = useState('home-incident-detail-loading', () => false)
   const mapError = useState('home-map-error', () => null)
+  // เวลาที่โหลดข้อมูลแผนที่สำเร็จครั้งล่าสุด ใช้บอกความสดของข้อมูล
+  const mapUpdatedAt = useState('home-map-updated-at', () => null)
   // ที่เก็บข้อมูลรายระเอียดของ Marker ที่กำลังกด 
   const selectedIncidentDetail = useState('home-selected-incident-detail',() => null,)
 
@@ -269,6 +288,7 @@ export const useHomeDashboard = () => {
       publicMapItems.value = mapItems.filter((item) => {
         return item.lat !== null && item.lng !== null
       })
+      mapUpdatedAt.value = new Date().toISOString()
     } catch (error) {
       console.error('Unable to load public map incidents', error)
       mapError.value = 'โหลดข้อมูลแผนที่ไม่สำเร็จ'
@@ -312,6 +332,47 @@ export const useHomeDashboard = () => {
     return cards.slice(0, 2)
   })
 
+  const withDistance = (item) => {
+    const distanceMeters = getDistanceInMeters(item.lat, item.lng, userLocation.value)
+    return { ...item, distanceMeters, distanceFromUserLabel: formatDistanceFromMeters(distanceMeters) }
+  }
+
+  const byDistanceThenRecent = (first, second) => {
+    const distanceDifference = (first.distanceMeters ?? Number.POSITIVE_INFINITY)
+      - (second.distanceMeters ?? Number.POSITIVE_INFINITY)
+    if (distanceDifference) return distanceDifference
+    return new Date(second.occurredAt || 0) - new Date(first.occurredAt || 0)
+  }
+
+  // คำขอความช่วยเหลือจริงจาก /help-requests/map เรียงจากใกล้ไปไกล
+  const helpRequestCards = computed(() => publicMapItems.value
+    .filter((item) => item.kind === 'help_request')
+    .map(withDistance)
+    .sort(byDistanceThenRecent)
+    .slice(0, 3))
+
+  // ความเคลื่อนไหวล่าสุด: รวมทุกชนิดบนแผนที่ เรียงตามเวลา
+  const recentActivity = computed(() => publicMapItems.value
+    .filter((item) => item.occurredAt)
+    .slice()
+    .sort((first, second) => new Date(second.occurredAt) - new Date(first.occurredAt))
+    .slice(0, 5))
+
+  // สรุปจากข้อมูลที่โหลดมาจริงเท่านั้น
+  const todaySummary = computed(() => {
+    const items = publicMapItems.value
+    const incidents = items.filter((item) => item.kind === 'incident')
+    return {
+      verified: incidents.filter((item) => item.statusTone === 'verified').length,
+      ongoing: incidents.filter((item) => item.statusTone === 'ongoing').length,
+      pending: incidents.filter((item) => item.statusTone === 'pending').length
+        + items.filter((item) => item.kind === 'pending_report').length,
+      helpRequests: items.filter((item) => item.kind === 'help_request').length,
+      reportedToday: items.filter((item) => item.kind !== 'help_request' && isSameLocalDay(item.occurredAt)).length,
+      updatedLabel: mapUpdatedAt.value ? formatRelativeTime(mapUpdatedAt.value) : null,
+    }
+  })
+
   const selectedIncidentPreview = computed(() => {
     if (!selectedIncident.value) return null
 
@@ -353,6 +414,10 @@ export const useHomeDashboard = () => {
     publicMapItems,
     userLocation,
     nearbyIncidentCards,
+    helpRequestCards,
+    recentActivity,
+    todaySummary,
+    mapUpdatedAt,
     isLoadingMap,
     isLoadingIncidentDetail,
     mapError,

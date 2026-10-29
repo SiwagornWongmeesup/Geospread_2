@@ -21,7 +21,7 @@ import AppBottomNav from '~/components/mobile/AppBottomNav.vue'
   height: 100dvh;
   display: flex;
   flex-direction: column;
-  background-color: #f8fafc;
+  background-color: var(--gs-paper);
   overflow: hidden;
   /* เว้นพื้นที่ด้านล่างสำหรับ Bottom Nav และ safe area ของอุปกรณ์ */
   padding-bottom: calc(4.45rem + env(safe-area-inset-bottom));

@@ -1,11 +1,15 @@
 <script setup>
 import { computed } from "vue";
+import StatusBadge from "~/components/common/StatusBadge.vue";
+import { getReportStatus } from "~/composables/useHomeDashboard";
 
 const props = defineProps({
   incident: { type: Object, required: true },
   incidentDetail: { type: Object, default: null },
   // ฟังก์ชันจาก usePlaceNames ที่ MapboxMap ส่งมาให้ ใช้หาชื่อสถานที่ของหมุด
   getPlaceLabel: { type: Function, default: null },
+  // true = แสดงอยู่ใน bottom sheet บนมือถือ (กว้างเต็มจอ แทนกล่อง popup)
+  inSheet: { type: Boolean, default: false },
 });
 
 // ชื่อสถานที่ของหมุดนี้ พอ Mapbox ส่งชื่อมา ค่านี้จะเปลี่ยนเองอัตโนมัติ
@@ -80,7 +84,11 @@ const incidentSummary = (incident) => {
 </script>
 
 <template>
-  <div class="incident-map-popup" aria-live="polite">
+  <div
+    class="incident-map-popup"
+    :class="{ 'incident-map-popup--sheet': props.inSheet }"
+    aria-live="polite"
+  >
     <header class="incident-map-popup__header">
       <div class="incident-map-popup__group-title">
         <img :src="props.incident.iconUrl || '/icons/Alert.svg'" alt="" />
@@ -151,7 +159,10 @@ const incidentSummary = (incident) => {
               <span aria-hidden="true">·</span>
               {{ getRelativeTime(report.created_at) }}
             </p>
-            <span class="incident-map-popup__report-status">รอตรวจสอบ</span>
+            <StatusBadge
+              :tone="getReportStatus(report.report_status).tone"
+              :label="getReportStatus(report.report_status).label"
+            />
           </div>
 
           <p class="incident-map-popup__report-description">
@@ -366,17 +377,6 @@ const incidentSummary = (incident) => {
   padding: 0 2px;
   color: #a4b4c8;
 }
-.incident-map-popup__report-status {
-  flex: 0 0 auto;
-  padding: 4px 8px;
-  border-radius: 999px;
-  background: #fff1d7;
-  color: #9c6207;
-  font-size: 11px;
-  font-weight: 800;
-  line-height: 1;
-  white-space: nowrap;
-}
 .incident-map-popup__report-description {
   display: -webkit-box;
   margin: 5px 0 0;
@@ -435,8 +435,22 @@ const incidentSummary = (incident) => {
   margin: 0;
 }
 
+/* แบบ bottom sheet: กว้างเต็ม sheet และให้รายการรายงานเลื่อนได้ในความสูงที่เหลือ */
+.incident-map-popup--sheet {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-height: none;
+  height: 100%;
+}
+.incident-map-popup--sheet .incident-map-popup__reports {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+}
+
 @media (max-width: 420px) {
-  .incident-map-popup {
+  .incident-map-popup:not(.incident-map-popup--sheet) {
     width: calc(100vw - 36px);
     max-height: min(520px, calc(100dvh - 80px));
   }

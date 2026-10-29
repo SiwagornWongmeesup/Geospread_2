@@ -22,17 +22,49 @@
         <MapboxMap :center="mapCenter" :zoom="14" :show-geolocate-control="false" :editable-location="location" :allow-location-selection="true" class="map__canvas-map" @location-select="setMapLocation" />
       </div>
 
+      <!-- ช่องกรอกรายละเอียดที่อยู่ (ตอนนี้ยังไม่ได้ส่งไป API) -->
+      <label class="map__address">
+        <span class="map__address-label">
+          บ้านเลขที่ ชั้น จุดสังเกต
+          <span class="map__new-badge">ใหม่</span>
+        </span>
+        <input
+          v-model="addressDetail"
+          type="text"
+          maxlength="200"
+          placeholder="เช่น บ้านเลขที่ 45 ชั้น 2 ตรงข้ามร้านสะดวกซื้อ"
+        />
+      </label>
+
+      <!-- ข้อความบอกว่าใครเห็นข้อมูลอะไรบ้าง -->
+      <p class="map__privacy">
+        <svg class="map__privacy-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="5" y="11" width="14" height="10" rx="2" />
+          <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+        </svg>
+        <span>คนทั่วไปเห็นแค่วงกลมพื้นที่โดยประมาณ จุดจริง ที่อยู่ และเบอร์โทร จะเปิดให้เฉพาะคนที่คุณกดอนุมัติ</span>
+      </p>
+
       <p v-if="submissionFeedback" class="map__submission-feedback" role="status">{{ submissionFeedback }}</p>
       <div class="map__action">
         <button type="button" class="map__submit-button" :disabled="isSubmitting" @click="emit('submit')">
           {{ isSubmitting ? 'กำลังส่งคำขอ…' : 'ส่งคำขอความช่วยเหลือ' }}
         </button>
       </div>
+
+      <!-- เบอร์ฉุกเฉิน: กดแล้วเปิดหน้าโทรออกของโทรศัพท์ -->
+      <p class="map__emergency">
+        อันตรายต่อชีวิต? โทร
+        <a href="tel:1669">1669</a>
+        หรือ
+        <a href="tel:1784">1784</a>
+        ควบคู่ไปด้วย
+      </p>
     </section>
   </aside>
 </template>
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import MapboxMap from '~/components/map/MapboxMap.vue'
 import { useGeolocation } from '~/composables/useGeolocation'
 
@@ -43,6 +75,8 @@ const props = defineProps({
 })
 const emit = defineEmits(['update:location', 'submit'])
 const { getCurrentLocation, isLocating, locationError } = useGeolocation()
+// รายละเอียดที่อยู่ที่ผู้ใช้พิมพ์ เช่น บ้านเลขที่ ชั้น จุดสังเกต (ยังไม่ได้ส่งไป API)
+const addressDetail = ref('')
 const defaultMapCenter = [100.5018, 13.7563]
 const mapCenter = computed(() => props.location ? [props.location.lng, props.location.lat] : defaultMapCenter)
 const locationLabel = computed(() => {
@@ -161,6 +195,89 @@ const useCurrentLocation = async () => {
 .map__canvas-map {
   width: 100%;
   height: 100%;
+}
+
+/* ช่องบ้านเลขที่ ชั้น จุดสังเกต */
+.map__address {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.map__address-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #102968;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.map__new-badge {
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: #102968;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.map__address input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid #d4dfee;
+  border-radius: 12px;
+  color: #17345f;
+  font: inherit;
+  font-size: 15px;
+}
+
+.map__address input:focus {
+  border-color: #1479ef;
+  outline: 3px solid rgb(20 121 239 / 15%);
+}
+
+/* กล่องข้อความเรื่องความเป็นส่วนตัว */
+.map__privacy {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 12px 0 0;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #eef4fd;
+  color: #102968;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.map__privacy-icon {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  margin-top: 2px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+/* ข้อความเบอร์ฉุกเฉินใต้ปุ่มส่ง */
+.map__emergency {
+  margin: 12px 0 0;
+  color: #60718c;
+  font-size: 14px;
+  text-align: center;
+}
+
+.map__emergency a {
+  color: #1d63d8;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .map__submission-feedback {

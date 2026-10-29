@@ -443,6 +443,7 @@ const findPublicIncidentDetailById = async (incidentId) => {
     `SELECT
               report.report_id,
               report.description,
+              report.report_status,
               report.created_at,
                         COALESCE(
                   NULLIF(TRIM(CONCAT_WS(' ', reporter.name, reporter.lastname)), ''),

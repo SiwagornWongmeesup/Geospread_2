@@ -7,6 +7,7 @@ import { createApp, ref, onMounted, onUnmounted, watch } from 'vue'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import IncidentMapPopup from './IncidentMapPopup.vue'
+import HelpRequestMapPopup from './HelpRequestMapPopup.vue'
 import { usePlaceNames } from '~/composables/usePlaceNames'
 
 const config = useRuntimeConfig()
@@ -48,6 +49,8 @@ const props = defineProps({
   editableLocation: { type: Object, default: null },
   reporterLocation: { type: Object, default: null },
   allowLocationSelection: { type: Boolean, default: false },
+  // false = ไม่แสดง popup ลอยบนแผนที่ตอนกดหมุด (หน้ามือถือใช้ bottom sheet แทน)
+  showPopup: { type: Boolean, default: true },
 })
 
 const emit = defineEmits(['select-item', 'location-select', 'close-popup','open-report'])
@@ -82,7 +85,7 @@ const renderIncidentPopup = () => {
 
   const item = props.selectedItem
   const lngLat = toLngLat(item)
-  if (!item || !lngLat) {
+  if (!item || !lngLat || !props.showPopup) {
     clearIncidentPopup()
     return
   }
@@ -104,14 +107,24 @@ const renderIncidentPopup = () => {
     offset: 0,
     className: 'geospread-incident-popup',
   })
-// ส่งไปใช้ต่อหน้าdestop
-  const popupApp = createApp(IncidentMapPopup, {
-    incident: item,
-    incidentDetail: props.selectedIncidentDetail,
-    getPlaceLabel,
-    onClose: () => clearIncidentPopup({ notifyParent: true }),
-    onOpenReport: ({ incidentId, reportId }) => {emit('open-report', { incidentId, reportId })},
-  })
+  // เลือก popup ให้ตรงกับประเภทหมุด: คำขอความช่วยเหลือใช้ popup ของตัวเอง ที่เหลือใช้ popup รายงาน
+  let popupApp
+  if (item.kind === 'help_request') {
+    popupApp = createApp(HelpRequestMapPopup, {
+      incident: item,
+      getPlaceLabel,
+      onClose: () => clearIncidentPopup({ notifyParent: true }),
+    })
+  } else {
+    // ส่งไปใช้ต่อหน้าdestop
+    popupApp = createApp(IncidentMapPopup, {
+      incident: item,
+      incidentDetail: props.selectedIncidentDetail,
+      getPlaceLabel,
+      onClose: () => clearIncidentPopup({ notifyParent: true }),
+      onOpenReport: ({ incidentId, reportId }) => {emit('open-report', { incidentId, reportId })},
+    })
+  }
 
   incidentPopup = popup
   incidentPopupApp = popupApp
@@ -559,8 +572,9 @@ watch(() => [props.editableLocation, props.reporterLocation], () => {
 </script>
 
 <style scoped>
+/* ห้ามตั้ง position หรือ transform ที่ตัวหมุด: Mapbox ใส่ position: absolute และ transform ให้เองเพื่อวางหมุดตามพิกัด
+   (เดิมตั้ง position: relative ไว้ ทำให้หมุดแต่ละอันถูกดันลงต่อจากอันก่อนหน้า หมุดจึงเลื่อนไปจากจุดจริง) */
 :global(.incident-map-marker) {
-  position: relative;
   display: grid;
   place-items: center;
   width: 2.6rem;
@@ -569,7 +583,6 @@ watch(() => [props.editableLocation, props.reporterLocation], () => {
   border: 0;
   background: transparent;
   cursor: pointer;
-  transform: translateY(0.25rem);
 }
 
 :global(.incident-map-marker__pin) {
@@ -655,8 +668,8 @@ watch(() => [props.editableLocation, props.reporterLocation], () => {
   color: #c2410c;
 }
 
+/* เหมือนตัวหมุด: ไม่ตั้ง position ให้ Mapbox วางตำแหน่งเอง */
 :global(.incident-map-cluster) {
-  position: relative;
   display: grid;
   width: 2.85rem;
   height: 2.85rem;

@@ -36,8 +36,8 @@ const menuGroups = [
     label: 'การดำเนินการ',
     kind: 'actions',
     items: [
-      { label: 'แจ้งเหตุใหม่', to: '/report-incident', icon: '/icons/Report.svg' },
-      { label: 'ขอความช่วยเหลือ', to: '/request-help', icon: '/icons/Life-saving.svg' }
+      { label: 'แจ้งเหตุใหม่', to: '/report-incident', icon: '/icons/Report.svg', tone: 'report' },
+      { label: 'ขอความช่วยเหลือ', to: '/request-help', icon: '/icons/Life-saving.svg', tone: 'help' }
     ]
   },
   {
@@ -65,7 +65,7 @@ const accountItems = [
 
         <span v-if="!collapsed" class="app-sidebar__brand-text">
           <span class="app-sidebar__brand-name">GeoSpread</span>
-          <span class="app-sidebar__brand-tagline">Safer Communities Together</span>
+          <span class="app-sidebar__brand-tagline">รู้ก่อน ช่วยกันทัน</span>
         </span>
       </NuxtLink>
 
@@ -136,7 +136,7 @@ const accountItems = [
             v-else
             :to="item.to"
             class="app-sidebar__link"
-            :class="{ 'app-sidebar__link--action': group.kind === 'actions' }"
+            :class="[{ 'app-sidebar__link--action': group.kind === 'actions' }, item.tone && `app-sidebar__link--${item.tone}`]"
             :aria-label="item.label"
             :title="collapsed ? item.label : undefined"
           >
@@ -190,8 +190,8 @@ const accountItems = [
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  border-right: 1px solid #dce5f2;
-  background: #ffffff;
+  border-right: 1px solid var(--gs-line);
+  background: var(--gs-surface);
 }
 
 .app-sidebar__topbar {
@@ -201,7 +201,7 @@ const accountItems = [
   gap: 8px;
   min-height: 56px;
   padding: 0 4px 12px 4px;
-  border-bottom: 1px solid #edf2f8;
+  border-bottom: 1px solid var(--gs-line);
 }
 
 .app-sidebar__brand {
@@ -229,7 +229,7 @@ const accountItems = [
 }
 
 .app-sidebar__brand-name {
-  color: #071b72;
+  color: var(--gs-ink);
   font-size: 21px;
   font-weight: 800;
   letter-spacing: -0.6px;
@@ -238,8 +238,8 @@ const accountItems = [
 .app-sidebar__brand-tagline {
   margin-top: 2px;
   overflow: hidden;
-  color: #4f6397;
-  font-size: 10px;
+  color: var(--gs-muted);
+  font-size: 12px;
   font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -255,16 +255,16 @@ const accountItems = [
   border: 1px solid transparent;
   border-radius: 0.625rem;
   background: transparent;
-  color: #264577;
+  color: var(--gs-ink-2);
 }
 
 .app-sidebar__toggle:hover {
-  background: #edf5ff;
-  color: #0876eb;
+  background: var(--gs-action-tint);
+  color: var(--gs-action);
 }
 
 .app-sidebar__toggle:focus-visible {
-  outline: 3px solid rgb(8 118 235 / 28%);
+  outline: 3px solid rgb(29 53 87 / 30%);
   outline-offset: 2px;
 }
 
@@ -292,17 +292,17 @@ const accountItems = [
 .app-sidebar__group-title {
   margin: 0 0 0.35rem;
   padding: 0 0.75rem;
-  color: #7890ad;
-  font-size: 0.68rem;
+  color: var(--gs-muted);
+  font-size: 0.75rem;
   font-weight: 800;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.01em;
 }
 
 .app-sidebar__group--actions {
   gap: 0.35rem;
   padding: 0.75rem 0;
-  border-top: 1px solid #edf2f8;
-  border-bottom: 1px solid #edf2f8;
+  border-top: 1px solid var(--gs-line);
+  border-bottom: 1px solid var(--gs-line);
 }
 
 .app-sidebar__group--actions .app-sidebar__group-title {
@@ -317,8 +317,8 @@ const accountItems = [
   min-height: 2.65rem;
   padding: 0.5rem 0.75rem;
   border: 1px solid transparent;
-  border-radius: 0.7rem;
-  color: #183c75;
+  border-radius: var(--gs-radius-sm);
+  color: var(--gs-ink-2);
   font-size: 0.875rem;
   font-weight: 650;
   line-height: 1.2;
@@ -328,25 +328,31 @@ const accountItems = [
 }
 
 .app-sidebar__link:hover {
-  background: #edf5ff;
-  color: #0876eb;
+  background: var(--gs-action-tint);
+  color: var(--gs-action);
 }
 
 .app-sidebar__link:focus-visible {
-  outline: 3px solid rgb(8 118 235 / 28%);
+  outline: 3px solid rgb(29 53 87 / 30%);
   outline-offset: 2px;
 }
 
 .app-sidebar__link--action {
-  border-color: #dcecff;
-  background: #f7fbff;
-  color: #0a67c7;
+  border-color: var(--gs-line);
+  background: var(--gs-surface);
+  color: var(--gs-ink);
 }
 
-.app-sidebar__link--action:hover {
-  border-color: #b8dcff;
-  background: #eaf5ff;
-  color: #0561be;
+.app-sidebar__link--report:hover {
+  border-color: #efc2c0;
+  background: var(--gs-danger-tint);
+  color: var(--gs-danger-hover);
+}
+
+.app-sidebar__link--help:hover {
+  border-color: #b7d9d1;
+  background: var(--gs-help-tint);
+  color: var(--gs-help-hover);
 }
 
 .app-sidebar__guide-menu {
@@ -362,8 +368,8 @@ const accountItems = [
 }
 
 .app-sidebar__link--guide-active {
-  background: #edf5ff;
-  color: #0876eb;
+  background: var(--gs-action-tint);
+  color: var(--gs-action);
 }
 
 .app-sidebar__guide-chevron {
@@ -405,7 +411,7 @@ const accountItems = [
   min-height: 2rem;
   padding: 0.35rem 0.65rem 0.35rem 2.35rem;
   border-radius: 0.55rem;
-  color: #547096;
+  color: var(--gs-muted);
   font-size: 0.8rem;
   font-weight: 650;
   line-height: 1.25;
@@ -415,12 +421,12 @@ const accountItems = [
 
 .app-sidebar__guide-link:hover,
 .app-sidebar__guide-link--current {
-  background: #edf5ff;
-  color: #0876eb;
+  background: var(--gs-action-tint);
+  color: var(--gs-action);
 }
 
 .app-sidebar__guide-link:focus-visible {
-  outline: 3px solid rgb(8 118 235 / 28%);
+  outline: 3px solid rgb(29 53 87 / 30%);
   outline-offset: 2px;
 }
 
@@ -448,10 +454,10 @@ const accountItems = [
 }
 
 .app-sidebar__link.router-link-exact-active {
-  border-color: #0876eb;
-  background: #0876eb;
+  border-color: var(--gs-action);
+  background: var(--gs-action);
   color: #ffffff;
-  box-shadow: 0 7px 14px rgb(8 118 235 / 18%);
+
 }
 
 .app-sidebar__icon {
@@ -486,17 +492,17 @@ const accountItems = [
   place-items: center;
   border: 2px solid #ffffff;
   border-radius: 999px;
-  background: #eb2631;
+  background: var(--gs-danger);
   color: #ffffff;
-  font-size: 0.64rem;
+  font-size: 0.72rem;
   font-weight: 800;
   line-height: 1;
 }
 
 .app-sidebar__link.router-link-exact-active .app-sidebar__badge {
-  border-color: #0876eb;
-  background: #ffffff;
-  color: #0876eb;
+  border-color: var(--gs-action);
+  background: var(--gs-surface);
+  color: var(--gs-action);
 }
 
 .app-sidebar__account {
@@ -504,7 +510,7 @@ const accountItems = [
   gap: 0.25rem;
   margin-top: auto;
   padding-top: 0.85rem;
-  border-top: 1px solid #dfe8f3;
+  border-top: 1px solid var(--gs-line);
 }
 
 .app-sidebar--collapsed {
@@ -557,7 +563,7 @@ const accountItems = [
   height: 1.15rem;
   padding: 0;
   border-width: 1.5px;
-  font-size: 0.58rem;
+  font-size: 0.68rem;
 }
 
 .app-sidebar--collapsed .app-sidebar__account {

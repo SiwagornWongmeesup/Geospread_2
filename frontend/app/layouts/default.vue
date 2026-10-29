@@ -51,7 +51,7 @@ const toggleSidebar = () => {
   grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
   height: 100vh;
   overflow: hidden;
-  background-color: #f1f5f9;
+  background-color: var(--gs-paper);
   transition: grid-template-columns 180ms ease;
 }
 

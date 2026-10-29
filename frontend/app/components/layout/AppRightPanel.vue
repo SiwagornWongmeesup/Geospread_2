@@ -10,8 +10,10 @@
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path :d="action.icon" fill="currentColor" />
           </svg>
-          <strong>{{ action.label }}</strong>
-          <span>{{ action.description }}</span>
+          <span class="action-card__text">
+            <strong>{{ action.label }}</strong>
+            <span>{{ action.description }}</span>
+          </span>
         </NuxtLink>
       </div>
     </section>
@@ -19,11 +21,19 @@
     <section class="app-right-panel__section">
       <div class="app-right-panel__section-heading">
         <h2>ตำแหน่งที่ติดตาม</h2>
-        <NuxtLink to="/followed-locations" class="app-right-panel__text-link">จัดการ</NuxtLink>
+        <NuxtLink to="/followed-locations" class="app-right-panel__text-link">
+          {{ followedLocations.length ? 'จัดการ' : 'เพิ่มพื้นที่' }}
+        </NuxtLink>
       </div>
-      <ul class="followed-locations">
+      <p v-if="!followedLocations.length" class="followed-locations__empty">
+        ยังไม่ได้ติดตามพื้นที่ใด เพิ่มพื้นที่เพื่อรับการแจ้งเตือนเมื่อมีเหตุใกล้ๆ
+      </p>
+      <ul v-else class="followed-locations">
         <li v-for="location in followedLocations" :key="location.name">
-          <span class="followed-locations__marker" aria-hidden="true">{{ location.initial }}</span>
+          <svg class="followed-locations__marker" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 21s6-5.1 6-11a6 6 0 1 0-12 0c0 5.9 6 11 6 11Z" />
+            <circle cx="12" cy="10" r="2" />
+          </svg>
           <span class="followed-locations__details">
             <strong>{{ location.name }}</strong>
             <small>{{ location.area }} · {{ location.distance }}</small>
@@ -35,10 +45,7 @@
 
     <section v-if="showSafetyGuide" class="app-right-panel__section safety-guide">
       <div class="app-right-panel__section-heading">
-        <div>
-          <p class="safety-guide__eyebrow">คำแนะนำสำหรับ {{ selectedIncident.category }}</p>
-          <h2>คู่มือความปลอดภัย</h2>
-        </div>
+        <h2>คู่มือความปลอดภัย: {{ selectedIncident.category }}</h2>
         <button type="button" aria-label="ปิดคู่มือความปลอดภัย" @click="clearSelectedIncident">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="m7 7 10 10M17 7 7 17" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2" />
@@ -69,113 +76,127 @@ const quickActions = [
   { label: 'ขอความช่วยเหลือ', description: 'ขอแรงสนับสนุนจากชุมชน', to: '/request-help', tone: 'help', icon: 'M12 21.35 10.55 20C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09A5.5 5.5 0 0 1 16.5 3C19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.51L12 21.35Z' },
 ]
 
-const followedLocations = [
-  { initial: 'ว', name: 'วัดเจดีย์หลวง', area: 'เมืองเชียงใหม่', distance: '1.2 กม.', to: '/map' },
-  { initial: 'ส', name: 'สนามบินเชียงใหม่', area: 'สุเทพ', distance: '3.4 กม.', to: '/map' },
-  { initial: 'น', name: 'นิมมานเหมินท์', area: 'สุเทพ', distance: '5.1 กม.', to: '/map' },
-]
+// TODO: ดึงจาก API พื้นที่ติดตามเมื่อ backend มี endpoint แล้ว
+// รูปแบบ: { name, area, distance, to }
+const followedLocations = []
 
 const showSafetyGuide = computed(() => route.path === '/' && selectedIncident.value)
 const isReportIncident = computed(() => route.path === '/report-incident')
 </script>
 
 <style scoped>
+/* แผงขวา: ไม่ใช้การ์ดลอยซ้อนกัน แต่ละส่วนคั่นด้วยเส้นบางบนพื้นขาวพื้นเดียว */
 .app-right-panel {
   display: grid;
   align-content: start;
-  gap: 0.875rem;
-  padding: 1rem;
-  background: #f8fbff;
+  padding: 0.25rem 1.25rem 1.25rem;
+  border-left: 1px solid var(--gs-line);
+  background: var(--gs-surface);
 }
 
 .app-right-panel__section {
-  padding: 1rem;
-  border: 1px solid #dfe8f4;
-  border-radius: 0.875rem;
-  background: #fff;
-  box-shadow: 0 3px 12px rgb(31 72 125 / 5%);
+  padding: 1.1rem 0;
+  border-bottom: 1px solid var(--gs-line);
 }
 
 .app-right-panel h2 {
-  margin: 0 0 0.5rem;
-  color: #123765;
-  font-size: 0.95rem;
+  margin: 0 0 0.75rem;
+  color: var(--gs-ink);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.35;
 }
 
 .app-right-panel__actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.6rem;
+  gap: 0.5rem;
 }
 
 .app-right-panel__actions a {
-  display: grid;
-  justify-items: center;
-  gap: 0.25rem;
-  min-height: 8.3rem;
-  padding: 0.8rem 0.45rem;
-  border-radius: 0.65rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 3.5rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: var(--gs-radius-sm);
   color: #fff;
-  text-align: center;
   text-decoration: none;
-  transition: transform 160ms ease, filter 160ms ease;
+  transition: background-color 160ms ease;
 }
 
-.app-right-panel__actions a:hover,
 .app-right-panel__actions a:focus-visible {
-  outline: none;
-  filter: brightness(0.95);
-  transform: translateY(-2px);
+  outline: 3px solid var(--gs-ink);
+  outline-offset: 2px;
 }
 
 .app-right-panel__actions svg {
-  width: 1.9rem;
-  height: 1.9rem;
+  flex: 0 0 auto;
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.action-card__text {
+  display: grid;
+  gap: 0.1rem;
 }
 
 .app-right-panel__actions strong {
-  font-size: 0.8rem;
+  font-size: 0.95rem;
+  font-weight: 700;
   line-height: 1.3;
 }
 
-.app-right-panel__actions span {
-  font-size: 0.67rem;
+.action-card__text span {
+  color: rgb(255 255 255 / 88%);
+  font-size: 0.8rem;
   line-height: 1.35;
 }
 
 .action-card--report {
-  background: #ee343d;
+  background: var(--gs-danger);
+}
+
+.action-card--report:hover {
+  background: var(--gs-danger-hover);
 }
 
 .action-card--help {
-  background: #1377e9;
+  background: var(--gs-help);
+}
+
+.action-card--help:hover {
+  background: var(--gs-help-hover);
 }
 
 .app-right-panel__section-heading {
   display: flex;
-  align-items: start;
+  align-items: baseline;
   justify-content: space-between;
   gap: 0.5rem;
 }
 
-.app-right-panel__section-heading h2 {
-  margin-bottom: 0.6rem;
-}
-
 .app-right-panel__text-link {
-  color: #1479ef;
-  font-size: 0.74rem;
-  font-weight: 700;
-  text-decoration: none;
+  color: var(--gs-action);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: var(--gs-line-strong);
+  text-underline-offset: 0.2em;
 }
 
 .app-right-panel__text-link:hover {
-  text-decoration: underline;
+  text-decoration-color: currentColor;
+}
+
+.followed-locations__empty {
+  margin: 0;
+  color: var(--gs-muted);
+  font-size: 0.85rem;
+  line-height: 1.55;
 }
 
 .followed-locations {
   display: grid;
-  gap: 0.55rem;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -183,123 +204,119 @@ const isReportIncident = computed(() => route.path === '/report-incident')
 
 .followed-locations li {
   display: grid;
-  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  grid-template-columns: 1.25rem minmax(0, 1fr) auto;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.6rem;
+  padding: 0.55rem 0;
+}
+
+.followed-locations li + li {
+  border-top: 1px solid var(--gs-line);
 }
 
 .followed-locations__marker {
-  display: grid;
-  width: 2rem;
-  height: 2rem;
-  place-items: center;
-  border-radius: 50%;
-  background: #e6f1ff;
-  color: #1479ef;
-  font-size: 0.76rem;
-  font-weight: 800;
+  width: 1.15rem;
+  height: 1.15rem;
+  fill: none;
+  stroke: var(--gs-muted);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
 }
 
 .followed-locations__details {
   display: grid;
   min-width: 0;
-  gap: 0.1rem;
+  gap: 0.05rem;
 }
 
 .followed-locations__details strong {
   overflow: hidden;
-  color: #294265;
-  font-size: 0.72rem;
+  color: var(--gs-ink);
+  font-size: 0.875rem;
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .followed-locations__details small {
   overflow: hidden;
-  color: #7b8ba2;
-  font-size: 0.63rem;
+  color: var(--gs-muted);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .followed-locations li > a {
-  padding: 0.35rem 0.45rem;
-  border-radius: 0.35rem;
-  background: #eaf3ff;
-  color: #1479ef;
-  font-size: 0.61rem;
-  font-weight: 700;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--gs-line-strong);
+  border-radius: var(--gs-radius-sm);
+  color: var(--gs-action);
+  font-size: 0.78rem;
+  font-weight: 600;
   text-decoration: none;
 }
 
 .followed-locations li > a:hover {
-  background: #d9ebff;
-}
-
-.safety-guide {
-  border-color: #bcd9fc;
-  background: #f7fbff;
-}
-
-.safety-guide__eyebrow {
-  margin: 0 0 0.2rem;
-  color: #5c7da6;
-  font-size: 0.66rem;
+  border-color: var(--gs-action);
 }
 
 .safety-guide__title {
   margin: 0 0 0.55rem;
-  color: #304b70;
-  font-size: 0.76rem;
-  font-weight: 700;
-  line-height: 1.4;
+  color: var(--gs-ink-2);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.45;
 }
 
 .safety-guide button {
   display: grid;
-  width: 1.4rem;
-  height: 1.4rem;
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
   padding: 0;
   place-items: center;
   border: 0;
   border-radius: 50%;
-  background: #e3eefb;
-  color: #37618f;
+  background: transparent;
+  color: var(--gs-muted);
   cursor: pointer;
 }
 
 .safety-guide button svg {
-  width: 0.85rem;
-  height: 0.85rem;
+  width: 1rem;
+  height: 1rem;
 }
 
 .safety-guide button:hover {
-  background: #d1e4fb;
+  background: var(--gs-surface-sunken);
+  color: var(--gs-ink);
 }
 
 .safety-guide ol {
   display: grid;
-  gap: 0.35rem;
-  margin: 0 0 0.7rem;
-  padding-left: 1.1rem;
-  color: #405878;
-  font-size: 0.72rem;
-  line-height: 1.45;
+  gap: 0.4rem;
+  margin: 0 0 0.8rem;
+  padding-left: 1.2rem;
+  color: var(--gs-ink-2);
+  font-size: 0.85rem;
+  line-height: 1.55;
 }
 
 .safety-guide__link {
   display: block;
-  padding: 0.5rem;
-  border-radius: 0.45rem;
-  background: #1479ef;
+  padding: 0.6rem;
+  border-radius: var(--gs-radius-sm);
+  background: var(--gs-action);
   color: #fff;
-  font-size: 0.72rem;
-  font-weight: 700;
+  font-size: 0.85rem;
+  font-weight: 600;
   text-align: center;
   text-decoration: none;
 }
 
 .safety-guide__link:hover {
-  background: #096bdc;
+  background: var(--gs-action-hover);
 }
 </style>

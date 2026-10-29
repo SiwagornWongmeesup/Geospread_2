@@ -4,97 +4,112 @@
       <h2 id="today-summary-heading">{{ title }}</h2>
       <NuxtLink to="/incidents">ดูรายละเอียด</NuxtLink>
     </header>
-    <div class="today-summary__stats">
+    <dl class="today-summary__stats">
       <div>
-        <strong class="today-summary__number today-summary__number--red">5</strong>
-        <span>เหตุการณ์<br>ที่รายงาน</span>
+        <dt>รายงานใหม่วันนี้</dt>
+        <dd>{{ summary.reportedToday }}</dd>
       </div>
       <div>
-        <strong class="today-summary__number today-summary__number--blue">3</strong>
-        <span>คำขอช่วยเหลือ<br>วันนี้</span>
+        <dt>เหตุการณ์ที่ยืนยันแล้ว</dt>
+        <dd class="today-summary__value--verified">{{ summary.verified }}</dd>
       </div>
       <div>
-        <strong class="today-summary__number today-summary__number--green">ดี</strong>
-        <span>ระดับความ<br>ปลอดภัยชุมชน</span>
+        <dt>รอตรวจสอบ</dt>
+        <dd class="today-summary__value--pending">{{ summary.pending }}</dd>
       </div>
-    </div>
+      <div>
+        <dt>คำขอช่วยเหลือที่เปิดอยู่</dt>
+        <dd class="today-summary__value--help">{{ summary.helpRequests }}</dd>
+      </div>
+    </dl>
+    <p class="today-summary__freshness">
+      {{ summary.updatedLabel ? `อัปเดตข้อมูล${summary.updatedLabel}` : 'กำลังโหลดข้อมูล…' }}
+    </p>
   </section>
 </template>
 
 <script setup>
 defineProps({ title: { type: String, default: 'สรุปเหตุการณ์วันนี้' } })
+
+const { todaySummary: summary } = useHomeDashboard()
 </script>
 
 <style scoped>
 .today-summary {
-  padding: 1rem;
-  border: 1px solid #dfe8f4;
-  border-radius: 0.875rem;
-  background: #fff;
+  padding: 1.1rem 0 0;
 }
 
 .today-summary header {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
   gap: 0.5rem;
 }
 
 .today-summary h2 {
   margin: 0;
-  color: #102968;
-  font-size: 0.95rem;
+  color: var(--gs-ink);
+  font-size: 1rem;
+  font-weight: 700;
 }
 
 .today-summary a {
-  color: #1479ef;
-  font-size: 0.74rem;
-  font-weight: 700;
-  text-decoration: none;
+  color: var(--gs-action);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: var(--gs-line-strong);
+  text-underline-offset: 0.2em;
 }
 
 .today-summary a:hover {
-  text-decoration: underline;
+  text-decoration-color: currentColor;
 }
 
 .today-summary__stats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.4rem;
-  margin-top: 0.75rem;
+  margin: 0.5rem 0 0;
 }
 
 .today-summary__stats > div {
-  display: grid;
-  justify-items: center;
-  gap: 0.25rem;
-  min-height: 5.4rem;
-  padding: 0.55rem 0.25rem;
-  border: 1px solid #e6edf6;
-  border-radius: 0.55rem;
-  text-align: center;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0;
 }
 
-.today-summary__number {
-  font-size: 1.15rem;
-  line-height: 1;
+.today-summary__stats > div + div {
+  border-top: 1px solid var(--gs-line);
 }
 
-.today-summary__number--red {
-  color: #e52d38;
+.today-summary dt {
+  color: var(--gs-ink-2);
+  font-size: 0.875rem;
 }
 
-.today-summary__number--blue {
-  color: #1479ef;
+.today-summary dd {
+  margin: 0;
+  color: var(--gs-ink);
+  font-size: 1rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
-.today-summary__number--green {
-  color: #13945b;
+.today-summary dd.today-summary__value--verified {
+  color: var(--gs-verified);
 }
 
-.today-summary span {
-  color: #50637e;
-  font-size: 0.62rem;
-  line-height: 1.35;
+.today-summary dd.today-summary__value--pending {
+  color: var(--gs-pending);
+}
+
+.today-summary dd.today-summary__value--help {
+  color: var(--gs-help);
+}
+
+.today-summary__freshness {
+  margin: 0.35rem 0 0;
+  color: var(--gs-muted);
+  font-size: 0.78rem;
 }
 </style>

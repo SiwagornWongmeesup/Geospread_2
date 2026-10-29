@@ -9,3 +9,16 @@ const helpRequestIcons = {
 export const getHelpRequestIcon = (helpType) => (
   helpRequestIcons[helpType] || '/icons/Life-saving.svg'
 )
+
+// ชื่อประเภทคำขอภาษาไทย ตรงกับตัวเลือกใน RequestHelpForm
+const helpRequestLabels = {
+  evacuation: 'ต้องการอพยพ',
+  medical: 'ต้องการความช่วยเหลือทางการแพทย์',
+  food: 'ต้องการอาหารและน้ำ',
+  shelter: 'ต้องการที่พักพิง',
+  vehicle: 'ต้องการพาหนะ',
+}
+
+export const getHelpRequestLabel = (helpType) => (
+  helpRequestLabels[helpType] || 'คำขอความช่วยเหลือ'
+)

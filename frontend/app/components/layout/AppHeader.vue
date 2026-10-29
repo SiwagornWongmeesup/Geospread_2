@@ -127,11 +127,11 @@ const handleLogout = () => {
   gap: 16px;
   margin: 12px 16px 12px;
   padding: 0 16px 0 24px;
-  border: 1px solid #e8eef8;
-  border-radius: 14px;
+  border: 1px solid var(--gs-line);
+  border-radius: var(--gs-radius);
   background: #ffffff;
-  box-shadow: 0 2px 10px rgba(31, 74, 142, 0.05);
-  font-family: "Noto Sans Thai", Inter, sans-serif;
+
+  font-family: var(--gs-font);
 }
 
 /* แบบ standalone (login, register): เป็นแถบเต็มความกว้างติดขอบบน */
@@ -166,7 +166,7 @@ const handleLogout = () => {
 }
 
 .app-header__brand-name {
-  color: #071b72;
+  color: var(--gs-ink);
   font-size: 25px;
   font-weight: 800;
   letter-spacing: -0.8px;
@@ -174,8 +174,8 @@ const handleLogout = () => {
 
 .app-header__brand-tagline {
   margin-top: 3px;
-  color: #4f6397;
-  font-size: 11px;
+  color: var(--gs-muted);
+  font-size: 12px;
   font-weight: 500;
 }
 
@@ -186,7 +186,7 @@ const handleLogout = () => {
   min-width: 0;
   margin: 0;
   overflow: hidden;
-  color: #071b72;
+  color: var(--gs-ink);
   font-size: 22px;
   font-weight: 800;
   text-overflow: ellipsis;
@@ -203,20 +203,20 @@ const handleLogout = () => {
   align-items: center;
   gap: 12px;
   padding: 0 16px;
-  background: #f2f6fd;
+  background: var(--gs-surface-sunken);
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--gs-radius-sm);
   transition: 0.2s ease;
 }
 
 .app-header__search:focus-within {
-  border-color: #006dff;
+  border-color: var(--gs-action);
   background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(0, 109, 255, 0.1);
+  box-shadow: var(--gs-focus);
 }
 
 .search-icon {
-  color: #071b72;
+  color: var(--gs-ink);
   font-size: 29px;
   line-height: 1;
   transform: rotate(-20deg);
@@ -227,13 +227,13 @@ const handleLogout = () => {
   border: 0;
   outline: 0;
   background: transparent;
-  color: #071b72;
+  color: var(--gs-ink);
   font-family: inherit;
   font-size: 14px;
 }
 
 .app-header__search input::placeholder {
-  color: #6373a2;
+  color: var(--gs-muted);
 }
 
 /* Notification */
@@ -244,7 +244,7 @@ const handleLogout = () => {
   height: 40px;
   border: 0;
   background: transparent;
-  color: #071b72;
+  color: var(--gs-ink);
   font-size: 27px;
   cursor: pointer;
 }
@@ -260,9 +260,9 @@ const handleLogout = () => {
   padding: 0 4px;
   border: 2px solid #ffffff;
   border-radius: 50%;
-  background: #f2232f;
+  background: var(--gs-danger);
   color: #ffffff;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -279,43 +279,43 @@ const handleLogout = () => {
 }
 
 .app-header__profile:hover {
-  background: #f2f6fd;
+  background: var(--gs-surface-sunken);
 }
 
 .profile-avatar {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #1479ef, #0b2372);
+  background: var(--gs-action);
   color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   font-size: 16px;
-  box-shadow: 0 2px 8px rgba(20, 121, 239, 0.25);
+
 }
 
 .profile-info {
   display: flex;
   flex-direction: column;
   line-height: 1.25;
-  color: #071b72;
+  color: var(--gs-ink);
   font-size: 14px;
 }
 
 .welcome-text {
-  color: #6576a5;
-  font-size: 11px;
+  color: var(--gs-muted);
+  font-size: 12px;
 }
 
 .logout-button {
   margin-left: 4px;
   padding: 6px 12px;
-  border: 1px solid #dbe5ef;
+  border: 1px solid var(--gs-line);
   border-radius: 6px;
   background: #ffffff;
-  color: #e53935;
+  color: var(--gs-danger);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
@@ -323,8 +323,8 @@ const handleLogout = () => {
 }
 
 .logout-button:hover {
-  background: #ffebee;
-  border-color: #ffcdd2;
+  background: var(--gs-danger-tint);
+  border-color: #f1c4c2;
 }
 
 /* Auth Buttons (กรณี Guest) */
@@ -338,7 +338,7 @@ const handleLogout = () => {
 .btn-login,
 .btn-register {
   padding: 8px 16px;
-  border-radius: 8px;
+  border-radius: var(--gs-radius-sm);
   font-size: 14px;
   font-weight: 700;
   text-decoration: none;
@@ -346,27 +346,27 @@ const handleLogout = () => {
 }
 
 .btn-login {
-  color: #1479ef;
-  background: #f0f6ff;
-  border: 1px solid #cce3ff;
+  color: var(--gs-action);
+  background: var(--gs-surface);
+  border: 1px solid var(--gs-line-strong);
 }
 
 .btn-login:hover {
-  background: #e0eeff;
+  background: var(--gs-action-tint);
 }
 
 .btn-register {
   color: #ffffff;
-  background: #1479ef;
-  box-shadow: 0 2px 8px rgba(20, 121, 239, 0.3);
+  background: var(--gs-action);
+
 }
 
 .btn-register:hover {
-  background: #0d63cc;
+  background: var(--gs-action-hover);
 }
 
 .arrow {
-  color: #071b72;
+  color: var(--gs-ink);
   font-size: 18px;
   font-weight: 700;
 }

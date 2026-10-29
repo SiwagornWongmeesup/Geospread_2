@@ -96,7 +96,7 @@
               <img :src="incident.iconUrl || '/icons/Alert.svg'" alt="" />
               {{ incident.category || "เหตุการณ์" }}
             </span>
-            <span class="incident-card__status">รอตรวจสอบ</span>
+            <StatusBadge :tone="incident.statusTone" :label="incident.statusLabel" />
           </div>
 
           <h3 :title="incidentTitle(incident)">{{ incidentTitle(incident) }}</h3>
@@ -117,7 +117,7 @@
 
           <!-- จำนวนรายงานที่ถูกรวมอยู่ในเหตุการณ์นี้ -->
           <p class="incident-card__report-count">
-            {{ incident.reportCount || 1 }} รายงาน
+            {{ incident.reportCount ? `${incident.reportCount} รายงาน` : "ยังไม่ทราบจำนวนรายงาน" }}
           </p>
         </div>
       </button>
@@ -126,6 +126,7 @@
 </template>
 
 <script setup>
+import StatusBadge from "~/components/common/StatusBadge.vue";
 import { usePlaceNames } from "~/composables/usePlaceNames";
 
 defineEmits(['select', 'request-location'])
@@ -172,10 +173,10 @@ const distanceLabel = (incident) =>
 
 <style scoped>
 .nearby-incidents {
-  padding: 1rem;
-  border: 1px solid #dfe8f4;
-  border-radius: 1rem;
-  background: #fff;
+  padding: 1.1rem 1.25rem 1.25rem;
+  border: 1px solid var(--gs-line);
+  border-radius: var(--gs-radius);
+  background: var(--gs-surface);
 }
 .nearby-incidents__header {
   display: flex;
@@ -186,22 +187,23 @@ const distanceLabel = (incident) =>
 }
 .nearby-incidents h2 {
   margin: 0;
-  color: #102968;
+  color: var(--gs-ink);
   font-size: 1.05rem;
+  font-weight: 700;
 }
 .nearby-incidents__header p {
   margin: 0.2rem 0 0;
-  color: #536f98;
-  font-size: 0.76rem;
+  color: var(--gs-muted);
+  font-size: 0.85rem;
 }
 .nearby-incidents__view-all {
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
   gap: 0.28rem;
-  color: #2563eb;
-  font-size: 0.82rem;
-  font-weight: 800;
+  color: var(--gs-action);
+  font-size: 0.875rem;
+  font-weight: 600;
   text-decoration: none;
 }
 .nearby-incidents__view-all svg {
@@ -214,13 +216,13 @@ const distanceLabel = (incident) =>
   stroke-width: 2;
 }
 .nearby-incidents__view-all:hover {
-  color: #164ec2;
+  color: var(--gs-action-hover);
   text-decoration: underline;
   text-underline-offset: 0.2rem;
 }
 .nearby-incidents__view-all:focus-visible,
 .incident-card:focus-visible {
-  outline: 3px solid rgb(37 99 235 / 30%);
+  outline: 3px solid rgb(29 53 87 / 30%);
   outline-offset: 3px;
 }
 .nearby-incidents__list {
@@ -232,12 +234,12 @@ const distanceLabel = (incident) =>
 .nearby-incidents__state {
   margin: 0;
   padding: 0.9rem;
-  border: 1px dashed #cdd9e8;
-  border-radius: 0.75rem;
-  background: #f8fbff;
-  color: #526e95;
-  font-size: 0.82rem;
-  font-weight: 700;
+  border: 1px dashed var(--gs-line-strong);
+  border-radius: var(--gs-radius-sm);
+  background: var(--gs-surface-sunken);
+  color: var(--gs-ink-2);
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 .nearby-incidents__state--location {
   display: flex;
@@ -250,27 +252,29 @@ const distanceLabel = (incident) =>
   margin: 0;
 }
 .nearby-incidents__location-button {
-  padding: 7px 14px;
+  min-height: 2.5rem;
+  padding: 0.45rem 1rem;
   border: 0;
-  border-radius: 999px;
-  background: #2563eb;
+  border-radius: var(--gs-radius-sm);
+  background: var(--gs-action);
   color: #fff;
   cursor: pointer;
   font: inherit;
-  font-size: 12px;
-  font-weight: 800;
+  font-size: 0.875rem;
+  font-weight: 600;
 }
 .nearby-incidents__location-button:hover {
-  background: #164ec2;
+  background: var(--gs-action-hover);
 }
 .nearby-incidents__location-button:disabled {
-  background: #93b4f0;
+  background: #7d8796;
   cursor: wait;
 }
 .nearby-incidents__state--error {
-  border-color: #fecaca;
-  background: #fff7f7;
-  color: #b91c1c;
+  border-color: #efc2c0;
+  border-style: solid;
+  background: var(--gs-danger-tint);
+  color: var(--gs-danger-hover);
 }
 .incident-card {
   display: grid;
@@ -280,21 +284,22 @@ const distanceLabel = (incident) =>
   min-height: 8.4rem;
   grid-template-columns: clamp(7.5rem, 30%, 10rem) minmax(0, 1fr);
   overflow: hidden;
-  border: 1px solid #e0e8f3;
-  border-radius: 0.875rem;
-  background: #fff;
+  border: 1px solid var(--gs-line);
+  border-radius: var(--gs-radius);
+  background: var(--gs-surface);
   color: inherit;
   text-align: left;
   cursor: pointer;
   font: inherit;
-  transition: border-color 160ms ease, box-shadow 160ms ease,
-    transform 160ms ease;
+  transition: border-color 160ms ease, background-color 160ms ease;
 }
-.incident-card:hover,
+.incident-card:hover {
+  border-color: var(--gs-line-strong);
+  background: var(--gs-surface-sunken);
+}
 .incident-card--selected {
-  border-color: #1976e9;
-  box-shadow: 0 0.5rem 1.25rem rgb(19 104 204 / 14%);
-  transform: translateY(-2px);
+  border-color: var(--gs-action);
+  box-shadow: inset 0 0 0 1px var(--gs-action);
 }
 .incident-card__media {
   position: relative;
@@ -302,8 +307,8 @@ const distanceLabel = (incident) =>
   min-height: 100%;
   place-items: center;
   overflow: hidden;
-  border-radius: 10px;
-  background: #eef4fb;
+  border-radius: var(--gs-radius-sm);
+  background: var(--gs-surface-sunken);
 }
 .incident-card__photo {
   width: 100%;
@@ -326,8 +331,8 @@ const distanceLabel = (incident) =>
   border-radius: 999px;
   background: rgb(15 23 42 / 70%);
   color: #fff;
-  font-size: 11px;
-  font-weight: 800;
+  font-size: 0.75rem;
+  font-weight: 600;
   line-height: 1.2;
 }
 .incident-card__photo-count img {
@@ -349,42 +354,36 @@ const distanceLabel = (incident) =>
   align-items: center;
   gap: 0.42rem;
 }
-.incident-card__category,
-.incident-card__status {
+.incident-card__category {
   display: inline-flex;
   min-width: 0;
   align-items: center;
   gap: 0.25rem;
-  padding: 0.25rem 0.46rem;
   overflow: hidden;
-  border-radius: 999px;
-  font-size: 0.65rem;
-  font-weight: 800;
+  font-size: 0.78rem;
+  font-weight: 600;
   line-height: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .incident-card__category {
-  color: #24528e;
-  background: #eef6ff;
+  color: var(--gs-ink-2);
 }
 .incident-card__category img {
   width: 0.78rem;
   height: 0.78rem;
   object-fit: contain;
 }
-.incident-card__status {
-  flex: 0 0 auto;
-  color: #9b5b00;
-  background: #fff0d4;
+.incident-card__eyebrow .status-badge {
+  margin-left: auto;
 }
 .incident-card h3 {
   display: -webkit-box;
   margin: 0;
   overflow: hidden;
-  color: #152b56;
-  font-size: 0.9rem;
-  font-weight: 800;
+  color: var(--gs-ink);
+  font-size: 0.95rem;
+  font-weight: 700;
   line-height: 1.28;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 1;
@@ -393,10 +392,10 @@ const distanceLabel = (incident) =>
   display: -webkit-box;
   margin: 0;
   overflow: hidden;
-  color: #536f98;
-  font-size: 0.72rem;
-  font-weight: 600;
-  line-height: 1.35;
+  color: var(--gs-ink-2);
+  font-size: 0.85rem;
+  font-weight: 400;
+  line-height: 1.45;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
@@ -407,9 +406,9 @@ const distanceLabel = (incident) =>
   gap: 0.28rem;
   margin: 0.08rem 0 0;
   overflow: hidden;
-  color: #55739d;
-  font-size: 0.72rem;
-  font-weight: 700;
+  color: var(--gs-muted);
+  font-size: 0.8rem;
+  font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -429,9 +428,10 @@ const distanceLabel = (incident) =>
   gap: 0.3rem;
   margin-top: 0.05rem;
   overflow: hidden;
-  color: #627d9f;
-  font-size: 0.67rem;
-  font-weight: 650;
+  color: var(--gs-muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 .incident-card__meta span {
@@ -441,12 +441,10 @@ const distanceLabel = (incident) =>
 .incident-card__report-count {
   justify-self: start;
   margin: 0;
-  padding: 3px 8px;
-  border-radius: 999px;
-  background: #eef6ff;
-  color: #1d4ed8;
-  font-size: 11px;
-  font-weight: 800;
+  color: var(--gs-ink-2);
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 @media (max-width: 46rem) {
