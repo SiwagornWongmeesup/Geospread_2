@@ -3,10 +3,11 @@ import { computed } from 'vue'
 
 const { getUser, logout } = useAuth()
 const notice = useState('adminNotice', () => '')
+const { t } = useLocale()
 
 const userDisplayName = computed(() => {
   const user = getUser()?.user ?? getUser()
-  return user?.name || user?.email || 'ผู้ดูแลระบบ'
+  return user?.name || user?.email || t('admin.topbar.fallbackName')
 })
 </script>
 
@@ -14,14 +15,14 @@ const userDisplayName = computed(() => {
   <header class="topbar">
     <label class="search">
       <img src="/icons/Search.svg" alt="">
-      <input type="search" placeholder="ค้นหาผู้ใช้ เหตุการณ์ หรือสถานที่…">
+      <input type="search" :placeholder="t('admin.topbar.searchPlaceholder')">
     </label>
     <div class="top-actions">
-      <button class="location" type="button"><img src="/icons/Location.svg" alt="">เชียงใหม่ (ตัวอย่าง)<span>⌄</span></button>
-      <button class="bell" type="button" aria-label="มีการแจ้งเตือน 3 รายการ"
-        @click="notice = 'คุณมีการแจ้งเตือนใหม่ 3 รายการ'"><img src="/icons/Notification.svg" alt=""><b>3</b></button>
+      <button class="location" type="button"><img src="/icons/Location.svg" alt="">{{ t('admin.topbar.sampleLocation') }}<span>⌄</span></button>
+      <button class="bell" type="button" :aria-label="t('admin.topbar.notificationsLabel', { count: 3 })"
+        @click="notice = t('admin.topbar.notificationsNotice', { count: 3 })"><img src="/icons/Notification.svg" alt=""><b>3</b></button>
       <div class="account"><span class="avatar">{{ userDisplayName.charAt(0) }}</span><strong>{{ userDisplayName
-          }}</strong><button type="button" @click="logout">ออกจากระบบ</button></div>
+          }}</strong><button type="button" @click="logout">{{ t('header.logout') }}</button></div>
     </div>
   </header>
 </template>

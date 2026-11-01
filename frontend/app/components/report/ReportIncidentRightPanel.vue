@@ -1,5 +1,5 @@
 <template>
-  <aside class="report-incident-side-panel" aria-label="ตำแหน่งเกิดเหตุและการส่งรายงาน">
+  <aside class="report-incident-side-panel" :aria-label="t('report.sidePanelLabel')">
     <LocationPicker />
     <slot name="action" />
   </aside>
@@ -7,6 +7,7 @@
 
 <script setup>
 import LocationPicker from '~/components/report/LocationPicker.vue'
+const { t } = useLocale()
 </script>
 
 <style scoped>

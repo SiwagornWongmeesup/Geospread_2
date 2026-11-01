@@ -1,21 +1,23 @@
 <script setup>
-const distanceOptions = ['ทุกระยะ', '0–2 กม.', '2–5 กม.', '5–10 กม.', 'มากกว่า 10 กม.'];
-const statusOptions = ['ทุกสถานะ', 'ยืนยันแล้ว', 'กำลังตรวจสอบ', 'ยังไม่ยืนยัน'];
+const { t } = useLocale();
+// ข้อความของตัวเลือกอยู่ใน locales: incidentFilter.distance.* และ incidentFilter.status.*
+const distanceOptions = ['any', 'within2', 'within5', 'within10', 'over10'];
+const statusOptions = ['any', 'verified', 'reviewing', 'unverified'];
 </script>
 
 <template>
-  <section class="incident-filter" aria-label="ตัวกรองเหตุการณ์">
+  <section class="incident-filter" :aria-label="t('incidentFilter.label')">
     <label>
-      <span>ระยะทาง</span>
+      <span>{{ t('incidentFilter.distanceLabel') }}</span>
       <select>
-        <option v-for="option in distanceOptions" :key="option">{{ option }}</option>
+        <option v-for="option in distanceOptions" :key="option" :value="option">{{ t(`incidentFilter.distance.${option}`) }}</option>
       </select>
     </label>
 
     <label>
-      <span>สถานะข้อมูล</span>
+      <span>{{ t('incidentFilter.statusLabel') }}</span>
       <select>
-        <option v-for="option in statusOptions" :key="option">{{ option }}</option>
+        <option v-for="option in statusOptions" :key="option" :value="option">{{ t(`incidentFilter.status.${option}`) }}</option>
       </select>
     </label>
   </section>

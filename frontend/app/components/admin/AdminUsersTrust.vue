@@ -1,107 +1,130 @@
 <script setup>
 import { computed, ref } from 'vue'
+import { formatRelativeTime } from '~/composables/useHomeDashboard'
 
+const { t, locale } = useLocale()
 const activeFilter = ref('all')
 const keyword = ref('')
 const selectedUserId = ref('u001')
 const profileTab = ref('overview')
 const actionNotice = ref('')
 
-const filters = [
-  ['all', 'ผู้ใช้ทั้งหมด'], ['trusted', 'น่าเชื่อถือ'], ['watchlist', 'เฝ้าระวัง'], ['risk', 'เสี่ยงสูง'],
+// ข้อความของตัวกรองอยู่ใน locales: usersTrust.filters.*
+const filters = ['all', 'trusted', 'watchlist', 'risk']
+
+// ข้อมูลตัวอย่าง: ชื่อคนเป็นข้อมูลจึงไม่แปล ส่วนระดับ/พื้นที่/กิจกรรมแยกตามภาษา
+// levelKey -> usersTrust.levels.*, lastActivityMin = กี่นาทีที่แล้ว, joined = วันที่ ISO
+const sampleUsers = [
+  { id: 'u001', name: 'พิมพ์ชนก วัฒนากุล', email: 'pimchanok@example.com', initials: 'พว', trust: 92, levelKey: 'veryTrusted', tone: 'trusted', reports: 48, verified: 45, suspicious: 1, lastActivityMin: 12, joined: '2025-01-12', location: { th: 'เชียงใหม่, ประเทศไทย', en: 'Chiang Mai, Thailand' }, breakdown: [['verifiedReports', '+30', 'positive'], ['communityConfirmations', '+18', 'positive'], ['helpedOthers', '+12', 'positive'], ['locationConsistency', '+20', 'positive'], ['inaccurateReports', '-3', 'negative'], ['unusualBehavior', '-2', 'negative']], activity: [[{ th: 'รายงานไฟป่าใกล้ดอยสุเทพ', en: 'Reported a wildfire near Doi Suthep' }, 12, '/icons/Fire.svg'], [{ th: 'ยืนยันต้นไม้ล้มกีดขวางถนน', en: 'Confirmed a fallen tree blocking a road' }, 1440, '/icons/Environment.svg'], [{ th: 'รายงานน้ำท่วมบริเวณช้างคลาน', en: 'Reported flooding around Chang Khlan' }, 2880, '/icons/Flood.svg']] },
+  { id: 'u002', name: 'ณัฐวุฒิ ศรีคำ', email: 'nattawut@example.com', initials: 'ณศ', trust: 76, levelKey: 'trusted', tone: 'trusted', reports: 27, verified: 24, suspicious: 2, lastActivityMin: 60, joined: '2025-02-08', location: { th: 'สันทราย, เชียงใหม่', en: 'San Sai, Chiang Mai' } },
+  { id: 'u003', name: 'กัญญารัตน์ อินต๊ะ', email: 'kanyarat@example.com', initials: 'กอ', trust: 68, levelKey: 'normal', tone: 'active', reports: 18, verified: 14, suspicious: 1, lastActivityMin: 120, joined: '2025-02-21', location: { th: 'แม่ริม, เชียงใหม่', en: 'Mae Rim, Chiang Mai' } },
+  { id: 'u004', name: 'ธีรภัทร แซ่ลี', email: 'teerapat@example.com', initials: 'ทล', trust: 55, levelKey: 'normal', tone: 'active', reports: 12, verified: 9, suspicious: 3, lastActivityMin: 180, joined: '2025-03-05', location: { th: 'เมืองเชียงใหม่', en: 'Mueang Chiang Mai' } },
+  { id: 'u005', name: 'ณิชาภา สายใจ', email: 'nichapa@example.com', initials: 'นส', trust: 46, levelKey: 'watchlist', tone: 'watchlist', reports: 15, verified: 7, suspicious: 5, lastActivityMin: 300, joined: '2025-03-18', location: { th: 'หางดง, เชียงใหม่', en: 'Hang Dong, Chiang Mai' } },
+  { id: 'u006', name: 'จักรพงษ์ คำแปง', email: 'jakrapong@example.com', initials: 'จค', trust: 38, levelKey: 'watchlist', tone: 'watchlist', reports: 10, verified: 4, suspicious: 6, lastActivityMin: 480, joined: '2025-04-02', location: { th: 'สารภี, เชียงใหม่', en: 'Saraphi, Chiang Mai' } },
+  { id: 'u007', name: 'อรทัย ชัยวงศ์', email: 'orathai@example.com', initials: 'อช', trust: 24, levelKey: 'risk', tone: 'risk', reports: 22, verified: 3, suspicious: 12, lastActivityMin: 600, joined: '2025-04-12', location: { th: 'ดอยสะเก็ด, เชียงใหม่', en: 'Doi Saket, Chiang Mai' } },
+  { id: 'u008', name: 'วรวิทย์ พูนผล', email: 'worawit@example.com', initials: 'วพ', trust: 81, levelKey: 'trusted', tone: 'trusted', reports: 31, verified: 28, suspicious: 2, lastActivityMin: 720, joined: '2025-04-30', location: { th: 'เชียงดาว, เชียงใหม่', en: 'Chiang Dao, Chiang Mai' } },
+  { id: 'u009', name: 'ชลธิชา เมืองแก้ว', email: 'chonthicha@example.com', initials: 'ชม', trust: 60, levelKey: 'normal', tone: 'active', reports: 14, verified: 11, suspicious: 3, lastActivityMin: 1440, joined: '2025-05-09', location: { th: 'สันกำแพง, เชียงใหม่', en: 'San Kamphaeng, Chiang Mai' } },
+  { id: 'u010', name: 'ภาคภูมิ ดีงาม', email: 'phakphum@example.com', initials: 'ภด', trust: 19, levelKey: 'risk', tone: 'risk', reports: 9, verified: 1, suspicious: 8, lastActivityMin: 1440, joined: '2025-05-19', location: { th: 'แม่แตง, เชียงใหม่', en: 'Mae Taeng, Chiang Mai' } },
 ]
 
-const users = [
-  { id: 'u001', name: 'พิมพ์ชนก วัฒนากุล', email: 'pimchanok@example.com', initials: 'พว', trust: 92, level: 'น่าเชื่อถือสูง', tone: 'trusted', reports: 48, verified: 45, suspicious: 1, lastActivity: '12 นาทีที่แล้ว', joined: '12 ม.ค. 2568', location: 'เชียงใหม่, ประเทศไทย', breakdown: [['รายงานที่ยืนยันแล้ว', '+30', 'positive'], ['การยืนยันจากชุมชน', '+18', 'positive'], ['ช่วยเหลือผู้ใช้อื่นสำเร็จ', '+12', 'positive'], ['ความสอดคล้องของตำแหน่ง', '+20', 'positive'], ['รายงานคลาดเคลื่อน', '-3', 'negative'], ['พฤติกรรมผิดปกติ', '-2', 'negative']], activity: [['รายงานไฟป่าใกล้ดอยสุเทพ', '12 นาทีที่แล้ว', '/icons/Fire.svg'], ['ยืนยันต้นไม้ล้มกีดขวางถนน', '1 วันที่แล้ว', '/icons/Environment.svg'], ['รายงานน้ำท่วมบริเวณช้างคลาน', '2 วันที่แล้ว', '/icons/Flood.svg']] },
-  { id: 'u002', name: 'ณัฐวุฒิ ศรีคำ', email: 'nattawut@example.com', initials: 'ณศ', trust: 76, level: 'น่าเชื่อถือ', tone: 'trusted', reports: 27, verified: 24, suspicious: 2, lastActivity: '1 ชั่วโมงที่แล้ว', joined: '8 ก.พ. 2568', location: 'สันทราย, เชียงใหม่' },
-  { id: 'u003', name: 'กัญญารัตน์ อินต๊ะ', email: 'kanyarat@example.com', initials: 'กอ', trust: 68, level: 'ปกติ', tone: 'active', reports: 18, verified: 14, suspicious: 1, lastActivity: '2 ชั่วโมงที่แล้ว', joined: '21 ก.พ. 2568', location: 'แม่ริม, เชียงใหม่' },
-  { id: 'u004', name: 'ธีรภัทร แซ่ลี', email: 'teerapat@example.com', initials: 'ทล', trust: 55, level: 'ปกติ', tone: 'active', reports: 12, verified: 9, suspicious: 3, lastActivity: '3 ชั่วโมงที่แล้ว', joined: '5 มี.ค. 2568', location: 'เมืองเชียงใหม่' },
-  { id: 'u005', name: 'ณิชาภา สายใจ', email: 'nichapa@example.com', initials: 'นส', trust: 46, level: 'เฝ้าระวัง', tone: 'watchlist', reports: 15, verified: 7, suspicious: 5, lastActivity: '5 ชั่วโมงที่แล้ว', joined: '18 มี.ค. 2568', location: 'หางดง, เชียงใหม่' },
-  { id: 'u006', name: 'จักรพงษ์ คำแปง', email: 'jakrapong@example.com', initials: 'จค', trust: 38, level: 'เฝ้าระวัง', tone: 'watchlist', reports: 10, verified: 4, suspicious: 6, lastActivity: '8 ชั่วโมงที่แล้ว', joined: '2 เม.ย. 2568', location: 'สารภี, เชียงใหม่' },
-  { id: 'u007', name: 'อรทัย ชัยวงศ์', email: 'orathai@example.com', initials: 'อช', trust: 24, level: 'เสี่ยงสูง', tone: 'risk', reports: 22, verified: 3, suspicious: 12, lastActivity: '10 ชั่วโมงที่แล้ว', joined: '12 เม.ย. 2568', location: 'ดอยสะเก็ด, เชียงใหม่' },
-  { id: 'u008', name: 'วรวิทย์ พูนผล', email: 'worawit@example.com', initials: 'วพ', trust: 81, level: 'น่าเชื่อถือ', tone: 'trusted', reports: 31, verified: 28, suspicious: 2, lastActivity: '12 ชั่วโมงที่แล้ว', joined: '30 เม.ย. 2568', location: 'เชียงดาว, เชียงใหม่' },
-  { id: 'u009', name: 'ชลธิชา เมืองแก้ว', email: 'chonthicha@example.com', initials: 'ชม', trust: 60, level: 'ปกติ', tone: 'active', reports: 14, verified: 11, suspicious: 3, lastActivity: '1 วันที่แล้ว', joined: '9 พ.ค. 2568', location: 'สันกำแพง, เชียงใหม่' },
-  { id: 'u010', name: 'ภาคภูมิ ดีงาม', email: 'phakphum@example.com', initials: 'ภด', trust: 19, level: 'เสี่ยงสูง', tone: 'risk', reports: 9, verified: 1, suspicious: 8, lastActivity: '1 วันที่แล้ว', joined: '19 พ.ค. 2568', location: 'แม่แตง, เชียงใหม่' },
-]
+const defaultBreakdown = [['verifiedReports', '+18', 'positive'], ['locationConsistency', '+12', 'positive'], ['inaccurateReports', '-1', 'negative']]
+const minutesAgo = (minutes) => formatRelativeTime(new Date(Date.now() - minutes * 60_000), t)
+const formatJoined = (isoDate) => new Intl.DateTimeFormat(locale.value === 'en' ? 'en-GB' : 'th-TH', { dateStyle: 'medium' }).format(new Date(isoDate))
+const pick = (text) => text[locale.value] ?? text.th
 
-const selectedUser = computed(() => users.find((user) => user.id === selectedUserId.value) ?? users[0])
+// แปลงข้อมูลตัวอย่างเป็นข้อความตามภาษาที่เลือก (รูปแบบเดิมที่ template ใช้)
+const users = computed(() => sampleUsers.map((user) => ({
+  ...user,
+  level: t(`usersTrust.levels.${user.levelKey}`),
+  lastActivity: minutesAgo(user.lastActivityMin),
+  joined: formatJoined(user.joined),
+  location: pick(user.location),
+  breakdown: (user.breakdown ?? defaultBreakdown).map(([key, value, tone]) => [t(`usersTrust.breakdown.${key}`), value, tone]),
+  activity: user.activity
+    ? user.activity.map(([text, minutes, icon]) => [pick(text), minutesAgo(minutes), icon])
+    : [[t('usersTrust.defaultActivity.report'), minutesAgo(user.lastActivityMin), '/icons/Report.svg'], [t('usersTrust.defaultActivity.confirm'), minutesAgo(2880), '/icons/Selected.svg']],
+})))
+
+const selectedUser = computed(() => users.value.find((user) => user.id === selectedUserId.value) ?? users.value[0])
 const filteredUsers = computed(() => {
-  const term = keyword.value.trim().toLocaleLowerCase('th-TH')
-  return users.filter((user) => {
+  const term = keyword.value.trim().toLocaleLowerCase()
+  return users.value.filter((user) => {
     const matchesFilter = activeFilter.value === 'all' || user.tone === activeFilter.value
-    const searchable = `${user.name} ${user.email} ${user.location}`.toLocaleLowerCase('th-TH')
+    const raw = sampleUsers.find((item) => item.id === user.id)
+    const searchable = `${user.name} ${user.email} ${raw.location.th} ${raw.location.en}`.toLocaleLowerCase()
     return matchesFilter && (!term || searchable.includes(term))
   })
 })
 const trustWidth = (score) => `${Math.max(4, Math.min(score, 100))}%`
-const trustLabel = (score) => score >= 75 ? 'น่าเชื่อถือ' : score >= 50 ? 'กำลังสร้างความน่าเชื่อถือ' : score >= 30 ? 'ต้องติดตาม' : 'ต้องตรวจสอบ'
+const trustLabel = (score) => t(`usersTrust.trustLabel.${score >= 75 ? 'trusted' : score >= 50 ? 'building' : score >= 30 ? 'monitor' : 'review'}`)
 const selectUser = (id) => { selectedUserId.value = id; actionNotice.value = '' }
-const runAction = (action) => { actionNotice.value = `บันทึกเป็นคำสั่งตัวอย่าง: ${action} สำหรับ ${selectedUser.value.name} — ยังไม่เชื่อม API` }
+const runAction = (action) => { actionNotice.value = t('usersTrust.sampleAction', { action, name: selectedUser.value.name }) }
+const profileTabs = ['overview', 'reports', 'help', 'activity']
 </script>
 
 <template>
   <section class="users-trust" aria-labelledby="users-trust-title">
     <header class="users-trust__heading">
       <div>
-        <h1 id="users-trust-title">ผู้ใช้และความน่าเชื่อถือ</h1>
-        <p>ติดตามคะแนนความน่าเชื่อถือ ตรวจสอบกิจกรรม และดูแลสมาชิกในชุมชน</p>
+        <h1 id="users-trust-title">{{ t('admin.menu.users') }}</h1>
+        <p>{{ t('usersTrust.subtitle') }}</p>
       </div>
       <button type="button" class="users-trust__export"
-        @click="actionNotice = 'การส่งออกข้อมูลเป็นตัวอย่าง — จะเปิดใช้เมื่อเชื่อม API แล้ว'">
-        <img src="/icons/Download.svg" alt="">ส่งออกข้อมูล
+        @click="actionNotice = t('usersTrust.exportNotice')">
+        <img src="/icons/Download.svg" alt="">{{ t('usersTrust.export') }}
       </button>
     </header>
 
     <p class="users-trust__sample" role="status"><img src="/icons/Alert.svg"
-        alt="">ข้อมูลบนหน้านี้เป็นข้อมูลตัวอย่างสำหรับออกแบบ ยังไม่เชื่อม API ผู้ใช้</p>
+        alt="">{{ t('usersTrust.sampleBanner') }}</p>
     <p v-if="actionNotice" class="users-trust__notice" role="status">{{ actionNotice }}<button type="button"
-        aria-label="ปิดข้อความ" @click="actionNotice = ''">×</button></p>
+        :aria-label="t('adminDashboard.closeNotice')" @click="actionNotice = ''">×</button></p>
 
-    <section class="users-trust__metrics" aria-label="สรุปข้อมูลผู้ใช้ตัวอย่าง">
+    <section class="users-trust__metrics" :aria-label="t('usersTrust.metricsLabel')">
       <article><img src="/icons/Users.svg" alt="">
-        <div><strong>12,482</strong><span>ผู้ใช้ทั้งหมด</span><small class="up">↑ 5% จากเดือนก่อน</small></div>
+        <div><strong>12,482</strong><span>{{ t('usersTrust.metrics.total') }}</span><small class="up">↑ 5% {{ t('usersTrust.metrics.fromLastMonth') }}</small></div>
       </article>
       <article><img src="/icons/Selected.svg" alt="">
-        <div><strong>8,320</strong><span>ผู้ใช้น่าเชื่อถือ</span><small class="up">67% ของผู้ใช้ทั้งหมด</small></div>
+        <div><strong>8,320</strong><span>{{ t('usersTrust.metrics.trusted') }}</span><small class="up">{{ t('usersTrust.metrics.shareOfAll', { value: 67 }) }}</small></div>
       </article>
       <article><img src="/icons/Alert.svg" alt="">
-        <div><strong>1,942</strong><span>รอตรวจสอบ</span><small class="warn">16% ของผู้ใช้ทั้งหมด</small></div>
+        <div><strong>1,942</strong><span>{{ t('status.pending') }}</span><small class="warn">{{ t('usersTrust.metrics.shareOfAll', { value: 16 }) }}</small></div>
       </article>
       <article><img src="/icons/Warning-Error.svg" alt="">
-        <div><strong>320</strong><span>ผู้ใช้เสี่ยงสูง</span><small class="risk">3% ของผู้ใช้ทั้งหมด</small></div>
+        <div><strong>320</strong><span>{{ t('usersTrust.metrics.risk') }}</span><small class="risk">{{ t('usersTrust.metrics.shareOfAll', { value: 3 }) }}</small></div>
       </article>
       <article><img src="/icons/Chart.svg" alt="">
-        <div><strong>+12</strong><span>ผู้ใช้ใหม่วันนี้</span><small class="up">เทียบกับเมื่อวาน</small></div>
+        <div><strong>+12</strong><span>{{ t('usersTrust.metrics.newToday') }}</span><small class="up">{{ t('usersTrust.metrics.vsYesterday') }}</small></div>
       </article>
     </section>
 
     <div class="users-trust__workspace">
       <section class="directory" aria-labelledby="directory-title">
         <header class="directory__tools">
-          <h2 id="directory-title" class="sr-only">รายชื่อผู้ใช้</h2>
-          <div class="directory__filters" role="tablist" aria-label="กรองรายชื่อผู้ใช้">
-            <button v-for="filter in filters" :key="filter[0]" type="button"
-              :class="{ active: activeFilter === filter[0] }" :aria-selected="activeFilter === filter[0]" role="tab"
-              @click="activeFilter = filter[0]">
-              {{ filter[1] }}<span v-if="filter[0] === 'all'"> ({{ users.length }})</span>
+          <h2 id="directory-title" class="sr-only">{{ t('usersTrust.directory') }}</h2>
+          <div class="directory__filters" role="tablist" :aria-label="t('usersTrust.filterLabel')">
+            <button v-for="filter in filters" :key="filter" type="button"
+              :class="{ active: activeFilter === filter }" :aria-selected="activeFilter === filter" role="tab"
+              @click="activeFilter = filter">
+              {{ t(`usersTrust.filters.${filter}`) }}<span v-if="filter === 'all'"> ({{ users.length }})</span>
             </button>
           </div>
-          <label class="directory__search"><img src="/icons/Search.svg" alt=""><span class="sr-only">ค้นหาผู้ใช้</span><input
-              v-model="keyword" type="search" placeholder="ค้นหาชื่อ อีเมล หรือพื้นที่"></label>
+          <label class="directory__search"><img src="/icons/Search.svg" alt=""><span class="sr-only">{{ t('usersTrust.searchLabel') }}</span><input
+              v-model="keyword" type="search" :placeholder="t('usersTrust.searchPlaceholder')"></label>
         </header>
 
         <div class="directory__table-wrap">
           <table>
             <thead>
               <tr>
-                <th scope="col">ผู้ใช้</th>
-                <th scope="col">คะแนนความน่าเชื่อถือ</th>
-                <th scope="col">ระดับ</th>
-                <th scope="col">รายงาน</th>
-                <th scope="col">ยืนยัน</th>
-                <th scope="col">น่าสงสัย</th>
-                <th scope="col">กิจกรรมล่าสุด</th>
-                <th scope="col"><span class="sr-only">คำสั่ง</span></th>
+                <th scope="col">{{ t('usersTrust.th.user') }}</th>
+                <th scope="col">{{ t('usersTrust.th.trust') }}</th>
+                <th scope="col">{{ t('usersTrust.th.level') }}</th>
+                <th scope="col">{{ t('usersTrust.th.reports') }}</th>
+                <th scope="col">{{ t('usersTrust.th.verified') }}</th>
+                <th scope="col">{{ t('usersTrust.th.suspicious') }}</th>
+                <th scope="col">{{ t('usersTrust.th.lastActivity') }}</th>
+                <th scope="col"><span class="sr-only">{{ t('usersTrust.th.actions') }}</span></th>
               </tr>
             </thead>
             <tbody>
@@ -120,18 +143,17 @@ const runAction = (action) => { actionNotice.value = `บันทึกเป�
                 <td class="number-positive">{{ user.verified }}</td>
                 <td :class="{ 'number-risk': user.suspicious > 2 }">{{ user.suspicious }}</td>
                 <td>{{ user.lastActivity }}</td>
-                <td><button type="button" class="row-menu" :aria-label="`คำสั่งของ ${user.name}`"
-                    @click.stop="runAction(`เปิดคำสั่งของ ${user.name}`)"><i></i><i></i><i></i></button></td>
+                <td><button type="button" class="row-menu" :aria-label="t('usersTrust.rowActions', { name: user.name })"
+                    @click.stop="runAction(t('usersTrust.openActions', { name: user.name }))"><i></i><i></i><i></i></button></td>
               </tr>
               <tr v-if="!filteredUsers.length">
-                <td colspan="8" class="directory__empty">ไม่พบผู้ใช้ที่ตรงกับคำค้นหา</td>
+                <td colspan="8" class="directory__empty">{{ t('usersTrust.empty') }}</td>
               </tr>
             </tbody>
           </table>
         </div>
-        <footer class="directory__footer"><span>แสดง {{ filteredUsers.length }} จาก {{ users.length }}
-            รายการตัวอย่าง</span>
-          <div aria-label="หน้าข้อมูล"><button type="button" disabled>‹</button><button type="button"
+        <footer class="directory__footer"><span>{{ t('usersTrust.showing', { shown: filteredUsers.length, total: users.length }) }}</span>
+          <div :aria-label="t('usersTrust.pagination')"><button type="button" disabled>‹</button><button type="button"
               class="current">1</button><button type="button">2</button><button type="button">3</button><button
               type="button">›</button></div>
         </footer>
@@ -148,52 +170,51 @@ const runAction = (action) => { actionNotice.value = `บันทึกเป�
         </header>
         <dl class="profile__facts">
           <div>
-            <dt>เข้าร่วมเมื่อ</dt>
+            <dt>{{ t('usersTrust.joined') }}</dt>
             <dd>{{ selectedUser.joined }}</dd>
           </div>
           <div>
-            <dt>พื้นที่หลัก</dt>
+            <dt>{{ t('usersTrust.mainArea') }}</dt>
             <dd>{{ selectedUser.location }}</dd>
           </div>
         </dl>
-        <nav class="profile__tabs" aria-label="ข้อมูลผู้ใช้"><button
-            v-for="tab in [['overview', 'ภาพรวม'], ['reports', 'รายงาน'], ['help', 'คำขอช่วยเหลือ'], ['activity', 'กิจกรรม']]"
-            :key="tab[0]" type="button" :class="{ active: profileTab === tab[0] }" @click="profileTab = tab[0]">{{
-            tab[1] }}</button></nav>
+        <nav class="profile__tabs" :aria-label="t('usersTrust.profileLabel')"><button
+            v-for="tab in profileTabs"
+            :key="tab" type="button" :class="{ active: profileTab === tab }" @click="profileTab = tab">{{
+            t(`usersTrust.tabs.${tab}`) }}</button></nav>
 
         <template v-if="profileTab === 'overview'">
           <section class="profile__score">
-            <h3>คะแนนความน่าเชื่อถือ</h3>
+            <h3>{{ t('usersTrust.th.trust') }}</h3>
             <p><strong>{{ selectedUser.trust }}</strong><span>/ 100</span></p>
             <div><i :class="`tone-${selectedUser.tone}`" :style="{ width: trustWidth(selectedUser.trust) }"></i></div>
             <b>{{ trustLabel(selectedUser.trust)
-              }}</b><small>คะแนนนี้ช่วยให้ผู้ดูแลเห็นแนวโน้มของรายงานและกิจกรรมในชุมชน</small>
+              }}</b><small>{{ t('usersTrust.scoreHint') }}</small>
           </section>
           <section class="profile__breakdown">
-            <h3>ที่มาของคะแนน</h3>
+            <h3>{{ t('usersTrust.scoreSources') }}</h3>
             <ul>
               <li
-                v-for="item in (selectedUser.breakdown || [['รายงานที่ยืนยันแล้ว', '+18', 'positive'], ['ความสอดคล้องของตำแหน่ง', '+12', 'positive'], ['รายงานคลาดเคลื่อน', '-1', 'negative']])"
+                v-for="item in selectedUser.breakdown"
                 :key="item[0]"><span>{{ item[0] }}</span><b :class="item[2]">{{ item[1] }}</b></li>
             </ul>
           </section>
           <section class="profile__activity">
             <header>
-              <h3>กิจกรรมล่าสุด</h3><button type="button" @click="profileTab = 'activity'">ดูทั้งหมด</button>
+              <h3>{{ t('usersTrust.th.lastActivity') }}</h3><button type="button" @click="profileTab = 'activity'">{{ t('common.viewAll') }}</button>
             </header>
             <ul>
               <li
-                v-for="item in (selectedUser.activity || [['รายงานเหตุการณ์ในพื้นที่', selectedUser.lastActivity, '/icons/Report.svg'], ['ยืนยันข้อมูลจากชุมชน', '2 วันที่แล้ว', '/icons/Selected.svg']])"
+                v-for="item in selectedUser.activity"
                 :key="item[0]"><img :src="item[2]" alt=""><span>{{ item[0] }}<small>{{ item[1] }}</small></span></li>
             </ul>
           </section>
         </template>
-        <p v-else class="profile__placeholder">แท็บ “{{ profileTab === 'reports' ? 'รายงาน' : profileTab === 'help' ?
-          'คำขอช่วยเหลือ' : 'กิจกรรม' }}” เป็นพื้นที่เตรียมไว้สำหรับข้อมูลจริงเมื่อเชื่อม API</p>
+        <p v-else class="profile__placeholder">{{ t('usersTrust.tabPlaceholder', { tab: t(`usersTrust.tabs.${profileTab}`) }) }}</p>
         <footer class="profile__actions"><button type="button"
-            @click="runAction('เพิ่มในรายการเฝ้าระวัง')">เฝ้าระวัง</button><button type="button"
-            @click="runAction('จำกัดบัญชี')">จำกัดบัญชี</button><button type="button"
-            @click="runAction('ระงับผู้ใช้')">ระงับผู้ใช้</button></footer>
+            @click="runAction(t('usersTrust.actions.watchlistAdd'))">{{ t('usersTrust.actions.watchlist') }}</button><button type="button"
+            @click="runAction(t('usersTrust.actions.restrict'))">{{ t('usersTrust.actions.restrict') }}</button><button type="button"
+            @click="runAction(t('usersTrust.actions.suspend'))">{{ t('usersTrust.actions.suspend') }}</button></footer>
       </aside>
     </div>
   </section>

@@ -93,7 +93,8 @@ export const useReportIncident = () => {
     return {
       lat: normalizedLat,
       lng: normalizedLng,
-      accuracyM: Number.isFinite(Number(accuracyM)) ? Number(accuracyM) : null,
+      // Number(null) = 0 จึงต้องเช็ค null ก่อน ไม่งั้นจุดที่เลือกเองจะขึ้น "ความแม่นยำ 0 ม."
+      accuracyM: accuracyM !== null && accuracyM !== undefined && Number.isFinite(Number(accuracyM)) ? Number(accuracyM) : null,
       placeName,
       capturedAt: capturedAt ?? new Date().toISOString(),
       source: ['device', 'map', 'unknown'].includes(source) ? source : 'unknown',

@@ -1,23 +1,30 @@
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
-const getLocationErrorMessage = (error) => {
-  if (error?.code === 1) return 'ไม่ได้รับอนุญาตให้เข้าถึงตำแหน่ง กรุณาอนุญาตในเบราว์เซอร์แล้วลองอีกครั้ง'
-  if (error?.code === 2) return 'ยังระบุตำแหน่งไม่ได้ ลองขยับไปจุดที่มีสัญญาณดีขึ้นแล้วลองอีกครั้ง'
-  if (error?.code === 3) return 'ใช้เวลาค้นหาตำแหน่งนานเกินไป กรุณาลองอีกครั้ง'
-  return 'ไม่สามารถอ่านตำแหน่งปัจจุบันได้ กรุณาลองอีกครั้ง'
+const getLocationErrorKey = (error) => {
+  if (error?.code === 1) return 'location.errorDenied'
+  if (error?.code === 2) return 'location.errorUnavailable'
+  if (error?.code === 3) return 'location.errorTimeout'
+  return 'location.errorGeneric'
 }
 
 // แยกการขอตำแหน่งออกจาก UI เพื่อให้หน้าอื่นเรียกใช้ flow เดียวกันได้
 export const useGeolocation = () => {
   const isLocating = ref(false)
-  const locationError = ref('')
+  const { t } = useLocale()
+  // เก็บเป็น key แล้วแปลตอนแสดง เพื่อให้สลับภาษาแล้วข้อความเปลี่ยนตาม
+  const locationErrorKey = ref('')
+  const locationError = computed({
+    get: () => (locationErrorKey.value ? t(locationErrorKey.value) : ''),
+    // คอมโพเนนต์บางตัวตั้งข้อความเอง (เช่น '' เพื่อล้าง) จึงรับได้ทั้ง key และข้อความ
+    set: (value) => { locationErrorKey.value = value },
+  })
 
   const getCurrentLocation = () => new Promise((resolve, reject) => {
-    locationError.value = ''
+    locationErrorKey.value = ''
 
     if (!navigator.geolocation) {
-      const error = new Error('เบราว์เซอร์นี้ไม่รองรับการระบุตำแหน่ง')
-      locationError.value = error.message
+      const error = new Error('Geolocation is not supported')
+      locationErrorKey.value = 'location.errorUnsupported'
       reject(error)
       return
     }
@@ -36,7 +43,7 @@ export const useGeolocation = () => {
       },
       (error) => {
         isLocating.value = false
-        locationError.value = getLocationErrorMessage(error)
+        locationErrorKey.value = getLocationErrorKey(error)
         reject(error)
       },
       { enableHighAccuracy: true, timeout: 15_000, maximumAge: 0 },

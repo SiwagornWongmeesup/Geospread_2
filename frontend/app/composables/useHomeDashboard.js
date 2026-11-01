@@ -9,33 +9,34 @@ const toNumber = (value) => {
   return Number.isFinite(number) ? number : null
 }
 
-const formatCoordinate = (lat, lng) => {
+// ฟังก์ชันจัดรูปแบบทั้งหมดรับ t (จาก useLocale) เพื่อให้เปลี่ยนภาษาได้ทันทีโดยไม่ต้องโหลดข้อมูลใหม่
+const formatCoordinate = (lat, lng, t) => {
   const normalizedLat = toNumber(lat)
   const normalizedLng = toNumber(lng)
-  if (normalizedLat === null || normalizedLng === null) return 'ยังไม่มีพิกัด'
+  if (normalizedLat === null || normalizedLng === null) return t('place.noCoordinates')
   return `${normalizedLat.toFixed(4)}, ${normalizedLng.toFixed(4)}`
 }
 
-const formatRelativeTime = (value) => {
+export const formatRelativeTime = (value, t) => {
   const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return 'เมื่อสักครู่'
+  if (Number.isNaN(date.getTime())) return t('time.justNow')
 
   const diffMinutes = Math.max(0, Math.round((Date.now() - date.getTime()) / 60000))
-  if (diffMinutes < 1) return 'เมื่อสักครู่'
-  if (diffMinutes < 60) return `${diffMinutes} นาทีที่แล้ว`
+  if (diffMinutes < 1) return t('time.justNow')
+  if (diffMinutes < 60) return t('time.minutesAgo', { count: diffMinutes })
 
   const diffHours = Math.round(diffMinutes / 60)
-  if (diffHours < 24) return `${diffHours} ชั่วโมงที่แล้ว`
+  if (diffHours < 24) return t('time.hoursAgo', { count: diffHours })
 
   const diffDays = Math.round(diffHours / 24)
-  return `${diffDays} วันที่แล้ว`
+  return t('time.daysAgo', { count: diffDays })
 }
 
-const formatImpactRadius = (radiusMeters) => {
+const formatImpactRadius = (radiusMeters, t) => {
   const radius = toNumber(radiusMeters)
-  if (!radius || radius <= 0) return 'ไม่ระบุ'
-  if (radius >= 1000) return `${(radius / 1000).toFixed(radius % 1000 === 0 ? 0 : 1)} กม.`
-  return `${Math.round(radius)} ม.`
+  if (!radius || radius <= 0) return t('units.notSpecified')
+  if (radius >= 1000) return t('units.kilometers', { value: (radius / 1000).toFixed(radius % 1000 === 0 ? 0 : 1) })
+  return t('units.meters', { value: Math.round(radius) })
 }
 
 const getDistanceInMeters = (lat, lng, userLocation) => {
@@ -55,16 +56,16 @@ const getDistanceInMeters = (lat, lng, userLocation) => {
   return 6_371_000 * 2 * Math.atan2(Math.sqrt(distanceFactor), Math.sqrt(1 - distanceFactor))
 }
 
-const formatDistanceFromMeters = (distanceMeters) => {
+const formatDistanceFromMeters = (distanceMeters, t) => {
   if (distanceMeters === null) return null
 
-  if (distanceMeters < 1000) return `${Math.max(10, Math.round(distanceMeters / 10) * 10)} ม. จากคุณ`
-  return `${(distanceMeters / 1000).toFixed(distanceMeters < 10_000 ? 1 : 0)} กม. จากคุณ`
+  if (distanceMeters < 1000) return t('units.metersFromYou', { value: Math.max(10, Math.round(distanceMeters / 10) * 10) })
+  return t('units.kilometersFromYou', { value: (distanceMeters / 1000).toFixed(distanceMeters < 10_000 ? 1 : 0) })
 }
 
-const formatDistanceFromUser = (lat, lng, userLocation) => {
+const formatDistanceFromUser = (lat, lng, userLocation, t) => {
   const distanceMeters = getDistanceInMeters(lat, lng, userLocation)
-  return formatDistanceFromMeters(distanceMeters)
+  return formatDistanceFromMeters(distanceMeters, t)
 }
 
 const toneFromColor = (color, fallback = 'blue') => {
@@ -101,19 +102,19 @@ const getImageCount  = (item) => {
 
 const withoutStatusSuffix = (title, fallback) => {
   const cleanedTitle = String(title || '')
-    .replace(/\s*[—–-]\s*(รอตรวจสอบ|ยืนยันแล้ว|กำลังดำเนินการ|pending|verified)\s*$/iu, '')
+    .replace(/\s*[—–-]\s*(รอตรวจสอบ|ยืนยันแล้ว|ระบุประเภทแล้ว|กำลังดำเนินการ|pending|verified)\s*$/iu, '')
     .trim()
 
   return cleanedTitle || fallback
 }
 
-const normalizeIncident = (incident) => {
+const normalizeIncident = (incident, t) => {
   const hasFinalType = Boolean(incident.final_type_id)
   const markerColor = hasFinalType ? incident.marker_color || '#1479ef' : pendingMarkerColor
   const reportCount = Number(incident.report_count) || 1
   const isVerified = incident.verification_status === 'verified'
   const statusTone = isVerified ? 'verified' : hasFinalType ? 'ongoing' : 'pending'
-  const statusLabel = isVerified ? 'ยืนยันแล้ว' : hasFinalType ? 'กำลังดำเนินการ' : 'รอตรวจสอบ'
+  const statusLabel = t(`status.${statusTone}`)
 
   return {
     // ใช้เลือกmarkerหน้าเว็ป
@@ -121,9 +122,9 @@ const normalizeIncident = (incident) => {
     // ใช้เรียกapiตอนเลือกmarker
     incidentId:incident.incident_id,
     kind: 'incident',
-    title: withoutStatusSuffix(incident.title, incident.type_name || 'เหตุการณ์'),
+    title: withoutStatusSuffix(incident.title, incident.type_name || t('incident.generic')),
     description: incident.description,
-    category: hasFinalType ? incident.type_name || 'เหตุการณ์' : 'รอตรวจสอบ',
+    category: hasFinalType ? incident.type_name || t('incident.generic') : t('status.pending'),
     statusLabel,
     statusTone,
     lat: toNumber(incident.lat),
@@ -138,27 +139,27 @@ const normalizeIncident = (incident) => {
     }),
     displayMode: hasFinalType ? incident.display_mode : 'marker',
     radiusM: hasFinalType ? toNumber(incident.radius_m) : null,
-    radiusLabel: formatImpactRadius(hasFinalType ? incident.radius_m : null),
+    radiusLabel: formatImpactRadius(hasFinalType ? incident.radius_m : null, t),
     reportCount,
     // รูปปกและจำนวนรูปทั้งหมด backend คำนวณมาจากทุกรายงานในเหตุการณ์นี้แล้ว
     imageUrl: incident.image_url || null,
     imageCount: Number(incident.image_count) || 0,
-    reporterLabel: incident.reporter_name || 'ชุมชน',
-    location: formatCoordinate(incident.lat, incident.lng),
-    areaLabel: incident.location_name || incident.area_name || incident.province_name || 'พื้นที่ที่รายงาน',
-    distance: `${reportCount} รายงาน`,
-    time: formatRelativeTime(incident.last_reported_at),
+    reporterLabel: incident.reporter_name || t('common.community'),
+    location: formatCoordinate(incident.lat, incident.lng, t),
+    areaLabel: incident.location_name || incident.area_name || incident.province_name || t('place.reportedArea'),
+    distance: t('units.reports', { count: reportCount }),
+    time: formatRelativeTime(incident.last_reported_at, t),
     occurredAt: incident.last_reported_at || null,
   }
 }
 
-const normalizePendingReport = (report) => ({
+const normalizePendingReport = (report, t) => ({
   id: `report-${report.report_id}`,
   kind: 'pending_report',
-  title: report.description || 'รายงานรอตรวจสอบ',
+  title: report.description || t('incident.pendingReport'),
   description: report.description,
-  category: 'รอตรวจสอบ',
-  statusLabel: 'รอตรวจสอบ',
+  category: t('status.pending'),
+  statusLabel: t('status.pending'),
   statusTone: 'pending',
   lat: toNumber(report.lat),
   lng: toNumber(report.lng),
@@ -168,29 +169,29 @@ const normalizePendingReport = (report) => ({
   iconUrl: getIncidentIconUrl({ kind: 'pending_report' }),
   displayMode: 'marker',
   radiusM: null,
-  radiusLabel: 'ไม่ระบุ',
+  radiusLabel: t('units.notSpecified'),
   reportCount: 1,
   imageCount: getImageCount(report),
-  reporterLabel: report.reporter_name || 'ชุมชน',
-  location: formatCoordinate(report.lat, report.lng),
-  areaLabel: report.location_name || report.area_name || report.province_name || 'พื้นที่ที่รายงาน',
-  distance: 'รายงานใหม่',
-  time: formatRelativeTime(report.created_at),
+  reporterLabel: report.reporter_name || t('common.community'),
+  location: formatCoordinate(report.lat, report.lng, t),
+  areaLabel: report.location_name || report.area_name || report.province_name || t('place.reportedArea'),
+  distance: t('incident.newReport'),
+  time: formatRelativeTime(report.created_at, t),
   occurredAt: report.created_at || null,
 })
-const normalizeHelpRequest = (helpRequest) => ({
+const normalizeHelpRequest = (helpRequest, t) => ({
   id: `help-${helpRequest.help_request_id}`,
   kind: 'help_request',
-  title: helpRequest.custom_help_type || getHelpRequestLabel(helpRequest.help_type),
-  category: 'ขอความช่วยเหลือ',
-  statusLabel: 'กำลังรอความช่วยเหลือ',
+  title: helpRequest.custom_help_type || getHelpRequestLabel(helpRequest.help_type, t),
+  category: t('help.category'),
+  statusLabel: t('status.helpOpen'),
   tone: 'orange',
   iconName: null,
   displayMode: 'marker',
   radiusM: null,
-  radiusLabel: 'ไม่ระบุ',
+  radiusLabel: t('units.notSpecified'),
   reportCount: 1,
-  distance: `${helpRequest.people_count} คนต้องการความช่วยเหลือ`,
+  distance: t('help.peopleNeedHelp', { count: helpRequest.people_count }),
   // จำนวนคนเป็นตัวเลข ใช้แสดงใน popup ขอความช่วยเหลือ
   peopleCount: Number(helpRequest.people_count) || 1,
   description: helpRequest.description,
@@ -200,18 +201,18 @@ const normalizeHelpRequest = (helpRequest) => ({
   // "other" intentionally falls back to the existing generic help icon.
   iconUrl: getHelpRequestIcon(helpRequest.help_type),
   imageUrl: null,
-  reporterLabel: 'ชุมชน',
-  location: formatCoordinate(helpRequest.lat, helpRequest.lng),
-  areaLabel: helpRequest.location_name || helpRequest.area_name || helpRequest.province_name || 'พื้นที่ที่รายงาน',
-  time: formatRelativeTime(helpRequest.created_at),
+  reporterLabel: t('common.community'),
+  location: formatCoordinate(helpRequest.lat, helpRequest.lng, t),
+  areaLabel: helpRequest.location_name || helpRequest.area_name || helpRequest.province_name || t('place.reportedArea'),
+  time: formatRelativeTime(helpRequest.created_at, t),
   occurredAt: helpRequest.created_at || null,
 })
 
-// สถานะของรายงานแต่ละชิ้นใน popup (มาจาก report.report_status)
-export const getReportStatus = (reportStatus) => {
-  if (reportStatus === 'verified') return { tone: 'verified', label: 'ยืนยันแล้ว' }
-  if (reportStatus === 'rejected') return { tone: 'rejected', label: 'ไม่ผ่านการตรวจสอบ' }
-  return { tone: 'pending', label: 'รอตรวจสอบ' }
+// สถานะของรายงานแต่ละชิ้นใน popup (มาจาก report.report_status) — ใช้ t(`status.${tone}`) เป็นข้อความ
+export const getReportStatusTone = (reportStatus) => {
+  if (reportStatus === 'verified') return 'verified'
+  if (reportStatus === 'rejected') return 'rejected'
+  return 'pending'
 }
 
 const isSameLocalDay = (value, now = new Date()) => {
@@ -222,15 +223,25 @@ const isSameLocalDay = (value, now = new Date()) => {
 export const useHomeDashboard = () => {
   const config = useRuntimeConfig()
   const apiBase = config.public.apiBase || 'http://localhost:5000'
+  const { t } = useLocale()
 
   const selectedIncident = useState('home-selected-incident', () => null)
-  const publicMapItems = useState('home-public-map-items', () => [])
+  // เก็บข้อมูลดิบจาก API แล้วแปลงเป็นรายการบนแผนที่ใน computed เพื่อให้ข้อความเปลี่ยนตามภาษาที่เลือก
+  const rawMapData = useState('home-raw-map-data', () => ({ incidents: [], pendingReports: [], helpRequests: [] }))
+  const publicMapItems = computed(() => [
+    ...rawMapData.value.incidents.map((incident) => normalizeIncident(incident, t)),
+    ...rawMapData.value.pendingReports.map((report) => normalizePendingReport(report, t)),
+    ...rawMapData.value.helpRequests.map((helpRequest) => normalizeHelpRequest(helpRequest, t)),
+  ].filter((item) => item.lat !== null && item.lng !== null))
   const userLocation = useState('home-user-location', () => null)
   const isLoadingMap = useState('home-map-loading', () => false)
   const isLoadingIncidentDetail = useState('home-incident-detail-loading', () => false)
-  const mapError = useState('home-map-error', () => null)
+  const mapErrorKey = useState('home-map-error', () => null)
+  const mapError = computed(() => (mapErrorKey.value ? t(mapErrorKey.value) : null))
   // เวลาที่โหลดข้อมูลแผนที่สำเร็จครั้งล่าสุด ใช้บอกความสดของข้อมูล
   const mapUpdatedAt = useState('home-map-updated-at', () => null)
+  // ตัวเรียงการ์ดเหตุการณ์ใกล้คุณ: 'nearest' = ใกล้ที่สุด, 'recent' = ล่าสุด
+  const nearbySort = useState('home-nearby-sort', () => 'nearest')
   // ที่เก็บข้อมูลรายระเอียดของ Marker ที่กำลังกด 
   const selectedIncidentDetail = useState('home-selected-incident-detail',() => null,)
 
@@ -258,7 +269,7 @@ export const useHomeDashboard = () => {
 
   const fetchPublicMapItems = async () => {
     isLoadingMap.value = true
-    mapError.value = null
+    mapErrorKey.value = null
 
     try {
       const response = await $fetch(`${apiBase}/incidents/map`)
@@ -267,32 +278,13 @@ export const useHomeDashboard = () => {
       const pendingReports = response.data?.pending_reports ?? []
       const helpResponse = await $fetch(`${apiBase}/help-requests/map`)
       const helpRequests = helpResponse.data ?? []
-      const mapItems = []
-      //รวมเหตุการณ์
-      for (const incident of incidents) {
-        const normalizedIncident = normalizeIncident(incident)
-        mapItems.push(normalizedIncident)
-      }
-      //รายงานดิบ
-      for (const report of pendingReports) {
-        const normalizeReport = normalizePendingReport(report)
-        mapItems.push(normalizeReport)
-      }
-
-      for (const helpRequest of helpRequests) {
-        const normalizedHelpRequest = normalizeHelpRequest(helpRequest)
-        mapItems.push(normalizedHelpRequest)
-      }
-
-      //กรองเหตุเพื่อส่งไปmap
-      publicMapItems.value = mapItems.filter((item) => {
-        return item.lat !== null && item.lng !== null
-      })
+      // เหตุการณ์ที่รวมแล้ว + รายงานดิบที่รอตรวจ + คำขอความช่วยเหลือ (แปลงเป็นหมุดใน publicMapItems)
+      rawMapData.value = { incidents, pendingReports, helpRequests }
       mapUpdatedAt.value = new Date().toISOString()
     } catch (error) {
       console.error('Unable to load public map incidents', error)
-      mapError.value = 'โหลดข้อมูลแผนที่ไม่สำเร็จ'
-      publicMapItems.value = []
+      mapErrorKey.value = 'map.loadFailed'
+      rawMapData.value = { incidents: [], pendingReports: [], helpRequests: [] }
     } finally {
       isLoadingMap.value = false
     }
@@ -314,9 +306,15 @@ export const useHomeDashboard = () => {
         return {
           ...item,
           distanceMeters,
-          distanceFromUserLabel: formatDistanceFromMeters(distanceMeters),
+          distanceFromUserLabel: formatDistanceFromMeters(distanceMeters, t),
         }
       })
+
+    // ล่าสุด: เรียงตามเวลารายงานล่าสุด ไม่ต้องรู้ตำแหน่งผู้ใช้
+    if (nearbySort.value === 'recent') {
+      cards.sort((firstCard, secondCard) => new Date(secondCard.occurredAt || 0) - new Date(firstCard.occurredAt || 0))
+      return cards.slice(0, 2)
+    }
 
     const hasUserLocation = cards.some((item) => item.distanceMeters !== null)
     //เงื่อนไขเช็คว่ามีระยะคำนวนอย่างน้อย1เหตุไหม
@@ -334,7 +332,7 @@ export const useHomeDashboard = () => {
 
   const withDistance = (item) => {
     const distanceMeters = getDistanceInMeters(item.lat, item.lng, userLocation.value)
-    return { ...item, distanceMeters, distanceFromUserLabel: formatDistanceFromMeters(distanceMeters) }
+    return { ...item, distanceMeters, distanceFromUserLabel: formatDistanceFromMeters(distanceMeters, t) }
   }
 
   const byDistanceThenRecent = (first, second) => {
@@ -369,20 +367,18 @@ export const useHomeDashboard = () => {
         + items.filter((item) => item.kind === 'pending_report').length,
       helpRequests: items.filter((item) => item.kind === 'help_request').length,
       reportedToday: items.filter((item) => item.kind !== 'help_request' && isSameLocalDay(item.occurredAt)).length,
-      updatedLabel: mapUpdatedAt.value ? formatRelativeTime(mapUpdatedAt.value) : null,
+      updatedLabel: mapUpdatedAt.value ? formatRelativeTime(mapUpdatedAt.value, t) : null,
     }
   })
 
   const selectedIncidentPreview = computed(() => {
     if (!selectedIncident.value) return null
 
+    // หยิบรายการล่าสุดตาม id เพื่อให้ข้อความใน popup เปลี่ยนตามภาษาด้วย
+    const latest = publicMapItems.value.find((item) => item.id === selectedIncident.value.id) ?? selectedIncident.value
     return {
-      ...selectedIncident.value,
-      distanceFromUserLabel: formatDistanceFromUser(
-        selectedIncident.value.lat,
-        selectedIncident.value.lng,
-        userLocation.value,
-      ),
+      ...latest,
+      distanceFromUserLabel: formatDistanceFromUser(latest.lat, latest.lng, userLocation.value, t),
     }
   })
 
@@ -395,7 +391,7 @@ export const useHomeDashboard = () => {
 
   const fetchIncidentDetail = async (incidentId) =>  {
     isLoadingIncidentDetail.value = true
-    mapError.value = null
+    mapErrorKey.value = null
     try {
       const response = await $fetch(`${apiBase}/incidents/${incidentId}`,)
       //รายงานของคนที่อยู่ในmarkerนั้น
@@ -414,6 +410,7 @@ export const useHomeDashboard = () => {
     publicMapItems,
     userLocation,
     nearbyIncidentCards,
+    nearbySort,
     helpRequestCards,
     recentActivity,
     todaySummary,

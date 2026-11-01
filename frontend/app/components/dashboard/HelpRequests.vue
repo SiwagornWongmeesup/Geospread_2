@@ -1,12 +1,12 @@
 <template>
   <section class="help-requests" aria-labelledby="help-requests-heading">
     <header class="help-requests__header">
-      <h2 id="help-requests-heading">{{ title }}</h2>
-      <NuxtLink to="/help-requests">ดูทั้งหมด</NuxtLink>
+      <h2 id="help-requests-heading">{{ title || t('helpList.title') }}</h2>
+      <NuxtLink to="/help-requests">{{ t('common.viewAll') }}</NuxtLink>
     </header>
 
     <p v-if="!requests.length" class="help-requests__empty">
-      ยังไม่มีคำขอความช่วยเหลือที่เปิดอยู่ในตอนนี้
+      {{ t('helpList.empty') }}
     </p>
 
     <div v-else class="help-requests__list">
@@ -15,8 +15,8 @@
         <div class="help-request-card__content">
           <h3>{{ request.title }}</h3>
           <p>{{ request.distanceFromUserLabel || request.areaLabel }} · {{ request.time }}</p>
-          <small>{{ request.description || `${request.peopleCount} คนต้องการความช่วยเหลือ` }}</small>
-          <NuxtLink to="/help-requests">ดูรายละเอียด</NuxtLink>
+          <small>{{ request.description || t('help.peopleNeedHelp', { count: request.peopleCount }) }}</small>
+          <NuxtLink to="/help-requests">{{ t('common.viewDetails') }}</NuxtLink>
         </div>
       </article>
     </div>
@@ -27,10 +27,11 @@
 defineProps({
   title: {
     type: String,
-    default: 'คำขอความช่วยเหลือใกล้ฉัน',
+    default: '',
   },
 })
 
+const { t } = useLocale()
 const { helpRequestCards: requests, publicMapItems, isLoadingMap, fetchPublicMapItems } = useHomeDashboard()
 
 // หน้า /help-requests ใช้คอมโพเนนต์นี้เดี่ยวๆ จึงต้องโหลดข้อมูลเองถ้ายังไม่มี

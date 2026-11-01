@@ -3,18 +3,20 @@ import { useRoute, useState } from '#app'
 
 const sidebarCollapsed = useState('adminSidebarCollapsed', () => false)
 const route = useRoute()
+const { t } = useLocale()
 
 const menus = [
-  ['dashboard', 'แดชบอร์ด', '/icons/Chart.svg'], ['incidents', 'เหตุการณ์', '/icons/Report.svg'],
-  ['requests', 'คำขอความช่วยเหลือ', '/icons/Help.svg'], ['events', 'กิจกรรม', '/icons/Calendar.svg'],
-  ['users', 'ผู้ใช้และความน่าเชื่อถือ', '/icons/Users.svg'], ['guides', 'คู่มือความปลอดภัย', '/icons/Alert.svg'],
-  ['analytics', 'รายงานวิเคราะห์', '/icons/Analysis.svg'], ['notifications', 'การแจ้งเตือน', '/icons/Notification.svg', 3],
-  ['settings', 'ตั้งค่าระบบ', '/icons/Settings.svg'],
+  // [id, key ข้อความ, ไอคอน, badge]
+  ['dashboard', 'admin.menu.dashboard', '/icons/Chart.svg'], ['incidents', 'admin.menu.incidents', '/icons/Report.svg'],
+  ['requests', 'admin.menu.requests', '/icons/Help.svg'], ['events', 'admin.menu.events', '/icons/Calendar.svg'],
+  ['users', 'admin.menu.users', '/icons/Users.svg'], ['guides', 'admin.menu.guides', '/icons/Alert.svg'],
+  ['analytics', 'admin.menu.analytics', '/icons/Analysis.svg'], ['notifications', 'admin.menu.notifications', '/icons/Notification.svg', 3],
+  ['settings', 'admin.menu.settings', '/icons/Settings.svg'],
 ]
 const menuGroups = [
-  { label: 'ภาพรวม', items: [menus[0]] },
-  { label: 'การจัดการชุมชน', items: menus.slice(1, 5) },
-  { label: 'ข้อมูลและความปลอดภัย', items: menus.slice(5, 8) },
+  { label: 'admin.groups.overview', items: [menus[0]] },
+  { label: 'admin.groups.community', items: menus.slice(1, 5) },
+  { label: 'admin.groups.dataSafety', items: menus.slice(5, 8) },
 ]
 const systemItems = [menus[8]]
 
@@ -27,11 +29,11 @@ const selectMenu = ([id]) => {
 </script>
 
 <template>
-  <aside class="sidebar" :class="{ 'sidebar--collapsed': sidebarCollapsed }" aria-label="เมนูผู้ดูแลระบบ">
+  <aside class="sidebar" :class="{ 'sidebar--collapsed': sidebarCollapsed }" :aria-label="t('admin.menuLabel')">
     <div class="sidebar-head">
-      <span v-if="!sidebarCollapsed" class="sidebar-label">เมนูผู้ดูแล</span>
-      <button class="sidebar-toggle" type="button" :aria-label="sidebarCollapsed ? 'ขยายแถบเมนู' : 'พับแถบเมนู'"
-        :title="sidebarCollapsed ? 'ขยายแถบเมนู' : 'พับแถบเมนู'" @click="sidebarCollapsed = !sidebarCollapsed">
+      <span v-if="!sidebarCollapsed" class="sidebar-label">{{ t('admin.menuTitle') }}</span>
+      <button class="sidebar-toggle" type="button" :aria-label="sidebarCollapsed ? t('common.expandMenu') : t('common.collapseMenu')"
+        :title="sidebarCollapsed ? t('common.expandMenu') : t('common.collapseMenu')" @click="sidebarCollapsed = !sidebarCollapsed">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="m15 18-6-6 6-6" />
         </svg>
@@ -39,22 +41,22 @@ const selectMenu = ([id]) => {
     </div>
     <nav>
       <section v-for="group in menuGroups" :key="group.label" class="menu-group">
-        <h2 v-if="!sidebarCollapsed">{{ group.label }}</h2>
+        <h2 v-if="!sidebarCollapsed">{{ t(group.label) }}</h2>
         <button v-for="menu in group.items" :key="menu[0]" type="button" :class="{ active: isActiveMenu(menu[0]) }"
           :aria-current="isActiveMenu(menu[0]) ? 'page' : undefined" :disabled="isUnavailableMenu(menu[0])"
-          :title="sidebarCollapsed ? menu[1] : (isUnavailableMenu(menu[0]) ? 'อยู่ระหว่างพัฒนา' : undefined)"
+          :title="sidebarCollapsed ? t(menu[1]) : (isUnavailableMenu(menu[0]) ? t('common.inDevelopment') : undefined)"
           @click="selectMenu(menu)">
-          <img :src="menu[2]" alt=""><span v-if="!sidebarCollapsed">{{ menu[1] }}</span><b v-if="menu[3]">{{ menu[3]
+          <img :src="menu[2]" alt=""><span v-if="!sidebarCollapsed">{{ t(menu[1]) }}</span><b v-if="menu[3]">{{ menu[3]
             }}</b>
         </button>
       </section>
     </nav>
     <section class="sidebar-system">
-      <h2 v-if="!sidebarCollapsed">ระบบ</h2>
+      <h2 v-if="!sidebarCollapsed">{{ t('admin.system') }}</h2>
       <button v-for="menu in systemItems" :key="menu[0]" type="button" :class="{ active: isActiveMenu(menu[0]) }"
         :aria-current="isActiveMenu(menu[0]) ? 'page' : undefined" :disabled="isUnavailableMenu(menu[0])"
-        :title="sidebarCollapsed ? menu[1] : 'อยู่ระหว่างพัฒนา'" @click="selectMenu(menu)">
-        <img :src="menu[2]" alt=""><span v-if="!sidebarCollapsed">{{ menu[1] }}</span>
+        :title="sidebarCollapsed ? t(menu[1]) : t('common.inDevelopment')" @click="selectMenu(menu)">
+        <img :src="menu[2]" alt=""><span v-if="!sidebarCollapsed">{{ t(menu[1]) }}</span>
       </button>
     </section>
   </aside>

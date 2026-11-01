@@ -1,68 +1,68 @@
 <template>
   <form class="report-incident-form" @submit.prevent="submitReport">
     <header class="report-incident-form__intro">
-      <h1>แจ้งเหตุการณ์</h1>
-      <p>แจ้งสิ่งที่คุณพบเพื่อให้คนในพื้นที่รับรู้และช่วยเหลือได้เร็วขึ้น</p>
+      <h1>{{ t('report.title') }}</h1>
+      <p>{{ t('report.subtitle') }}</p>
     </header>
 
     <div class="report-incident-form__body">
     <div class="report-incident-form__fields">
     <label class="report-incident-form__section report-incident-form__details">
-      <span>เกิดอะไรขึ้น? <b aria-hidden="true">*</b></span>
-      <textarea v-model="details" rows="4" maxlength="500" required placeholder="พิมพ์สิ่งที่เกิดขึ้น เช่น น้ำท่วมหน้าตลาด, มีควันผิดปกติ, ถนนทรุด..." />
+      <span>{{ t('report.whatHappened') }} <b aria-hidden="true">*</b></span>
+      <textarea v-model="details" rows="4" maxlength="500" required :placeholder="t('report.detailsPlaceholder')" />
       <em>{{ details.length }}/500</em>
     </label>
 
     <section class="report-incident-form__section incident-suggestions" aria-labelledby="suggested-types-heading">
       <header class="incident-suggestions__heading">
         <div>
-          <h2 id="suggested-types-heading">ประเภทเหตุการณ์ <span>(ไม่บังคับ)</span></h2>
+          <h2 id="suggested-types-heading">{{ t('report.typeHeading') }} <span>{{ t('report.optional') }}</span></h2>
           <p>{{ suggestionNote }}</p>
         </div>
         <button ref="moreTypesButton" type="button" class="more-types-button" @click="openTypePicker">
-          ดูเพิ่มเติม
+          {{ t('report.seeMore') }}
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13m-5-5 5 5-5 5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" /></svg>
         </button>
       </header>
 
-      <div v-if="visibleIncidentTypes.length" class="suggested-type-grid" role="group" aria-label="ประเภทเหตุการณ์ที่เลือกได้อย่างรวดเร็ว">
+      <div v-if="visibleIncidentTypes.length" class="suggested-type-grid" role="group" :aria-label="t('report.quickTypesLabel')">
         <button v-for="incidentType in visibleIncidentTypes" :key="incidentType.id" type="button" class="suggested-type" :class="{ 'suggested-type--selected': userSelectedTypeId === incidentType.id }" :aria-pressed="userSelectedTypeId === incidentType.id" @click="selectIncidentType(incidentType)">
           <span class="suggested-type__icon" :style="{ backgroundColor: iconColor(incidentType) }" aria-hidden="true">
             <img :src="incidentType.iconUrl || '/icons/Alert.svg'" alt="">
           </span>
           <span>{{ incidentType.label }}</span>
-          <svg v-if="userSelectedTypeId === incidentType.id" class="suggested-type__check" viewBox="0 0 24 24" aria-label="เลือกแล้ว"><path d="m7.5 12.5 3 3 6-7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.3" /></svg>
+          <svg v-if="userSelectedTypeId === incidentType.id" class="suggested-type__check" viewBox="0 0 24 24" :aria-label="t('report.selected')"><path d="m7.5 12.5 3 3 6-7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.3" /></svg>
         </button>
       </div>
     </section>
 
     <section class="report-incident-form__section report-incident-form__upload" aria-labelledby="upload-heading">
-      <h2 id="upload-heading">แนบรูปภาพหรือวิดีโอ <span>(ไม่บังคับ)</span></h2>
-      <p>สื่อประกอบช่วยให้ชุมชนและเจ้าหน้าที่เข้าใจสถานการณ์ได้ดีขึ้น</p>
+      <h2 id="upload-heading">{{ t('report.mediaHeading') }} <span>{{ t('report.optional') }}</span></h2>
+      <p>{{ t('report.mediaHint') }}</p>
       <input ref="fileInput" type="file" multiple accept="image/jpeg,image/png,video/mp4" class="sr-only" :disabled="isSubmitting" @change="selectFiles">
       <button type="button" class="upload-zone" :disabled="isSubmitting" @click="fileInput?.click()">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm0 2v12h16V6H4Zm3 10 3.2-4.1 2.4 2.9 1.7-2.1L18 16H7Zm3-5.5A1.5 1.5 0 1 0 10 7.5a1.5 1.5 0 0 0 0 3Z" fill="currentColor" /></svg>
-        <span><strong>{{ selectedMediaLabel }}</strong><small>{{ selectedFiles.length ? 'ไฟล์จะถูกอัปโหลดเมื่อส่งรายงาน' : 'รองรับ JPG, PNG และ MP4 สูงสุด 5 ไฟล์ ไฟล์ละไม่เกิน 20 MB' }}</small></span>
+        <span><strong>{{ selectedMediaLabel }}</strong><small>{{ selectedFiles.length ? t('report.mediaUploadOnSubmit') : t('report.mediaLimits') }}</small></span>
       </button>
-      <ul v-if="selectedFiles.length" class="selected-media" aria-label="ไฟล์ที่เลือก">
+      <ul v-if="selectedFiles.length" class="selected-media" :aria-label="t('report.selectedFiles')">
         <li v-for="(item, index) in selectedFiles" :key="`${item.file.name}-${item.file.lastModified}`" :title="item.file.name">
-          <img v-if="item.previewUrl" :src="item.previewUrl" :alt="`ตัวอย่าง ${item.file.name}`"><span v-else class="selected-media__video">วิดีโอ</span>
+          <img v-if="item.previewUrl" :src="item.previewUrl" :alt="t('report.previewOf', { name: item.file.name })"><span v-else class="selected-media__video">{{ t('report.video') }}</span>
           <span class="selected-media__details"><strong>{{ item.file.name }}</strong><small>{{ formatFileSize(item.file.size) }}</small></span>
-          <button type="button" :disabled="isSubmitting" :aria-label="`ลบ ${item.file.name}`" @click="removeSelectedFile(index)">ลบ</button>
+          <button type="button" :disabled="isSubmitting" :aria-label="t('report.removeFile', { name: item.file.name })" @click="removeSelectedFile(index)">{{ t('report.remove') }}</button>
         </li>
       </ul>
     </section>
     <div v-if="feedback" class="report-incident-form__feedback" role="status">
       <span>{{ feedback }}</span>
-      <button v-if="needsLogin" type="button" class="feedback-login" @click="goToLogin">เข้าสู่ระบบ</button>
+      <button v-if="needsLogin" type="button" class="feedback-login" @click="goToLogin">{{ t('header.login') }}</button>
     </div>
     </div>
     <ReportIncidentRightPanel class="report-incident-form__location">
       <template #action>
         <footer class="report-incident-form__action-row">
-          <button type="button" class="button button--secondary" :disabled="isSubmitting" @click="saveMockDraft">บันทึกร่าง</button>
-          <button v-if="isLoggedIn" type="submit" class="button button--primary" :disabled="isSubmitting">{{ isSubmitting ? 'กำลังส่งรายงาน…' : 'ส่งรายงาน' }}</button>
-          <button v-else type="button" class="button button--primary" @click="showLoginPrompt">เข้าสู่ระบบเพื่อส่งรายงาน</button>
+          <button type="button" class="button button--secondary" :disabled="isSubmitting" @click="saveMockDraft">{{ t('report.saveDraft') }}</button>
+          <button v-if="isLoggedIn" type="submit" class="button button--primary" :disabled="isSubmitting">{{ isSubmitting ? t('report.submitting') : t('report.submit') }}</button>
+          <button v-else type="button" class="button button--primary" @click="showLoginPrompt()">{{ t('report.loginToSubmit') }}</button>
         </footer>
       </template>
     </ReportIncidentRightPanel>
@@ -74,19 +74,19 @@
       <section class="incident-type-modal" role="dialog" aria-modal="true" aria-labelledby="type-picker-title" @keydown.esc="closeTypePicker">
         <header class="incident-type-modal__header">
           <div>
-            <h2 id="type-picker-title">หมวดหมู่และประเภทเหตุการณ์</h2>
-            <p>เลือกเฉพาะเมื่อ Type ตรงกับสิ่งที่พบ ไม่เลือกก็ส่งรายงานได้ตามปกติ</p>
+            <h2 id="type-picker-title">{{ t('report.pickerTitle') }}</h2>
+            <p>{{ t('report.pickerHint') }}</p>
           </div>
-          <button type="button" class="modal-close-button" aria-label="ปิดหน้าต่างเลือกประเภทเหตุการณ์" @click="closeTypePicker">
+          <button type="button" class="modal-close-button" :aria-label="t('report.pickerClose')" @click="closeTypePicker">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2" /></svg>
           </button>
         </header>
 
         <label class="type-search">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20 20-4.2-4.2m1.2-4.8a6 6 0 1 1-12 0 6 6 0 0 1 12 0Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2" /></svg>
-          <input ref="typePickerSearch" v-model="typeSearch" type="search" placeholder="ค้นหาประเภทเหตุการณ์">
+          <input ref="typePickerSearch" v-model="typeSearch" type="search" :placeholder="t('report.pickerSearch')">
         </label>
-        <p class="type-search__hint">เช่น น้ำท่วม, อุบัติเหตุทางถนน, เพลิงไหม้, PM2.5</p>
+        <p class="type-search__hint">{{ t('report.pickerSearchHint') }}</p>
 
         <div v-if="filteredTypeGroups.length" class="type-picker-groups">
           <section v-for="group in filteredTypeGroups" :key="group.id" class="type-picker-group" :aria-labelledby="`type-group-${group.id}`">
@@ -95,7 +95,7 @@
                 <img :src="group.iconUrl || '/icons/Alert.svg'" alt="">
               </span>
               <h3 :id="`type-group-${group.id}`">{{ group.label }}</h3>
-              <span class="type-picker-group__count">{{ group.types.length }} ประเภท</span>
+              <span class="type-picker-group__count">{{ t('report.typeCount', { count: group.types.length }) }}</span>
             </header>
             <div class="type-picker-grid">
               <button v-for="incidentType in group.types" :key="incidentType.id" type="button" class="type-picker-option" :class="{ 'type-picker-option--selected': userSelectedTypeId === incidentType.id }" :aria-pressed="userSelectedTypeId === incidentType.id" @click="selectIncidentType(incidentType, true)">
@@ -103,18 +103,18 @@
                   <img :src="incidentType.iconUrl || '/icons/Alert.svg'" alt="">
                 </span>
                 <span>{{ incidentType.label }}</span>
-                <svg v-if="userSelectedTypeId === incidentType.id" class="type-picker-option__check" viewBox="0 0 24 24" aria-label="เลือกแล้ว"><path d="m7.5 12.5 3 3 6-7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.3" /></svg>
+                <svg v-if="userSelectedTypeId === incidentType.id" class="type-picker-option__check" viewBox="0 0 24 24" :aria-label="t('report.selected')"><path d="m7.5 12.5 3 3 6-7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.3" /></svg>
               </button>
             </div>
           </section>
         </div>
-        <p v-else-if="isLoadingTypeCache" class="type-picker-empty">กำลังโหลดหมวดหมู่และประเภทเหตุการณ์…</p>
-        <p v-else-if="catalogLoadError" class="type-picker-empty">ยังโหลดประเภทเหตุการณ์จากระบบไม่ได้ ลองเปิดใหม่อีกครั้งได้เลย</p>
-        <p v-else class="type-picker-empty">ไม่พบประเภทเหตุการณ์ที่ค้นหา ลองใช้คำที่สั้นลงหรือพิมพ์รายละเอียดในรายงานแทน</p>
+        <p v-else-if="isLoadingTypeCache" class="type-picker-empty">{{ t('report.pickerLoading') }}</p>
+        <p v-else-if="catalogLoadError" class="type-picker-empty">{{ t('report.pickerLoadError') }}</p>
+        <p v-else class="type-picker-empty">{{ t('report.pickerNoResults') }}</p>
 
         <p class="type-picker-footnote">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 15h-2v-6h2v6Zm0-8h-2V7h2v2Z" fill="currentColor" /></svg>
-          หากไม่พบประเภทที่ต้องการ หรือยังไม่แน่ใจ คุณยังสามารถพิมพ์รายละเอียดแล้วส่งรายงานได้
+          {{ t('report.pickerFooter') }}
         </p>
       </section>
     </div>
@@ -123,11 +123,11 @@
   <Teleport to="body">
     <div v-if="isTypeConflictDialogOpen" class="incident-type-modal-backdrop" @click.self="closeTypeConflictDialog">
       <section class="incident-type-modal type-conflict-modal" role="dialog" aria-modal="true" aria-labelledby="type-conflict-title" @keydown.esc="closeTypeConflictDialog">
-        <h2 id="type-conflict-title">ประเภทที่คุณเลือกอาจไม่ตรงกับรายละเอียดที่พิมพ์</h2>
-        <p>ระบบแนะนำ: <strong>{{ detectedSuggestion?.label }}</strong><br>คุณเลือก: <strong>{{ userSelectedType?.label }}</strong></p>
+        <h2 id="type-conflict-title">{{ t('report.conflictTitle') }}</h2>
+        <p>{{ t('report.conflictSuggested') }} <strong>{{ detectedSuggestion?.label }}</strong><br>{{ t('report.conflictChosen') }} <strong>{{ userSelectedType?.label }}</strong></p>
         <div class="type-conflict-modal__actions">
-          <button type="button" class="button button--secondary" @click="changeToSuggestedType">เปลี่ยนเป็น {{ detectedSuggestion?.label }}</button>
-          <button type="button" class="button button--primary" @click="confirmSelectedTypeDespiteConflict">ยืนยันใช้ {{ userSelectedType?.label }}</button>
+          <button type="button" class="button button--secondary" @click="changeToSuggestedType">{{ t('report.conflictChange', { type: detectedSuggestion?.label }) }}</button>
+          <button type="button" class="button button--primary" @click="confirmSelectedTypeDespiteConflict">{{ t('report.conflictKeep', { type: userSelectedType?.label }) }}</button>
         </div>
       </section>
     </div>
@@ -148,6 +148,7 @@ const {
   clearUserSelectedType,
   restoreLocations,
 } = useReportIncident()
+const { t } = useLocale()
 const details = ref('')
 const fileInput = ref(null)
 // อยู่ใน state ระดับแอป เพื่อให้ไฟล์ที่เลือกยังอยู่เมื่อเปลี่ยนหน้าไปล็อกอินแล้วกลับมา
@@ -189,17 +190,17 @@ const hasTypeConflict = computed(() => Boolean(
   && userSelectedType.value.databaseTypeId !== detectedSuggestion.value.databaseTypeId,
 ))
 const selectedMediaLabel = computed(() => {
-  if (!selectedFiles.value.length) return 'เลือกรูปภาพหรือวิดีโอ'
+  if (!selectedFiles.value.length) return t('report.chooseMedia')
   if (selectedFiles.value.length === 1) return selectedFiles.value[0].file.name
-  return `เลือกแล้ว ${selectedFiles.value.length} ไฟล์`
+  return t('report.filesSelected', { count: selectedFiles.value.length })
 })
 const suggestionNote = computed(() => {
-  if (userSelectedType.value) return `เลือกประเภท “${userSelectedType.value.label}” แล้ว กดอีกครั้งเพื่อยกเลิก หรือเลือกประเภทอื่นได้`
-  if (details.value.trim().length < 2) return 'เลือกประเภทที่ใกล้เคียง หรือพิมพ์รายละเอียดเพื่อให้ระบบแนะนำได้'
-  if (isLoadingTypeCache.value) return 'กำลังเตรียมคำแนะนำประเภทเหตุการณ์…'
-  if (detectedSuggestion.value) return `ระบบคาดว่าอาจเป็น “${detectedSuggestion.value.label}” เลือกได้ถ้าตรง ไม่เลือกก็ส่งรายงานได้`
-  if (catalogLoadError.value) return 'ยังโหลดคำแนะนำจากระบบไม่ได้ แต่คุณยังพิมพ์และส่งรายงานได้ตามปกติ'
-  return 'ระบุ Type ได้เมื่อช่วยให้ตรงกับสิ่งที่พบ ไม่เลือกก็ส่งรายงานได้'
+  if (userSelectedType.value) return t('report.noteSelected', { type: userSelectedType.value.label })
+  if (details.value.trim().length < 2) return t('report.noteStart')
+  if (isLoadingTypeCache.value) return t('report.noteLoading')
+  if (detectedSuggestion.value) return t('report.noteSuggested', { type: detectedSuggestion.value.label })
+  if (catalogLoadError.value) return t('report.noteLoadError')
+  return t('report.noteDefault')
 })
 const normalizedSearch = computed(() => typeSearch.value.trim().toLocaleLowerCase())
 const filteredTypeGroups = computed(() => incidentTypeGroups.value
@@ -280,13 +281,13 @@ const selectFiles = (event) => {
   const files = Array.from(event.target.files ?? [])
 
   if (selectedFiles.value.length + files.length > maxMediaFiles) {
-    feedback.value = 'แนบรูปภาพหรือวิดีโอได้สูงสุด 5 ไฟล์ต่อรายงาน'
+    feedback.value = t('report.tooManyFiles', { count: maxMediaFiles })
     event.target.value = ''
     return
   }
 
   if (files.some((file) => file.size > maxMediaFileSizeBytes)) {
-    feedback.value = 'ไฟล์แนบแต่ละไฟล์ต้องมีขนาดไม่เกิน 20 MB'
+    feedback.value = t('report.fileTooLarge')
     event.target.value = ''
     return
   }
@@ -309,8 +310,8 @@ const removeSelectedFile = (index) => {
   if (removed?.previewUrl) URL.revokeObjectURL(removed.previewUrl)
   if (!selectedFiles.value.length && fileInput.value) fileInput.value.value = ''
 }
-const saveMockDraft = () => { feedback.value = 'บันทึกข้อมูลตัวอย่างแล้ว ข้อมูลนี้ยังอยู่เฉพาะในหน้าจอนี้' }
-const showLoginPrompt = (message = 'เข้าสู่ระบบก่อนส่งรายงาน เพื่อให้ระบบยืนยันผู้แจ้งและป้องกันการส่งข้อมูลรบกวน') => {
+const saveMockDraft = () => { feedback.value = t('report.draftSaved') }
+const showLoginPrompt = (message = t('report.loginRequired')) => {
   feedback.value = message
   needsLogin.value = true
 }
@@ -333,7 +334,7 @@ const restoreLoginDraft = () => {
     details.value = String(draft.details ?? '')
     if (draft.selectedType?.id) selectUserSelectedType(draft.selectedType)
     restoreLocations({ incident: draft.incidentLocation, reporter: draft.reporterLocation })
-    feedback.value = 'คืนค่ารายละเอียด ประเภท และตำแหน่งที่บันทึกไว้ก่อนเข้าสู่ระบบแล้ว'
+    feedback.value = t('report.draftRestored')
   } catch {
     sessionStorage.removeItem(loginDraftKey)
   }
@@ -343,7 +344,7 @@ const goToLogin = () =>
 { saveLoginDraft(); navigateTo({ path: '/login', query: { redirect: '/report-incident' } }) }
 const submitReport = async () => {
   if (!incidentLocation.value) {
-    feedback.value = 'กรุณาเลือกตำแหน่งเหตุการณ์ก่อนส่งรายงาน'
+    feedback.value = t('report.needLocation')
     return
   }
 
@@ -361,7 +362,7 @@ const submitReport = async () => {
   const description = details.value.trim()
 
   if (description.length < 5) {
-    feedback.value = 'กรุณากรอกข้อความอย่างน้อย 5 ตัวอักษร'
+    feedback.value = t('report.needDetails')
     return
   }
 
@@ -400,7 +401,7 @@ const submitReport = async () => {
       headers: { Authorization: `Bearer ${authToken}` },
     })
     const reportId = response.data?.report_id
-    feedback.value = reportId ? `ส่งรายงาน #${reportId} สำเร็จแล้ว` : 'ส่งรายงานสำเร็จแล้ว'
+    feedback.value = reportId ? t('report.submittedWithId', { id: reportId }) : t('report.submitted')
     details.value = ''
     clearSelectedFiles()
     if (fileInput.value) fileInput.value.value = ''
@@ -412,10 +413,10 @@ const submitReport = async () => {
     allowTypeConflict.value = false
   } catch (error) {
     if (error?.statusCode === 401) {
-      showLoginPrompt('เซสชันหมดอายุ กรุณาเข้าสู่ระบบอีกครั้งก่อนส่งรายงาน')
+      showLoginPrompt(t('report.sessionExpired'))
       return
     }
-    feedback.value = error?.data?.message ?? 'ส่งรายงานไม่สำเร็จ กรุณาลองอีกครั้ง'
+    feedback.value = error?.data?.message ?? t('report.submitFailed')
   } finally {
     isSubmitting.value = false
   }

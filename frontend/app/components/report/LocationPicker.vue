@@ -2,28 +2,33 @@
   <section class="location-picker" aria-labelledby="location-picker-heading">
     <header class="location-picker__header">
       <div>
-        <h2 id="location-picker-heading">ตำแหน่งเกิดเหตุ</h2>
-        <p>คลิกบนแผนที่หรือลากหมุดเพื่อเลือกจุดเกิดเหตุ</p>
+        <h2 id="location-picker-heading">{{ t('report.locationHeading') }}</h2>
+        <p>{{ t('report.locationHint') }}</p>
       </div>
       <button type="button" class="location-picker__current-button" :disabled="isLocating" :aria-busy="isLocating"
-        @click="useCurrentLocation"><img src="/icons/Location.svg" alt="">{{ isLocating ? 'กำลังขอตำแหน่ง…' :
-        'ใช้ตำแหน่งปัจจุบัน' }}</button>
+        @click="useCurrentLocation"><img src="/icons/Location.svg" alt="">{{ isLocating ? t('location.requesting') : t('location.useCurrent') }}</button>
     </header>
     <section class="location-picker__selection" :class="{ 'location-picker__selection--ready': incidentLocation }"
       aria-live="polite"><img src="/icons/Location.svg" alt="">
       <div><strong>{{ locationLabel }}</strong><span>{{ locationHint }}</span></div><b
-        v-if="incidentLocation">เลือกตำแหน่งแล้ว</b>
+        v-if="incidentLocation">{{ t('report.locationChosen') }}</b>
     </section>
     <p v-if="locationError" class="location-picker__error" role="alert">{{ locationError }}</p>
+    <!-- คอมพิวเตอร์ที่ไม่มี GPS จะเดาตำแหน่งจาก Wi-Fi/IP ซึ่งอาจคลาดไปหลายกิโลเมตร -->
+    <p v-else-if="isLowAccuracy" class="location-picker__warning" role="status">
+      {{ t('report.lowAccuracy', { accuracy: accuracyLabel }) }}
+    </p>
     <div class="location-picker__map" :class="{ 'location-picker__map--fullscreen': isFullscreen }">
       <MapboxMap :center="mapCenter" :zoom="14" :show-geolocate-control="false" :editable-location="incidentLocation"
         :allow-location-selection="true" class="location-picker__map-canvas" @location-select="setMapLocation" />
+      <!-- ค้นหาสถานที่ หรือวางพิกัด/ลิงก์ Google Maps เพื่อปักหมุด -->
+      <MapLocationSearch variant="pick" @select="setSearchLocation" />
       <button type="button" class="location-picker__fullscreen"
-        :aria-label="isFullscreen ? 'ย่อแผนที่' : 'ขยายแผนที่เต็มจอ'" @click="isFullscreen = !isFullscreen"><span
-          v-if="isFullscreen">ย่อแผนที่</span><span v-else>ขยายแผนที่</span></button>
-      <div class="location-picker__legend"><span><i class="incident"></i>จุดเกิดเหตุที่เลือก</span></div>
+        :aria-label="isFullscreen ? t('report.mapShrink') : t('report.mapFullscreen')" @click="isFullscreen = !isFullscreen"><span
+          v-if="isFullscreen">{{ t('report.mapShrink') }}</span><span v-else>{{ t('report.mapExpand') }}</span></button>
+      <div class="location-picker__legend"><span><i class="incident"></i>{{ t('report.legendIncident') }}</span></div>
       <button v-if="isFullscreen" type="button" class="location-picker__confirm"
-        @click="isFullscreen = false; locationError = incidentLocation ? '' : 'กรุณาเลือกจุดเกิดเหตุก่อนยืนยัน'">ยืนยันตำแหน่ง</button>
+        @click="isFullscreen = false; locationError = incidentLocation ? '' : 'report.chooseBeforeConfirm'">{{ t('report.confirmLocation') }}</button>
     </div>
   </section>
 </template>
@@ -31,6 +36,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import MapboxMap from '~/components/map/MapboxMap.vue'
+import MapLocationSearch from '~/components/map/MapLocationSearch.vue'
 import { useGeolocation } from '~/composables/useGeolocation'
 
 const { incidentLocation, setReporterLocation, setIncidentLocation } = useReportIncident()
@@ -38,12 +44,33 @@ const { getCurrentLocation, isLocating, locationError } = useGeolocation()
 const isFullscreen = ref(false)
 const defaultMapCenter = [98.9853, 18.7883]
 const mapCenter = computed(() => incidentLocation.value ? [incidentLocation.value.lng, incidentLocation.value.lat] : defaultMapCenter)
-const locationLabel = computed(() => incidentLocation.value?.placeName || 'ยังไม่ได้เลือกจุดเกิดเหตุ')
-const locationHint = computed(() => {
-  if (!incidentLocation.value) return 'กดใช้ตำแหน่งปัจจุบัน หรือคลิกบนแผนที่เพื่อเลือกจุด'
-  const { lat, lng, accuracyM } = incidentLocation.value
-  return `${lat.toFixed(6)}, ${lng.toFixed(6)}${accuracyM !== null ? ` · ความแม่นยำประมาณ ${Math.round(accuracyM)} ม.` : ''}`
+const { t } = useLocale()
+// placeName ของตำแหน่งจากเครื่องเก็บเป็น key (location.currentPlace) เพื่อให้สลับภาษาได้
+const locationLabel = computed(() => {
+  const placeName = incidentLocation.value?.placeName
+  if (!placeName) return t('report.noLocation')
+  return placeName === 'location.currentPlace' ? t(placeName) : placeName
 })
+const locationHint = computed(() => {
+  if (!incidentLocation.value) return t('report.noLocationHint')
+  const { lat, lng, accuracyM } = incidentLocation.value
+  return `${lat.toFixed(6)}, ${lng.toFixed(6)}${accuracyM !== null ? ` · ${t('report.accuracy', { value: Math.round(accuracyM) })}` : ''}`
+})
+// เกินระยะนี้ถือว่าตำแหน่งจากเครื่องไม่แม่นพอสำหรับระบุจุดเกิดเหตุ
+const lowAccuracyThresholdM = 200
+const isLowAccuracy = computed(() => {
+  const location = incidentLocation.value
+  return location?.source === 'device' && location.accuracyM !== null && location.accuracyM > lowAccuracyThresholdM
+})
+const accuracyLabel = computed(() => {
+  const accuracy = incidentLocation.value?.accuracyM ?? 0
+  return accuracy >= 1000 ? t('units.kilometers', { value: (accuracy / 1000).toFixed(1) }) : t('units.meters', { value: Math.round(accuracy) })
+})
+// ผลค้นหา/พิกัดที่กรอก ถือเป็นจุดที่ผู้ใช้เลือกเอง (source 'map' ตามที่ฐานข้อมูลรองรับ)
+const setSearchLocation = (item) => {
+  locationError.value = ''
+  setIncidentLocation({ lat: item.center[1], lng: item.center[0], accuracyM: null, placeName: item.label, source: 'map' })
+}
 const setMapLocation = (location) => {
   setIncidentLocation({ ...location, accuracyM: null, source: 'map' })
 }
@@ -55,7 +82,7 @@ const useCurrentLocation = async () => {
 
     // อย่าเขียนทับหมุดที่ผู้ใช้เลือกเองบนแผนที่ แต่ยัง refresh จุดที่มาจากเครื่องได้
     if (!incidentLocation.value || incidentLocation.value.source === 'device') {
-      setIncidentLocation({ ...location, placeName: 'ตำแหน่งปัจจุบันของคุณ', source: 'device' })
+      setIncidentLocation({ ...location, placeName: 'location.currentPlace', source: 'device' })
     }
   } catch {
     // useGeolocation แปลงและเก็บข้อความผิดพลาดสำหรับแสดงผลแล้ว
@@ -298,5 +325,15 @@ const useCurrentLocation = async () => {
   .location-picker__fullscreen {
     display: none
   }
+}
+.location-picker__warning {
+  margin: .6rem 0 0;
+  padding: .6rem .75rem;
+  border: 1px solid #ecd3a4;
+  border-radius: var(--gs-radius-sm);
+  background: var(--gs-pending-tint);
+  color: var(--gs-pending);
+  font-size: .82rem;
+  line-height: 1.5
 }
 </style>

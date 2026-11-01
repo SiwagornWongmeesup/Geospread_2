@@ -1,5 +1,5 @@
 <template>
-  <nav class="bottom-nav" aria-label="เมนูหลัก">
+  <nav class="bottom-nav" :aria-label="t('bottomNav.label')">
     <NuxtLink v-for="item in navItems" :key="item.to" :to="item.to" class="bottom-nav__item" :class="{ 'bottom-nav__item--report': item.isReport }">
       <span class="bottom-nav__icon" aria-hidden="true">
         <svg v-if="item.icon === 'home'" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1Z" /></svg>
@@ -8,18 +8,20 @@
         <svg v-else-if="item.icon === 'bell'" viewBox="0 0 24 24"><path d="M18 10a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 22h4" /></svg>
         <svg v-else viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4.1 3.6-7 8-7s8 2.9 8 7" /></svg>
       </span>
-      <span class="bottom-nav__label">{{ item.label }}</span>
+      <span class="bottom-nav__label">{{ t(item.label) }}</span>
     </NuxtLink>
   </nav>
 </template>
 
 <script setup>
+const { t } = useLocale()
+
 const navItems = [
-  { to: '/', icon: 'home', label: 'หน้าหลัก' },
-  { to: '/incidents', icon: 'list', label: 'เหตุการณ์' },
-  { to: '/report-incident', icon: 'plus', label: 'แจ้งเหตุ', isReport: true },
-  { to: '/notifications', icon: 'bell', label: 'แจ้งเตือน' },
-  { to: '/profile', icon: 'profile', label: 'โปรไฟล์' },
+  { to: '/', icon: 'home', label: 'bottomNav.home' },
+  { to: '/incidents', icon: 'list', label: 'bottomNav.incidents' },
+  { to: '/report-incident', icon: 'plus', label: 'bottomNav.report', isReport: true },
+  { to: '/notifications', icon: 'bell', label: 'bottomNav.notifications' },
+  { to: '/profile', icon: 'profile', label: 'bottomNav.profile' },
 ]
 </script>
 

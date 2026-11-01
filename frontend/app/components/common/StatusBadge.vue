@@ -19,7 +19,7 @@
 defineProps({
   // verified | ongoing | pending | rejected
   tone: { type: String, default: 'pending' },
-  label: { type: String, default: 'รอตรวจสอบ' },
+  label: { type: String, required: true },
 })
 </script>
 

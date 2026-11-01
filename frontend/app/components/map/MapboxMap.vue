@@ -14,6 +14,7 @@ const config = useRuntimeConfig()
 // popup สร้างด้วย createApp แยกต่างหาก เรียก composable ของ Nuxt เองไม่ได้
 // จึงหาชื่อสถานที่ที่นี่ แล้วส่งเข้า popup เป็น prop
 const { loadPlaceNames, getPlaceLabel } = usePlaceNames()
+const { t, locale } = useLocale()
 const mapContainer = ref(null)
 let map = null
 let isMapLoaded = false
@@ -113,6 +114,7 @@ const renderIncidentPopup = () => {
     popupApp = createApp(HelpRequestMapPopup, {
       incident: item,
       getPlaceLabel,
+      t,
       onClose: () => clearIncidentPopup({ notifyParent: true }),
     })
   } else {
@@ -121,6 +123,7 @@ const renderIncidentPopup = () => {
       incident: item,
       incidentDetail: props.selectedIncidentDetail,
       getPlaceLabel,
+      t,
       onClose: () => clearIncidentPopup({ notifyParent: true }),
       onOpenReport: ({ incidentId, reportId }) => {emit('open-report', { incidentId, reportId })},
     })
@@ -216,17 +219,17 @@ const createMarkerElement = (item) => {
       ? '#f97316'
       : '#1479ef'
   const badgeLabel = item.kind === 'pending_report'
-    ? 'รอตรวจสอบ'
+    ? t('status.pending')
     : item.kind === 'help_request'
-      ? 'ขอความช่วยเหลือ'
+      ? t('help.category')
       : null
 
   const marker = document.createElement('button')
   marker.type = 'button'
   marker.className = `incident-map-marker incident-map-marker--${markerKind}`
   marker.style.setProperty('--marker-color', item.markerColor || fallbackMarkerColor)
-  const ariaCount = Number(item.reportCount) > 1 ? ` (${Number(item.reportCount)} รายงาน)` : ''
-  marker.setAttribute('aria-label', (badgeLabel ? `${badgeLabel}: ${item.title || 'ตำแหน่งบนแผนที่'}` : (item.title || 'ตำแหน่งเหตุการณ์')) + ariaCount)
+  const ariaCount = Number(item.reportCount) > 1 ? ` (${t('units.reports', { count: Number(item.reportCount) })})` : ''
+  marker.setAttribute('aria-label', (badgeLabel ? `${badgeLabel}: ${item.title || t('map.markerFallback')}` : (item.title || t('map.markerIncident'))) + ariaCount)
 
   const pin = document.createElement('span')
   pin.className = 'incident-map-marker__pin'
@@ -343,7 +346,7 @@ const createClusterElement = (cluster) => {
   const marker = document.createElement('button')
   marker.type = 'button'
   marker.className = 'incident-map-cluster'
-  marker.setAttribute('aria-label', `${cluster.items.length} เหตุการณ์ใกล้กัน กดเพื่อซูมดู`)
+  marker.setAttribute('aria-label', t('map.clusterLabel', { count: cluster.items.length }))
 
   const count = document.createElement('span')
   count.className = 'incident-map-cluster__count'
@@ -370,6 +373,12 @@ const createLocationMarkerElement = (kind) => {
   const marker = document.createElement('span')
   marker.className = `report-map-marker report-map-marker--${kind}`
   marker.setAttribute('aria-hidden', 'true')
+  // Mapbox เขียน transform ทับที่ตัว marker เพื่อวางตามพิกัด จึงต้องหมุนรูปหมุดที่ลูกข้างในแทน
+  if (kind === 'incident') {
+    const pin = document.createElement('span')
+    pin.className = 'report-map-marker__pin'
+    marker.appendChild(pin)
+  }
   return marker
 }
 
@@ -569,6 +578,11 @@ watch(() => props.selectedIncidentDetail, () => {
 watch(() => [props.editableLocation, props.reporterLocation], () => {
   renderReportLocations()
 }, { deep: true })
+
+// เปลี่ยนภาษาแล้ววาด popup ใหม่ (popup เป็น Vue app แยก จึงไม่อัปเดตเอง)
+watch(locale, () => {
+  renderIncidentPopup()
+})
 </script>
 
 <style scoped>
@@ -705,8 +719,10 @@ watch(() => [props.editableLocation, props.reporterLocation], () => {
 }
 
 :global(.report-map-marker) { display:block; width:1.35rem; height:1.35rem; border:3px solid #fff; border-radius:50%; box-shadow:0 .28rem .75rem rgb(15 23 42 / 26%) }
-:global(.report-map-marker--incident) { width:2.35rem; height:2.35rem; border-radius:50% 50% 50% 0; background:#e8343e; transform:rotate(-45deg) }
-:global(.report-map-marker--incident::after) { position:absolute; inset:.48rem; border-radius:50%; background:#fff; content:'' }
+:global(.report-map-marker--incident) { width:2.35rem; height:2.48rem; border:0; border-radius:0; background:transparent; box-shadow:none }
+/* หยดน้ำหมุน -45° ให้ปลายแหลมชี้ลงตรงกลางขอบล่าง (anchor: bottom = จุดพิกัดจริง) */
+:global(.report-map-marker__pin) { position:absolute; top:0; left:50%; width:2.05rem; height:2.05rem; box-sizing:border-box; margin-left:-1.025rem; border:3px solid #fff; border-radius:50% 50% 50% 0; background:#e8343e; box-shadow:0 .28rem .75rem rgb(15 23 42 / 26%); transform:rotate(-45deg); transform-origin:center }
+:global(.report-map-marker__pin::after) { position:absolute; inset:.4rem; border-radius:50%; background:#fff; content:'' }
 :global(.report-map-marker--reporter) { background:#1479ef }
 
 :global(.geospread-incident-popup) { z-index:4; }

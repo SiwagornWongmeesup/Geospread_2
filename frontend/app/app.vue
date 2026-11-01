@@ -5,17 +5,9 @@
 </template>
 
 <script setup>
-// ฟอนต์ไทยแบบมีหัว อ่านง่ายสำหรับคนทุกวัย ใช้ทั้งแอปแทน system-ui
-useHead({
-  link: [
-    { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
-    { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
-    {
-      rel: 'stylesheet',
-      href: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600;700&display=swap'
-    }
-  ]
-})
+// ตั้งภาษาของหน้า (<html lang>) ตามภาษาที่ผู้ใช้เลือก ให้ screen reader อ่านถูกภาษา
+const { locale } = useLocale()
+useHead({ htmlAttrs: { lang: locale } })
 </script>
 
 <style>
@@ -24,7 +16,11 @@ useHead({
    - แดงจากโลโก้ใช้กับเหตุ/อันตรายเท่านั้น
    - เขียวหัวเป็ดคือ "ความช่วยเหลือจากชุมชน" */
 :root {
-  --gs-font: 'IBM Plex Sans Thai Looped', 'Noto Sans Thai', Tahoma, sans-serif;
+  /* ชุดฟอนต์ระบบแบบเดียวกับ Bootstrap: ใช้ฟอนต์ของเครื่องผู้ใช้ ไม่ต้องโหลดจากเน็ต */
+  --bs-font-sans-serif: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', 'Noto Sans',
+    'Liberation Sans', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+    'Noto Color Emoji';
+  --gs-font: var(--bs-font-sans-serif);
 
   --gs-paper: #f4f3ef;
   --gs-surface: #ffffff;

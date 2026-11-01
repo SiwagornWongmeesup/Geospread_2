@@ -3,11 +3,11 @@
     <AppHeader standalone />
     <div class="login-layout">
     <section class="visual" aria-labelledby="visual-title">
-      <img src="/images/login-community-background.png" alt="ภาพชุมชนไทยและสถานการณ์ภัยพิบัติ" />
+      <img src="/images/login-community-background.png" :alt="t('auth.heroAlt')" />
       <div class="visual__wash" />
       <div class="visual__copy">
-        <h1 id="visual-title">ชุมชนปลอดภัย<br />เริ่มจากการช่วยเหลือกัน</h1>
-        <p>ติดตามเหตุการณ์ ขอความช่วยเหลือ และรับข้อมูลความปลอดภัยที่เกี่ยวข้องกับพื้นที่ของคุณ</p>
+        <h1 id="visual-title">{{ t('auth.heroLine1') }}<br />{{ t('auth.heroLine2') }}</h1>
+        <p>{{ t('auth.loginHeroText') }}</p>
       </div>
     </section>
     <section class="form-area" aria-labelledby="login-title">
@@ -16,27 +16,27 @@
           <img src="/logos/logo.png" alt="GeoSpread" />
           <span>GeoSpread</span>
         </NuxtLink>
-        <h2 id="login-title">เข้าสู่ระบบ</h2>
-        <p class="intro">ยินดีต้อนรับกลับสู่ GeoSpread</p>
+        <h2 id="login-title">{{ t('header.login') }}</h2>
+        <p class="intro">{{ t('auth.welcomeBack') }}</p>
         <form @submit.prevent="emit('submitLogin')">
           <p v-if="error" class="error" role="alert">{{ error }}</p>
-          <label for="desktop-email">อีเมล<input id="desktop-email" v-model="form.email" type="email" required autocomplete="email" placeholder="name@example.com" />
+          <label for="desktop-email">{{ t('auth.email') }}<input id="desktop-email" v-model="form.email" type="email" required autocomplete="email" placeholder="name@example.com" />
         </label>
-        <label for="desktop-password">รหัสผ่าน<input id="desktop-password" v-model="form.password" type="password" required autocomplete="current-password" placeholder="กรอกรหัสผ่าน" />
+        <label for="desktop-password">{{ t('auth.password') }}<input id="desktop-password" v-model="form.password" type="password" required autocomplete="current-password" :placeholder="t('auth.passwordPlaceholder')" />
       </label>
       <div class="form-options">
         <label>
-          <input type="checkbox" /> จดจำฉัน</label>
-          <a href="#support">ลืมรหัสผ่าน?</a>
+          <input type="checkbox" /> {{ t('auth.rememberMe') }}</label>
+          <a href="#support">{{ t('auth.forgotPassword') }}</a>
         </div>
-        <button type="submit" :disabled="loading">{{ loading ? 'กำลังตรวจสอบ...' : 'เข้าสู่ระบบ' }}</button>
+        <button type="submit" :disabled="loading">{{ loading ? t('auth.checking') : t('header.login') }}</button>
       </form>
-      <div class="divider">หรือ</div>
+      <div class="divider">{{ t('auth.or') }}</div>
       <button type="button" class="google">
-        <b>G</b>เข้าสู่ระบบด้วย Google</button>
-        <p class="register">ยังไม่มีบัญชี? <NuxtLink to="/register">สมัครสมาชิก</NuxtLink>
+        <b>G</b>{{ t('auth.loginGoogle') }}</button>
+        <p class="register">{{ t('auth.noAccount') }} <NuxtLink to="/register">{{ t('header.register') }}</NuxtLink>
       </p>
-      <p id="support" class="support">ข้อมูลของคุณจะถูกใช้เพื่อให้บริการ GeoSpread เท่านั้น</p>
+      <p id="support" class="support">{{ t('auth.privacyNote') }}</p>
     </div>
   </section>
 </div>
@@ -44,6 +44,7 @@
 </template>
 
 <script setup>
+const { t } = useLocale()
 import AppHeader from '~/components/layout/AppHeader.vue'
 
 defineProps({

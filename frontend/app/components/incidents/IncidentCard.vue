@@ -1,31 +1,23 @@
 <script setup>
 defineProps({
-  title: {
-    type: String,
-    default: 'ยังไม่มีชื่อเหตุการณ์'
-  },
-  category: {
-    type: String,
-    default: 'รอระบุประเภท'
-  },
-  severity: {
-    type: String,
-    default: 'รอประเมิน'
-  }
+  title: { type: String, default: '' },
+  category: { type: String, default: '' },
+  severity: { type: String, default: '' }
 });
+const { t } = useLocale();
 </script>
 
 <template>
   <article class="incident-card">
     <div class="incident-card__meta">
-      <span>{{ category }}</span>
-      <span>{{ severity }}</span>
+      <span>{{ category || t('incidentCard.noCategory') }}</span>
+      <span>{{ severity || t('incidentCard.noSeverity') }}</span>
     </div>
 
-    <h3>{{ title }}</h3>
+    <h3>{{ title || t('incidentCard.noTitle') }}</h3>
 
     <div class="incident-card__details">
-      <slot>รายละเอียดเหตุการณ์จะแสดงเมื่อมีข้อมูลจากระบบ</slot>
+      <slot>{{ t('incidentCard.placeholder') }}</slot>
     </div>
   </article>
 </template>

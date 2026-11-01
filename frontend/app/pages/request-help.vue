@@ -2,8 +2,8 @@
   <section class="request-page">
     <div class="request-page__layout">
       <header class="request-page__intro">
-        <h1>ขอความช่วยเหลือ</h1>
-        <p>บอกรายละเอียดให้ชุมชนช่วยเหลือคุณได้เร็วขึ้น</p>
+        <h1>{{ t('nav.requestHelp') }}</h1>
+        <p>{{ t('requestHelp.pageSubtitle') }}</p>
       </header>
 
       <div class="request-page__body">
@@ -23,6 +23,7 @@
 import { ref } from 'vue'
 import RequestHelpForm from '~/components/request-help/RequestHelpForm.vue'
 import RequestHelpSidePanel from '~/components/request-help/RequestHelpSidePanel.vue'
+const { t } = useLocale()
 
 const helpLocation = ref(null)
 const helpForm = ref(null)

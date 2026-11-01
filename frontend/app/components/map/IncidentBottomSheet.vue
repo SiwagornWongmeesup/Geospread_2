@@ -5,13 +5,13 @@
       v-if="incident"
       class="incident-sheet"
       role="dialog"
-      aria-label="รายละเอียดเหตุการณ์"
+      :aria-label="t('popup.sheetLabel')"
     >
       <!-- แถบจับด้านบน: กดแล้วปิด sheet ได้ -->
       <button
         type="button"
         class="incident-sheet__handle"
-        aria-label="ปิดรายละเอียดเหตุการณ์"
+        :aria-label="t('popup.close')"
         @click="$emit('close')"
       >
         <span aria-hidden="true"></span>
@@ -23,6 +23,7 @@
         v-if="incident.kind === 'help_request'"
         :incident="incident"
         :get-place-label="getPlaceLabel"
+        :t="t"
         in-sheet
         @close="$emit('close')"
       />
@@ -31,6 +32,7 @@
         :incident="incident"
         :incident-detail="incidentDetail"
         :get-place-label="getPlaceLabel"
+        :t="t"
         in-sheet
         @close="$emit('close')"
         @open-report="(report) => $emit('open-report', report)"
@@ -55,6 +57,7 @@ const props = defineProps({
 defineEmits(['close', 'open-report'])
 
 const { loadPlaceNames, getPlaceLabel } = usePlaceNames()
+const { t } = useLocale()
 
 // ทุกครั้งที่เลือกหมุดใหม่ ให้หาชื่อสถานที่ของหมุดนั้น (ถ้าเคยหาแล้วจะไม่ถามซ้ำ)
 watch(

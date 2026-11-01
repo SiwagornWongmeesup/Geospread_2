@@ -1,4 +1,5 @@
 <script setup>
+const { t } = useLocale()
 definePageMeta({
   showRightPanel: false
 });
@@ -6,8 +7,8 @@ definePageMeta({
 
 <template>
   <section class="dashboard-page">
-    <h1>การแจ้งเตือน</h1>
-    <p>รายการการแจ้งเตือนและการตั้งค่าที่เกี่ยวข้องจะแสดงในส่วนนี้</p>
+    <h1>{{ t('nav.notifications') }}</h1>
+    <p>{{ t('pages.notifications') }}</p>
   </section>
 </template>
 

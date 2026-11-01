@@ -1,5 +1,6 @@
 <script setup>
 const route = useRoute();
+const { t } = useLocale();
 
 defineProps({
   collapsed: {
@@ -13,46 +14,46 @@ const emit = defineEmits(['toggle']);
 const guideMenuOpen = ref(route.path === '/safety-guide');
 
 const guideItems = [
-  { id: 'flood', label: 'น้ำท่วม' },
-  { id: 'flash-flood', label: 'น้ำป่าไหลหลาก' },
-  { id: 'storm', label: 'พายุ' },
-  { id: 'wildfire', label: 'ไฟป่า' },
-  { id: 'earthquake', label: 'แผ่นดินไหว' },
-  { id: 'tsunami', label: 'สึนามิ' },
-  { id: 'landslide', label: 'ดินถล่ม' },
-  { id: 'drought', label: 'ภัยแล้ง' }
+  { id: 'flood' },
+  { id: 'flash-flood' },
+  { id: 'storm' },
+  { id: 'wildfire' },
+  { id: 'earthquake' },
+  { id: 'tsunami' },
+  { id: 'landslide' },
+  { id: 'drought' }
 ];
 
 const menuGroups = [
   {
-    label: 'เมนูหลัก',
+    label: 'nav.groups.main',
     items: [
-      { label: 'หน้าหลัก', to: '/', icon: '/icons/House.svg' },
-      { label: 'ดูเหตุการณ์', to: '/incidents', icon: '/icons/Alert.svg' },
-      { label: 'ดูคำขอช่วยเหลือ', to: '/help-requests', icon: '/icons/Help.svg' }
+      { label: 'nav.home', to: '/', icon: '/icons/House.svg' },
+      { label: 'nav.incidents', to: '/incidents', icon: '/icons/Alert.svg' },
+      { label: 'nav.helpRequests', to: '/help-requests', icon: '/icons/Help.svg' }
     ]
   },
   {
-    label: 'การดำเนินการ',
+    label: 'nav.groups.actions',
     kind: 'actions',
     items: [
-      { label: 'แจ้งเหตุใหม่', to: '/report-incident', icon: '/icons/Report.svg', tone: 'report' },
-      { label: 'ขอความช่วยเหลือ', to: '/request-help', icon: '/icons/Life-saving.svg', tone: 'help' }
+      { label: 'nav.reportIncident', to: '/report-incident', icon: '/icons/Report.svg', tone: 'report' },
+      { label: 'nav.requestHelp', to: '/request-help', icon: '/icons/Life-saving.svg', tone: 'help' }
     ]
   },
   {
-    label: 'พื้นที่ของฉัน',
+    label: 'nav.groups.mine',
     items: [
-      { label: 'พื้นที่ติดตาม', to: '/followed-locations', icon: '/icons/Location.svg' },
-      { label: 'การแจ้งเตือน', to: '/notifications', icon: '/icons/Notification.svg', badge: '3' },
-      { label: 'คู่มือความปลอดภัย', to: '/safety-guide', icon: '/icons/Safety-and-security.svg', kind: 'guide' }
+      { label: 'nav.followedLocations', to: '/followed-locations', icon: '/icons/Location.svg' },
+      { label: 'nav.notifications', to: '/notifications', icon: '/icons/Notification.svg', badge: '3' },
+      { label: 'nav.safetyGuide', to: '/safety-guide', icon: '/icons/Safety-and-security.svg', kind: 'guide' }
     ]
   }
 ];
 
 const accountItems = [
-  { label: 'โปรไฟล์', to: '/profile', icon: '/icons/User.svg' },
-  { label: 'ตั้งค่า', to: '/settings', icon: '/icons/Settings.svg' }
+  { label: 'nav.profile', to: '/profile', icon: '/icons/User.svg' },
+  { label: 'nav.settings', to: '/settings', icon: '/icons/Settings.svg' }
 ];
 </script>
 
@@ -60,20 +61,20 @@ const accountItems = [
   <aside class="app-sidebar" :class="{ 'app-sidebar--collapsed': collapsed }">
     <!-- โลโก้อยู่บนสุดของ sidebar (ย้ายมาจาก header) ตอนพับจะเหลือแค่รูปโลโก้ -->
     <div class="app-sidebar__topbar">
-      <NuxtLink to="/" class="app-sidebar__brand" aria-label="GeoSpread หน้าหลัก">
+      <NuxtLink to="/" class="app-sidebar__brand" :aria-label="t('brand.homeLink')">
         <img src="/logos/logo.png" alt="" class="app-sidebar__logo" />
 
         <span v-if="!collapsed" class="app-sidebar__brand-text">
           <span class="app-sidebar__brand-name">GeoSpread</span>
-          <span class="app-sidebar__brand-tagline">รู้ก่อน ช่วยกันทัน</span>
+          <span class="app-sidebar__brand-tagline">{{ t('brand.tagline') }}</span>
         </span>
       </NuxtLink>
 
       <button
         type="button"
         class="app-sidebar__toggle"
-        :aria-label="collapsed ? 'ขยายแถบเมนู' : 'พับแถบเมนู'"
-        :title="collapsed ? 'ขยายแถบเมนู' : 'พับแถบเมนู'"
+        :aria-label="collapsed ? t('common.expandMenu') : t('common.collapseMenu')"
+        :title="collapsed ? t('common.expandMenu') : t('common.collapseMenu')"
         @click="emit('toggle')"
       >
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -82,7 +83,7 @@ const accountItems = [
       </button>
     </div>
 
-    <nav class="app-sidebar__navigation" aria-label="เมนูนำทาง">
+    <nav class="app-sidebar__navigation" :aria-label="t('nav.navigation')">
       <section
         v-for="group in menuGroups"
         :key="group.label"
@@ -90,7 +91,7 @@ const accountItems = [
         :class="{ 'app-sidebar__group--actions': group.kind === 'actions' }"
       >
         <h2 v-if="!collapsed" class="app-sidebar__group-title">
-          {{ group.label }}
+          {{ t(group.label) }}
         </h2>
 
         <template v-for="item in group.items" :key="item.to">
@@ -107,7 +108,7 @@ const accountItems = [
                 <img :src="item.icon" alt="" />
               </span>
 
-              <span class="app-sidebar__link-label">{{ item.label }}</span>
+              <span class="app-sidebar__link-label">{{ t(item.label) }}</span>
 
               <svg class="app-sidebar__guide-chevron" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="m7 9 5 5 5-5" />
@@ -125,7 +126,7 @@ const accountItems = [
                     :class="{ 'app-sidebar__guide-link--current': route.hash === `#${guide.id}` }"
                   >
                     <span class="app-sidebar__guide-dot" aria-hidden="true"></span>
-                    <span>{{ guide.label }}</span>
+                    <span>{{ t(`guideTopics.${guide.id}`) }}</span>
                   </NuxtLink>
                 </div>
               </div>
@@ -137,15 +138,15 @@ const accountItems = [
             :to="item.to"
             class="app-sidebar__link"
             :class="[{ 'app-sidebar__link--action': group.kind === 'actions' }, item.tone && `app-sidebar__link--${item.tone}`]"
-            :aria-label="item.label"
-            :title="collapsed ? item.label : undefined"
+            :aria-label="t(item.label)"
+            :title="collapsed ? t(item.label) : undefined"
           >
             <span class="app-sidebar__icon" aria-hidden="true">
               <img :src="item.icon" alt="" />
             </span>
 
             <span v-if="!collapsed" class="app-sidebar__link-label">
-              {{ item.label }}
+              {{ t(item.label) }}
             </span>
 
             <span v-if="item.badge" class="app-sidebar__badge">
@@ -162,15 +163,15 @@ const accountItems = [
         :key="item.to"
         :to="item.to"
         class="app-sidebar__link"
-        :aria-label="item.label"
-        :title="collapsed ? item.label : undefined"
+        :aria-label="t(item.label)"
+        :title="collapsed ? t(item.label) : undefined"
       >
         <span class="app-sidebar__icon" aria-hidden="true">
           <img :src="item.icon" alt="" />
         </span>
 
         <span v-if="!collapsed" class="app-sidebar__link-label">
-          {{ item.label }}
+          {{ t(item.label) }}
         </span>
       </NuxtLink>
     </div>

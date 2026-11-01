@@ -96,7 +96,7 @@ const activeTab = ref('register');
   max-width: 480px;
   margin: 20px auto;
   padding: 16px;
-  font-family: sans-serif;
+  font-family: var(--bs-font-sans-serif);
   background: #ffffff;
   border-radius: 12px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);

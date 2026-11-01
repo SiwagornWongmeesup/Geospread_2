@@ -1,6 +1,6 @@
 <template>
   <div class="desktop-home">
-    <section class="desktop-home__map" aria-label="แผนที่เหตุการณ์">
+    <section class="desktop-home__map" :aria-label="t('common.incidentMap')">
       <MapboxMap
         :center="activeMapCenter"
         :zoom="activeMapZoom"
@@ -71,6 +71,7 @@ const {
   setUserLocation,
   fetchPublicMapItems,
 } = useHomeDashboard()
+const { t } = useLocale()
 
 const { getCurrentLocation, isLocating, locationError } = useGeolocation()
 const selectedArea = ref(null)
@@ -129,10 +130,9 @@ onMounted(() => {
 .desktop-home__map {
   position: relative;
   width: 100%;
-  /* ต่ำสุด550px */
-  /* ความสูง 70% ของพื้นที่หน้าจอ */
-  /* สูงสุด ประมาณ 800px */
-  height: clamp(550px, 70dvh, 800px);
+  /* เต็มพื้นที่ที่มองเห็น: 100vh - header (64px + margin 24px) - padding บน/ล่างของหน้า */
+  /* เหตุการณ์ใกล้คุณจะอยู่ถัดลงไป ต้องเลื่อนลงถึงจะเห็น */
+  height: calc(100dvh - 88px - 2.5rem);
   /* แผนที่จะไม่เตี้ยกว่า550px */
   min-height: 550px;
   overflow: hidden;

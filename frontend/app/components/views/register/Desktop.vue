@@ -3,11 +3,11 @@
     <AppHeader standalone />
     <div class="register-layout">
     <section class="visual" aria-labelledby="visual-title">
-      <img src="/images/login-community-background.png" alt="ภาพชุมชนไทยและสถานการณ์ภัยพิบัติ" />
+      <img src="/images/login-community-background.png" :alt="t('auth.heroAlt')" />
       <div class="visual__wash" />
       <div class="visual__copy">
-        <h1 id="visual-title">ชุมชนปลอดภัย<br />เริ่มจากการช่วยเหลือกัน</h1>
-        <p>ร่วมเป็นส่วนหนึ่งของชุมชนที่ช่วยกันรายงานเหตุการณ์และแบ่งปันข้อมูลความปลอดภัย</p>
+        <h1 id="visual-title">{{ t('auth.heroLine1') }}<br />{{ t('auth.heroLine2') }}</h1>
+        <p>{{ t('auth.registerHeroText') }}</p>
       </div>
     </section>
     <section class="form-area" aria-labelledby="register-title">
@@ -16,28 +16,28 @@
           <img src="/logos/logo.png" alt="GeoSpread" />
           <span>GeoSpread</span>
         </NuxtLink>
-        <h2 id="register-title">สร้างบัญชีใหม่</h2>
-        <p class="intro">ลงทะเบียนฟรี เพื่อเริ่มใช้ GeoSpread</p>
+        <h2 id="register-title">{{ t('auth.createAccount') }}</h2>
+        <p class="intro">{{ t('auth.registerIntro') }}</p>
         <form @submit.prevent="emit('submitRegister')">
           <p v-if="error" class="error" role="alert">{{ error }}</p>
-          <label for="desktop-reg-name">ชื่อผู้ใช้งาน<input id="desktop-reg-name" v-model="form.name" required autocomplete="name" placeholder="ชื่อของคุณ" />
+          <label for="desktop-reg-name">{{ t('auth.username') }}<input id="desktop-reg-name" v-model="form.name" required autocomplete="name" :placeholder="t('auth.namePlaceholder')" />
         </label>
-        <label for="desktop-reg-email">อีเมล<input id="desktop-reg-email" v-model="form.email" type="email" required autocomplete="email" placeholder="name@example.com" />
+        <label for="desktop-reg-email">{{ t('auth.email') }}<input id="desktop-reg-email" v-model="form.email" type="email" required autocomplete="email" placeholder="name@example.com" />
       </label>
-      <label for="desktop-reg-password">รหัสผ่าน<input id="desktop-reg-password" v-model="form.password" type="password" required minlength="8" autocomplete="new-password" placeholder="อย่างน้อย 8 ตัวอักษร" />
+      <label for="desktop-reg-password">{{ t('auth.password') }}<input id="desktop-reg-password" v-model="form.password" type="password" required minlength="8" autocomplete="new-password" :placeholder="t('auth.passwordMin')" />
     </label>
     <label class="terms">
       <input id="desktop-reg-terms" type="checkbox" :checked="acceptTerms" @change="emit('update:acceptTerms', $event.target.checked)" />
-      <span>ฉันยอมรับ <NuxtLink to="/terms">เงื่อนไขการใช้งาน</NuxtLink> และนโยบายความเป็นส่วนตัว</span>
+      <span>{{ t('auth.acceptBefore') }} <NuxtLink to="/terms">{{ t('auth.terms') }}</NuxtLink> {{ t('auth.acceptAfter') }}</span>
     </label>
-    <button type="submit" :disabled="loading">{{ loading ? 'กำลังสร้างบัญชี...' : 'สร้างบัญชีใหม่' }}</button>
+    <button type="submit" :disabled="loading">{{ loading ? t('auth.creating') : t('auth.createAccount') }}</button>
   </form>
-  <div class="divider">หรือ</div>
+  <div class="divider">{{ t('auth.or') }}</div>
   <button type="button" class="google">
-    <b>G</b>สมัครสมาชิกด้วย Google</button>
-    <p class="switch">มีบัญชีอยู่แล้ว? <NuxtLink to="/login">เข้าสู่ระบบ</NuxtLink>
+    <b>G</b>{{ t('auth.registerGoogle') }}</button>
+    <p class="switch">{{ t('auth.haveAccount') }} <NuxtLink to="/login">{{ t('header.login') }}</NuxtLink>
   </p>
-  <p class="support">ข้อมูลของคุณจะถูกใช้เพื่อให้บริการ GeoSpread เท่านั้น</p>
+  <p class="support">{{ t('auth.privacyNote') }}</p>
 </div>
 </section>
 </div>
@@ -45,6 +45,7 @@
 </template>
 
 <script setup>
+const { t } = useLocale()
 import AppHeader from '~/components/layout/AppHeader.vue'
 
 defineProps({

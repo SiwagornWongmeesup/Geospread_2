@@ -1,104 +1,131 @@
 <script setup>
 const notice = useState('adminNotice', () => '')
+const { t, tm } = useLocale()
 
-const cards = [
-  ['รายงานเหตุการณ์', '128', '12%', 'red', '/icons/Warning-Error.svg', 'up'], ['คำขอความช่วยเหลือ', '56', '8%', 'blue', '/icons/Help.svg', 'up'],
-  ['ยืนยันแล้ว', '42', '20%', 'green', '/icons/Selected.svg', 'up'], ['รอตรวจสอบ', '18', '15%', 'yellow', '/icons/Alert.svg', 'down'],
-  ['ผู้ใช้ทั้งหมด', '12,482', '5%', 'purple', '/icons/Users.svg', 'up'], ['คะแนนความน่าเชื่อถือ', '8.3/10', '0.4', 'green', '/icons/Selected.svg', 'up'],
+// ข้อมูลตัวอย่างสำหรับการออกแบบ: ตัวเลข สี และไอคอนอยู่ที่นี่
+// ข้อความของแต่ละแถวอยู่ใน locales (adminDashboard.rows.*) เรียงตาม index เดียวกัน
+const rows = computed(() => tm('adminDashboard.rows'))
+
+const cardData = [
+  ['128', '12%', 'red', '/icons/Warning-Error.svg', 'up'], ['56', '8%', 'blue', '/icons/Help.svg', 'up'],
+  ['42', '20%', 'green', '/icons/Selected.svg', 'up'], ['18', '15%', 'yellow', '/icons/Alert.svg', 'down'],
+  ['12,482', '5%', 'purple', '/icons/Users.svg', 'up'], ['8.3/10', '0.4', 'green', '/icons/Selected.svg', 'up'],
 ]
-const incidents = [
-  ['ไฟป่าใกล้ดอยสุเทพ', 'สุเทพ, เชียงใหม่', 'อัคคีภัย', '/icons/Fire.svg', 'สูง', 'รอตรวจสอบ', '28 นาทีที่แล้ว', 'red'],
-  ['ฝนหนักทำให้น้ำท่วมขัง', 'ช้างเผือก, เชียงใหม่', 'น้ำท่วม', '/icons/Flood.svg', 'ปานกลาง', 'ยืนยันแล้ว', '1 ชั่วโมงที่แล้ว', 'blue'],
-  ['ต้นไม้ล้มกีดขวางถนน', 'สันทราย, เชียงใหม่', 'อุบัติเหตุ', '/icons/Roadblock.svg', 'ปานกลาง', 'รอตรวจสอบ', '2 ชั่วโมงที่แล้ว', 'orange'],
-  ['ดินสไลด์หลังฝนตกหนัก', 'แม่ริม, เชียงใหม่', 'ดินถล่ม', '/icons/Landslide-mudslide.svg', 'สูง', 'ยืนยันแล้ว', '3 ชั่วโมงที่แล้ว', 'yellow'],
-  ['รถชนบนถนนซูเปอร์ไฮเวย์', 'เมืองเชียงใหม่', 'ฉุกเฉิน', '/icons/Health.svg', 'สูง', 'รอตรวจสอบ', '5 ชั่วโมงที่แล้ว', 'red'],
+// [ชื่อ, ค่า, เปลี่ยนแปลง, สี, ไอคอน, ทิศทาง]
+const cards = computed(() => cardData.map((card, index) => [rows.value.cards[index], ...card]))
+
+// severity: high | medium, status: pending | verified
+const incidentData = [
+  ['/icons/Fire.svg', 'high', 'pending', 'red'],
+  ['/icons/Flood.svg', 'medium', 'verified', 'blue'],
+  ['/icons/Roadblock.svg', 'medium', 'pending', 'orange'],
+  ['/icons/Landslide-mudslide.svg', 'high', 'verified', 'yellow'],
+  ['/icons/Health.svg', 'high', 'pending', 'red'],
 ]
-const helpRequests = [
-  ['ต้องการอพยพ', 'ช้างคลาน', 4, 'เปิดอยู่', '35 นาทีที่แล้ว', '/icons/Building.svg'], ['ตามหาหน้ากากอนามัย', 'สุเทพ', 2, 'กำลังรับเรื่อง', '1 ชั่วโมงที่แล้ว', '/icons/Health.svg'],
-  ['ต้องการน้ำและอาหาร', 'สันทราย', 3, 'เปิดอยู่', '2 ชั่วโมงที่แล้ว', '/icons/Water-source.svg'], ['ขอความช่วยเหลือทางการแพทย์', 'แม่ริม', 1, 'กำลังดำเนินการ', '4 ชั่วโมงที่แล้ว', '/icons/Health.svg'],
-  ['ขอความช่วยเหลือด้านการเดินทาง', 'หางดง', 2, 'เปิดอยู่', '6 ชั่วโมงที่แล้ว', '/icons/Car.svg'],
+// [ชื่อ, พื้นที่, ประเภท, ไอคอน, ระดับ, สถานะ, เวลา, สี, รหัสระดับ, รหัสสถานะ]
+const incidents = computed(() => incidentData.map(([icon, severity, status, color], index) => {
+  const [title, area, category, time] = rows.value.incidents[index]
+  return [title, area, category, icon, t(`adminDashboard.severity.${severity}`), t(`adminDashboard.status.${status}`), time, color, severity, status]
+}))
+
+const helpRequestData = [[4, '/icons/Building.svg'], [2, '/icons/Health.svg'], [3, '/icons/Water-source.svg'], [1, '/icons/Health.svg'], [2, '/icons/Car.svg']]
+// [คำขอ, พื้นที่, จำนวน, สถานะ, เวลา, ไอคอน]
+const helpRequests = computed(() => helpRequestData.map(([count, icon], index) => {
+  const [title, area, status, time] = rows.value.helpRequests[index]
+  return [title, area, count, status, time, icon]
+}))
+
+const typeData = [[38, 30, '/icons/Flood.svg'], [28, 22, '/icons/Fire.svg'], [18, 14, '/icons/Roadblock.svg'], [16, 13, '/icons/Landslide-mudslide.svg'], [14, 11, '/icons/Health.svg'], [14, 11, '/icons/Alert.svg']]
+const types = computed(() => typeData.map((type, index) => [rows.value.types[index], ...type]))
+
+const serviceIcons = ['/icons/Map.svg', '/icons/Data.svg', '/icons/Notification.svg', '/icons/Folder.svg']
+const services = computed(() => serviceIcons.map((icon, index) => [rows.value.services[index], icon]))
+
+const markerData = [
+  ['/icons/Fire.svg', 'red', 'one'], ['/icons/Flood.svg', 'blue', 'two'], ['/icons/Roadblock.svg', 'orange', 'three'],
+  ['/icons/Health.svg', 'red', 'four'], ['/icons/Landslide-mudslide.svg', 'orange', 'five'], ['/icons/Environment.svg', 'green', 'six'],
 ]
-const types = [
-  ['น้ำท่วม', 38, 30, '/icons/Flood.svg'], ['อัคคีภัย', 28, 22, '/icons/Fire.svg'], ['อุบัติเหตุบนถนน', 18, 14, '/icons/Roadblock.svg'],
-  ['ดินถล่ม', 16, 13, '/icons/Landslide-mudslide.svg'], ['ฉุกเฉินทางการแพทย์', 14, 11, '/icons/Health.svg'], ['อื่น ๆ', 14, 11, '/icons/Alert.svg'],
-]
-const services = [['บริการแผนที่', '/icons/Map.svg'], ['ฐานข้อมูล', '/icons/Data.svg'], ['บริการแจ้งเตือน', '/icons/Notification.svg'], ['พื้นที่เก็บสื่อ', '/icons/Folder.svg']]
-const mapMarkers = [
-  ['ไฟไหม้', '/icons/Fire.svg', 'red', 'one'], ['น้ำท่วม', '/icons/Flood.svg', 'blue', 'two'], ['อุบัติเหตุ', '/icons/Roadblock.svg', 'orange', 'three'],
-  ['ฉุกเฉินทางการแพทย์', '/icons/Health.svg', 'red', 'four'], ['ดินถล่ม', '/icons/Landslide-mudslide.svg', 'orange', 'five'], ['พื้นที่ปลอดภัย', '/icons/Environment.svg', 'green', 'six'],
-]
-const chart = [[43, 29, 16, 7, '21 ก.ย.'], [56, 31, 19, 8, '22 ก.ย.'], [56, 39, 18, 8, '23 ก.ย.'], [68, 37, 20, 8, '24 ก.ย.'], [88, 53, 25, 9, '25 ก.ย.'], [62, 29, 18, 7, '26 ก.ย.'], [72, 35, 21, 8, 'วันนี้']]
-const quickAction = (label) => { label === 'ตรวจสอบเหตุการณ์' ? navigateTo('/admin/incidents') : notice.value = `“${label}” เป็นเมนูโครงร่างที่ยังอยู่ระหว่างพัฒนา` }
+const mapMarkers = computed(() => markerData.map((marker, index) => [rows.value.markers[index], ...marker]))
+
+const chartData = [[43, 29, 16, 7], [56, 31, 19, 8], [56, 39, 18, 8], [68, 37, 20, 8], [88, 53, 25, 9], [62, 29, 18, 7], [72, 35, 21, 8]]
+const chart = computed(() => chartData.map((bar, index) => [...bar, rows.value.chartDays[index]]))
+
+const quickActions = ['reviewIncidents', 'manageHelp', 'trackUsers', 'manageEvents', 'editGuides']
+const quickAction = (id) => {
+  if (id === 'reviewIncidents') {
+    navigateTo('/admin/incidents')
+    return
+  }
+  notice.value = t('adminDashboard.inDevelopment', { label: t(`adminDashboard.actions.${id}`) })
+}
 </script>
 
 <template>
   <section class="admin-content">
         <section class="intro">
           <div>
-            <h1>สวัสดี, ผู้ดูแลระบบ</h1>
-            <p>ภาพรวมสถานการณ์ GeoSpread และความปลอดภัยของชุมชนวันนี้</p>
-          </div><em>“เพื่อวันพรุ่งนี้ที่ปลอดภัยและรู้เท่าทันกว่าเดิม”</em>
+            <h1>{{ t('adminDashboard.greeting') }}</h1>
+            <p>{{ t('adminDashboard.subtitle') }}</p>
+          </div><em>{{ t('adminDashboard.quote') }}</em>
         </section>
 
-        <p class="sample-banner"><img src="/icons/Alert.svg" alt="">ข้อมูลบนแดชบอร์ดนี้เป็นข้อมูลตัวอย่างสำหรับการออกแบบ
-          ยังไม่ใช่สถานการณ์ปัจจุบัน</p>
+        <p class="sample-banner"><img src="/icons/Alert.svg" alt="">{{ t('adminDashboard.sampleBanner') }}</p>
 
-        <section class="summary" aria-label="สรุปสถานะระบบ">
+        <section class="summary" :aria-label="t('adminDashboard.summaryLabel')">
           <article v-for="card in cards" :key="card[0]" :class="`card card--${card[3]}`"><span class="card-icon"><img
                 :src="card[4]" alt=""></span>
             <div><strong>{{ card[1] }}</strong><span>{{ card[0] }}</span><small :class="`trend-${card[5]}`">{{ card[5]
-              === 'up' ? '↑' : '↓' }} {{ card[2] }}<i>จากสัปดาห์ก่อน</i></small></div>
+              === 'up' ? '↑' : '↓' }} {{ card[2] }}<i>{{ t('adminDashboard.fromLastWeek') }}</i></small></div>
           </article>
         </section>
 
-        <p v-if="notice" class="notice" role="status">{{ notice }}<button type="button" aria-label="ปิดข้อความ"
+        <p v-if="notice" class="notice" role="status">{{ notice }}<button type="button" :aria-label="t('adminDashboard.closeNotice')"
             @click="notice = ''">×</button></p>
 
         <section class="dashboard-mode">
           <section class="main-grid">
             <article class="panel map-panel">
               <header>
-                <h2><img src="/icons/Map.svg" alt="">เหตุการณ์ล่าสุดบนแผนที่</h2><button type="button"
-                  @click="quickAction('เหตุการณ์ทั้งหมด')">ดูทั้งหมด</button>
+                <h2><img src="/icons/Map.svg" alt="">{{ t('adminDashboard.mapTitle') }}</h2><button type="button"
+                  @click="quickAction('allIncidents')">{{ t('common.viewAll') }}</button>
               </header>
-              <div class="map" aria-label="แผนที่ภาพรวมเชียงใหม่ พร้อมตำแหน่งเหตุการณ์ตัวอย่าง">
+              <div class="map" :aria-label="t('adminDashboard.mapLabel')">
                 <i class="hill hill-a" /><i class="hill hill-b" /><i class="river" /><i class="road road-a" /><i
                   class="road road-b" /><i class="road road-c" />
-                <span class="place place-a">แม่ริม</span><span class="place place-b">เชียงใหม่</span><span
-                  class="place place-c">สันทราย</span><span class="place place-d">สารภี</span>
+                <span class="place place-a">{{ rows.places[0] }}</span><span class="place place-b">{{ rows.places[1] }}</span><span
+                  class="place place-c">{{ rows.places[2] }}</span><span class="place place-d">{{ rows.places[3] }}</span>
                 <button v-for="marker in mapMarkers" :key="marker[0]" type="button"
                   :class="`marker marker--${marker[2]} marker--${marker[3]}`" :aria-label="marker[0]"
-                  @click="notice = `เลือกเหตุการณ์: ${marker[0]}`"><img :src="marker[1]" alt=""></button>
-                <aside class="legend"><strong>ชั้นข้อมูลตัวอย่าง</strong><span><i
-                      class="you" />ตำแหน่งตัวอย่าง</span><span><img src="/icons/Fire.svg" alt="">อัคคีภัย</span><span><img
-                      src="/icons/Flood.svg" alt="">น้ำท่วม</span><span><img src="/icons/Roadblock.svg" alt="">อุบัติเหตุ</span>
+                  @click="notice = t('adminDashboard.markerSelected', { name: marker[0] })"><img :src="marker[1]" alt=""></button>
+                <aside class="legend"><strong>{{ t('adminDashboard.legendTitle') }}</strong><span><i
+                      class="you" />{{ t('adminDashboard.legendYou') }}</span><span><img src="/icons/Fire.svg" alt="">{{ t('adminDashboard.legendFire') }}</span><span><img
+                      src="/icons/Flood.svg" alt="">{{ t('adminDashboard.legendFlood') }}</span><span><img src="/icons/Roadblock.svg" alt="">{{ t('adminDashboard.legendAccident') }}</span>
                 </aside>
-                <small class="scale"><i />0&nbsp;&nbsp;&nbsp;&nbsp; 5 กม.</small>
+                <small class="scale"><i />0&nbsp;&nbsp;&nbsp;&nbsp; {{ t('units.kilometers', { value: 5 }) }}</small>
               </div>
             </article>
 
             <div class="side-stack">
               <article class="panel chart-panel">
                 <header>
-                  <h2><img src="/icons/Chart.svg" alt="">สถิติเหตุการณ์</h2><button class="period" type="button">7
-                    วันที่ผ่านมา
+                  <h2><img src="/icons/Chart.svg" alt="">{{ t('adminDashboard.statsTitle') }}</h2><button class="period" type="button">{{ t('adminDashboard.last7Days') }}
                     ⌄</button>
                 </header>
-                <div class="chart" aria-label="กราฟเหตุการณ์ 7 วันล่าสุด">
+                <div class="chart" :aria-label="t('adminDashboard.chartLabel')">
                   <div v-for="item in chart" :key="item[4]">
                     <section><i class="total" :style="{ height: `${item[0]}%` }" /><i class="verified"
                         :style="{ height: `${item[1]}%` }" /><i class="pending" :style="{ height: `${item[2]}%` }" /><i
                         class="rejected" :style="{ height: `${item[3]}%` }" /></section><small>{{ item[4] }}</small>
                   </div>
                 </div>
-                <p class="chart-key"><span><i class="total" />ทั้งหมด</span><span><i
-                      class="verified" />ยืนยันแล้ว</span><span><i class="pending" />รอตรวจ</span><span><i
-                      class="rejected" />ไม่ผ่าน</span></p>
+                <p class="chart-key"><span><i class="total" />{{ t('adminDashboard.keyTotal') }}</span><span><i
+                      class="verified" />{{ t('status.verified') }}</span><span><i class="pending" />{{ t('adminDashboard.keyPending') }}</span><span><i
+                      class="rejected" />{{ t('adminDashboard.keyRejected') }}</span></p>
               </article>
               <article class="panel types">
-                <h2>ประเภทเหตุการณ์</h2>
+                <h2>{{ t('adminDashboard.typesTitle') }}</h2>
                 <div>
-                  <section class="donut" aria-label="128 เหตุการณ์ทั้งหมด"><strong>128<small>ทั้งหมด</small></strong>
+                  <section class="donut" :aria-label="t('adminDashboard.donutLabel', { count: 128 })"><strong>128<small>{{ t('adminDashboard.keyTotal') }}</small></strong>
                   </section>
                   <ul>
                     <li v-for="type in types" :key="type[0]"><img :src="type[3]" alt=""><span>{{ type[0] }}</span><b>{{
@@ -111,16 +138,16 @@ const quickAction = (label) => { label === 'ตรวจสอบเหตุก
 
             <aside class="right-rail">
               <article class="panel system">
-                <h2><i />สถานะระบบ</h2>
+                <h2><i />{{ t('adminDashboard.systemTitle') }}</h2>
                 <ul>
                   <li v-for="service in services" :key="service[0]"><img :src="service[1]" alt=""><span>{{ service[0]
-                  }}</span><b>ออนไลน์</b></li>
+                  }}</span><b>{{ t('adminDashboard.online') }}</b></li>
                 </ul>
               </article>
               <article class="panel quick">
-                <h2><img src="/icons/Help.svg" alt="">งานด่วน</h2><button
-                  v-for="action in ['ตรวจสอบเหตุการณ์', 'จัดการคำขอความช่วยเหลือ', 'ติดตามผู้ใช้งาน', 'จัดการกิจกรรม', 'แก้ไขคู่มือความปลอดภัย']"
-                  :key="action" type="button" @click="quickAction(action)">{{ action }}</button>
+                <h2><img src="/icons/Help.svg" alt="">{{ t('adminDashboard.quickTitle') }}</h2><button
+                  v-for="action in quickActions"
+                  :key="action" type="button" @click="quickAction(action)">{{ t(`adminDashboard.actions.${action}`) }}</button>
               </article>
             </aside>
           </section>
@@ -128,20 +155,20 @@ const quickAction = (label) => { label === 'ตรวจสอบเหตุก
           <section class="tables">
             <article class="panel data">
               <header>
-                <h2><img src="/icons/Report.svg" alt="">เหตุการณ์ล่าสุด</h2><button type="button"
-                  @click="quickAction('เหตุการณ์ทั้งหมด')">ดูทั้งหมด</button>
+                <h2><img src="/icons/Report.svg" alt="">{{ t('adminDashboard.latestIncidents') }}</h2><button type="button"
+                  @click="quickAction('allIncidents')">{{ t('common.viewAll') }}</button>
               </header>
               <div>
                 <table>
                   <thead>
                     <tr>
                       <th>#</th>
-                      <th>เหตุการณ์</th>
-                      <th>พื้นที่</th>
-                      <th>ประเภท</th>
-                      <th>ระดับ</th>
-                      <th>สถานะ</th>
-                      <th>เวลา</th>
+                      <th>{{ t('adminDashboard.th.incident') }}</th>
+                      <th>{{ t('adminDashboard.th.area') }}</th>
+                      <th>{{ t('adminDashboard.th.type') }}</th>
+                      <th>{{ t('adminDashboard.th.severity') }}</th>
+                      <th>{{ t('adminDashboard.th.status') }}</th>
+                      <th>{{ t('adminDashboard.th.time') }}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -150,9 +177,9 @@ const quickAction = (label) => { label === 'ตรวจสอบเหตุก
                       <td>{{ incident[0] }}</td>
                       <td>{{ incident[1] }}</td>
                       <td><img :src="incident[3]" alt="">{{ incident[2] }}</td>
-                      <td><b class="severity" :class="incident[4] === 'สูง' ? 'high' : 'medium'">{{ incident[4] }}</b>
+                      <td><b class="severity" :class="incident[8] === 'high' ? 'high' : 'medium'">{{ incident[4] }}</b>
                       </td>
-                      <td><b class="status" :class="{ verified: incident[5] === 'ยืนยันแล้ว' }">{{ incident[5] }}</b>
+                      <td><b class="status" :class="{ verified: incident[9] === 'verified' }">{{ incident[5] }}</b>
                       </td>
                       <td>{{ incident[6] }}</td>
                     </tr>
@@ -162,19 +189,19 @@ const quickAction = (label) => { label === 'ตรวจสอบเหตุก
             </article>
             <article class="panel data">
               <header>
-                <h2><img src="/icons/Help.svg" alt="">คำขอความช่วยเหลือล่าสุด</h2><button type="button"
-                  @click="quickAction('คำขอความช่วยเหลือทั้งหมด')">ดูทั้งหมด</button>
+                <h2><img src="/icons/Help.svg" alt="">{{ t('adminDashboard.latestHelp') }}</h2><button type="button"
+                  @click="quickAction('allHelp')">{{ t('common.viewAll') }}</button>
               </header>
               <div>
                 <table>
                   <thead>
                     <tr>
                       <th>#</th>
-                      <th>คำขอ</th>
-                      <th>พื้นที่</th>
-                      <th>จำนวน</th>
-                      <th>สถานะ</th>
-                      <th>เวลา</th>
+                      <th>{{ t('adminDashboard.th.request') }}</th>
+                      <th>{{ t('adminDashboard.th.area') }}</th>
+                      <th>{{ t('adminDashboard.th.count') }}</th>
+                      <th>{{ t('adminDashboard.th.status') }}</th>
+                      <th>{{ t('adminDashboard.th.time') }}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -192,14 +219,14 @@ const quickAction = (label) => { label === 'ตรวจสอบเหตุก
             </article>
             <article class="panel community">
               <header>
-                <h2><img src="/icons/Users.svg" alt="">ภาพรวมชุมชน</h2><button type="button"
-                  @click="quickAction('ภาพรวมชุมชน')">รายละเอียด</button>
+                <h2><img src="/icons/Users.svg" alt="">{{ t('adminDashboard.communityTitle') }}</h2><button type="button"
+                  @click="quickAction('community')">{{ t('adminDashboard.details') }}</button>
               </header>
               <section>
-                <div><img src="/icons/Users.svg" alt=""><strong>12,482</strong><span>ผู้ใช้ทั้งหมด</span></div>
-                <div><img src="/icons/Selected.svg" alt=""><strong>8,320</strong><span>ผู้ใช้ที่เชื่อถือได้</span></div>
-                <div><img src="/icons/Users.svg" alt=""><strong>1,420</strong><span>กำลังติดตาม</span></div>
-                <div><img src="/icons/Warning-Error.svg" alt=""><strong>320</strong><span>ความเสี่ยงสูง</span></div>
+                <div><img src="/icons/Users.svg" alt=""><strong>12,482</strong><span>{{ t('adminDashboard.communityUsers') }}</span></div>
+                <div><img src="/icons/Selected.svg" alt=""><strong>8,320</strong><span>{{ t('adminDashboard.communityTrusted') }}</span></div>
+                <div><img src="/icons/Users.svg" alt=""><strong>1,420</strong><span>{{ t('adminDashboard.communityWatching') }}</span></div>
+                <div><img src="/icons/Warning-Error.svg" alt=""><strong>320</strong><span>{{ t('adminDashboard.communityRisk') }}</span></div>
               </section>
             </article>
           </section>
@@ -216,7 +243,7 @@ const quickAction = (label) => { label === 'ตรวจสอบเหตุก
   margin: 0;
   background: #f5f9ff;
   color: #102968;
-  font-family: "Noto Sans Thai", Tahoma, sans-serif
+  font-family: var(--bs-font-sans-serif)
 }
 
 :global(button),

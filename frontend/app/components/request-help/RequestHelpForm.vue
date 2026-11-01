@@ -1,31 +1,31 @@
 <template>
   <form class="help-form" @submit.prevent="submit">
     <section>
-      <h2><b>1</b> ต้องการความช่วยเหลือด้านใด</h2>
+      <h2><b>1</b> {{ t('requestHelp.step1') }}</h2>
       <div class="type-grid">
         <button v-for="item in types" :key="item.id"
           type="button"
           :class="{ selected: type === item.id }"
           @click="type = item.id"><strong>{{ item.icon }}</strong>
-          <span>{{item.label }}</span>
-          <small>{{ item.desc }}</small>
+          <span>{{ t(`requestHelp.types.${item.id}.label`) }}</span>
+          <small>{{ t(`requestHelp.types.${item.id}.desc`) }}</small>
           </button>
         </div>
-      <div v-if="type === 'other'" class="other"><label>หรือระบุประเภทอื่น
-        <input v-model="customType"placeholder="เช่น ต้องการไฟฉายและแบตเตอรี่" /></label>
+      <div v-if="type === 'other'" class="other"><label>{{ t('requestHelp.otherLabel') }}
+        <input v-model="customType" :placeholder="t('requestHelp.otherPlaceholder')" /></label>
       </div>
     </section>
 
     <section>
-      <h2><b>2</b> รายละเอียดเพิ่มเติม</h2><textarea v-model="details" maxlength="500"
-        placeholder="เช่น จำนวนคน สถานการณ์ตอนนี้ และสิ่งที่ต้องการเป็นพิเศษ" />
+      <h2><b>2</b> {{ t('requestHelp.step2') }}</h2><textarea v-model="details" maxlength="500"
+        :placeholder="t('requestHelp.detailsPlaceholder')" />
         <small class="count">{{ details.length}}/500</small>
     </section>
     <section>
-      <h2><b>3</b> จำนวนผู้ที่ต้องการความช่วยเหลือ</h2>
+      <h2><b>3</b> {{ t('requestHelp.step3') }}</h2>
       <!-- ช่องระบุจำนวนคนเป็นตัวเลข ค่านี้ส่งไป API เป็น people_count -->
       <label class="people-custom">
-        ระบุจำนวนคน
+        {{ t('requestHelp.peopleLabel') }}
         <span class="people-custom__field">
           <input
             v-model="peopleCount"
@@ -34,27 +34,27 @@
             max="999"
             step="1"
             inputmode="numeric"
-            placeholder="เช่น 3"
+            :placeholder="t('requestHelp.peoplePlaceholder')"
           />
-          <span class="people-custom__unit">คน</span>
+          <span class="people-custom__unit">{{ t('requestHelp.peopleUnit') }}</span>
         </span>
       </label>
     </section>
     <section class="media-upload">
-      <h2><b>4</b> เพิ่มรูปภาพ <span>(ไม่บังคับ)</span></h2>
+      <h2><b>4</b> {{ t('requestHelp.step4') }} <span>{{ t('report.optional') }}</span></h2>
       <input ref="fileInput" class="sr-only" type="file" multiple accept="image/jpeg,image/png" :disabled="isSubmitting" @change="selectFiles">
       <button type="button" class="upload" :disabled="isSubmitting" @click="fileInput?.click()">
         ▣
         <span>
           <strong>{{ selectedMediaLabel }}</strong>
-          <small>{{ selectedFiles.length ? `เพิ่มแล้ว ${selectedFiles.length}/5 รูป` : 'รองรับ JPG และ PNG สูงสุด 5 รูป รูปละไม่เกิน 20 MB' }}</small>
+          <small>{{ selectedFiles.length ? t('requestHelp.imagesAdded', { count: selectedFiles.length, max: maxImageFiles }) : t('requestHelp.imageLimits') }}</small>
         </span>
       </button>
-      <ul v-if="selectedFiles.length" class="selected-media" aria-label="รูปภาพที่เลือก">
+      <ul v-if="selectedFiles.length" class="selected-media" :aria-label="t('requestHelp.selectedImages')">
         <li v-for="(item, index) in selectedFiles" :key="`${item.file.name}-${item.file.lastModified}`" :title="item.file.name">
-          <img :src="item.previewUrl" :alt="`ตัวอย่าง ${item.file.name}`">
+          <img :src="item.previewUrl" :alt="t('report.previewOf', { name: item.file.name })">
           <span class="selected-media__details"><strong>{{ item.file.name }}</strong><small>{{ formatFileSize(item.file.size) }}</small></span>
-          <button type="button" :disabled="isSubmitting" :aria-label="`ลบ ${item.file.name}`" @click="removeSelectedFile(index)">ลบ</button>
+          <button type="button" :disabled="isSubmitting" :aria-label="t('report.removeFile', { name: item.file.name })" @click="removeSelectedFile(index)">{{ t('report.remove') }}</button>
         </li>
       </ul>
     </section>
@@ -70,7 +70,9 @@ const props = defineProps({
 const config = useRuntimeConfig()
 const apiBase = config.public.apiBase || 'http://localhost:5000'
 const { getToken } = useAuth()
-const types = [{ id: 'evacuation', label: 'อพยพ', desc: 'ต้องการย้ายไปที่ปลอดภัย', icon: '↗' }, { id: 'medical', label: 'การแพทย์', desc: 'ต้องการการดูแล', icon: '+' }, { id: 'food', label: 'อาหารและน้ำ', desc: 'ต้องการเสบียง', icon: '▤' }, { id: 'shelter', label: 'ที่พักพิง', desc: 'ต้องการที่พัก', icon: '⌂' }, { id: 'vehicle', label: 'พาหนะ', desc: 'ต้องการการเดินทาง', icon: '▰' }, { id: 'other', label: 'อื่น ๆ', desc: 'ระบุความต้องการ', icon: '•••' }]
+const { t } = useLocale()
+// ชื่อและคำอธิบายของแต่ละประเภทอยู่ใน locales: requestHelp.types.<id>
+const types = [{ id: 'evacuation', icon: '↗' }, { id: 'medical', icon: '+' }, { id: 'food', icon: '▤' }, { id: 'shelter', icon: '⌂' }, { id: 'vehicle', icon: '▰' }, { id: 'other', icon: '•••' }]
 const type = ref('evacuation'); const customType = ref(''); const details = ref(''); const fileInput = ref(null); const selectedFiles = ref([]); const feedback = ref('')
 const isSubmitting = ref(false)
 // จำนวนคนที่ต้องการความช่วยเหลือ (ผู้ใช้พิมพ์เอง เริ่มต้นที่ 1)
@@ -78,22 +80,22 @@ const peopleCount = ref(1)
 const maxImageFiles = 5
 const maxImageFileSizeBytes = 20 * 1024 * 1024
 const selectedMediaLabel = computed(() => {
-  if (!selectedFiles.value.length) return 'เลือกรูปภาพ'
+  if (!selectedFiles.value.length) return t('requestHelp.chooseImages')
   if (selectedFiles.value.length === 1) return selectedFiles.value[0].file.name
-  return `เลือกรูปภาพแล้ว ${selectedFiles.value.length} รูป`
+  return t('requestHelp.imagesSelected', { count: selectedFiles.value.length })
 })
 
 const selectFiles = (event) => {
   const files = Array.from(event.target.files ?? [])
 
   if (selectedFiles.value.length + files.length > maxImageFiles) {
-    feedback.value = 'แนบรูปภาพได้สูงสุด 5 รูปต่อคำขอ'
+    feedback.value = t('requestHelp.tooManyImages', { count: maxImageFiles })
     event.target.value = ''
     return
   }
 
   if (files.some((file) => file.size > maxImageFileSizeBytes)) {
-    feedback.value = 'รูปภาพแต่ละรูปต้องมีขนาดไม่เกิน 20 MB'
+    feedback.value = t('requestHelp.imageTooLarge')
     event.target.value = ''
     return
   }
@@ -120,30 +122,30 @@ const submit = async () => {
   const location = props.location
 
   if (!location) {
-    feedback.value = 'กรุณาเลือกตำแหน่งที่ต้องการความช่วยเหลือก่อนส่งคำขอ'
+    feedback.value = t('requestHelp.needLocation')
     return
   }
 
   if (description.length < 5) {
-    feedback.value = 'กรุณากรอกรายละเอียดอย่างน้อย 5 ตัวอักษร'
+    feedback.value = t('requestHelp.needDetails')
     return
   }
 
   if (type.value === 'other' && !customType.value.trim()) {
-    feedback.value = 'กรุณาระบุประเภทความช่วยเหลืออื่น ๆ'
+    feedback.value = t('requestHelp.needOtherType')
     return
   }
 
   // จำนวนคนต้องเป็นเลขจำนวนเต็ม 1–999 (ตรงกับที่ backend รับ)
   const people = Number(peopleCount.value)
   if (!Number.isInteger(people) || people < 1 || people > 999) {
-    feedback.value = 'กรุณาระบุจำนวนผู้ที่ต้องการความช่วยเหลือเป็นตัวเลข 1 ถึง 999 คน'
+    feedback.value = t('requestHelp.needPeople')
     return
   }
 
   const authToken = getToken()
   if (!authToken) {
-    feedback.value = 'กรุณาเข้าสู่ระบบก่อนส่งคำขอความช่วยเหลือ'
+    feedback.value = t('requestHelp.needLogin')
     return
   }
 
@@ -167,12 +169,12 @@ const submit = async () => {
 
     const helpRequestId = response.data?.help_request_id
     feedback.value = helpRequestId
-      ? `ส่งคำขอ #${helpRequestId} สำเร็จแล้ว กำลังกลับไปหน้าแผนที่…`
-      : 'ส่งคำขอความช่วยเหลือสำเร็จแล้ว กำลังกลับไปหน้าแผนที่…'
+      ? t('requestHelp.submittedWithId', { id: helpRequestId })
+      : t('requestHelp.submitted')
     clearSelectedFiles()
     setTimeout(() => navigateTo('/'), 1500)
   } catch (error) {
-    feedback.value = error?.data?.message ?? 'ส่งคำขอไม่สำเร็จ กรุณาลองอีกครั้ง'
+    feedback.value = error?.data?.message ?? t('requestHelp.submitFailed')
   } finally {
     isSubmitting.value = false
   }

@@ -9,7 +9,10 @@ const props = defineProps({
   getPlaceLabel: { type: Function, default: null },
   // true = แสดงอยู่ใน bottom sheet บนมือถือ
   inSheet: { type: Boolean, default: false },
+  // ฟังก์ชันแปลภาษา: popup ถูก mount ด้วย createApp แยกจาก Nuxt จึงเรียก useLocale เองไม่ได้
+  t: { type: Function, required: true },
 });
+const t = (...args) => props.t(...args);
 
 defineEmits(["close"]);
 
@@ -19,14 +22,14 @@ const MOCK_OFFER_COUNT = 1;
 // ชื่อสถานที่ พอ Mapbox ส่งชื่อมา ค่านี้จะเปลี่ยนเองอัตโนมัติ
 const placeLabel = computed(() => {
   if (!props.getPlaceLabel) {
-    return "พื้นที่ที่ขอความช่วยเหลือ";
+    return t("place.helpArea");
   }
   return props.getPlaceLabel(props.incident);
 });
 
 // บรรทัดข้อมูลย่อยใต้หัวข้อ เช่น "พื้นที่โดยประมาณ · พระโขนง · ห่าง 2.4 กม. · 12 นาทีที่แล้ว"
 const metaLine = computed(() => {
-  const parts = ["พื้นที่โดยประมาณ", placeLabel.value];
+  const parts = [t("place.approximateArea"), placeLabel.value];
 
   if (props.incident.distanceFromUserLabel) {
     parts.push(props.incident.distanceFromUserLabel);
@@ -42,7 +45,7 @@ const metaLine = computed(() => {
 // (ประเภทความช่วยเหลือแสดงเป็นหัวข้ออยู่แล้ว จึงไม่ใส่ซ้ำในป้าย)
 const tags = computed(() => {
   const tagList = [];
-  tagList.push(`${props.incident.peopleCount || 1} คน`);
+  tagList.push(t("units.people", { count: props.incident.peopleCount || 1 }));
   return tagList;
 });
 
@@ -51,7 +54,7 @@ const description = computed(() => {
   if (text) {
     return text;
   }
-  return "ยังไม่มีรายละเอียดเพิ่มเติม";
+  return t("incident.noDetails");
 });
 
 // ปุ่มยังไม่ได้ต่อระบบจริง กดแล้วยังไม่ทำอะไร
@@ -74,13 +77,13 @@ const openDetail = () => {
       <!-- สถานะของคำขอ พร้อมไอคอนประเภทความช่วยเหลือ -->
       <span class="help-popup__status">
         <img :src="props.incident.iconUrl || '/icons/Help.svg'" alt="" aria-hidden="true" />
-        รอการช่วยเหลือ
+        {{ t("help.waiting") }}
       </span>
 
       <button
         class="help-popup__close"
         type="button"
-        aria-label="ปิดรายละเอียดคำขอความช่วยเหลือ"
+        :aria-label="t('help.closeDetails')"
         @click="$emit('close')"
       >
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -89,10 +92,10 @@ const openDetail = () => {
       </button>
     </header>
 
-    <h2 class="help-popup__title">{{ props.incident.title || "คำขอความช่วยเหลือ" }}</h2>
+    <h2 class="help-popup__title">{{ props.incident.title || t("help.category") }}</h2>
     <p class="help-popup__meta">{{ metaLine }}</p>
 
-    <ul class="help-popup__tags" aria-label="ข้อมูลคำขอ">
+    <ul class="help-popup__tags" :aria-label="t('help.requestInfo')">
       <li v-for="tag in tags" :key="tag">{{ tag }}</li>
     </ul>
 
@@ -104,17 +107,17 @@ const openDetail = () => {
         <rect x="5" y="11" width="14" height="10" rx="2" />
         <path d="M8 11V8a4 4 0 0 1 8 0v3" />
       </svg>
-      ตำแหน่งจริงจะแสดงหลังผู้ขออนุมัติคุณ
+      {{ t("help.exactLocationHidden") }}
     </p>
 
-    <p class="help-popup__offers">มีผู้เสนอช่วยแล้ว {{ MOCK_OFFER_COUNT }} คน</p>
+    <p class="help-popup__offers">{{ t("help.offersCount", { count: MOCK_OFFER_COUNT }) }}</p>
 
     <div class="help-popup__actions">
       <button type="button" class="help-popup__offer-button" @click="offerHelp">
-        เสนอช่วยเหลือ
+        {{ t("help.offerHelp") }}
       </button>
       <button type="button" class="help-popup__detail-button" @click="openDetail">
-        ดูรายละเอียด
+        {{ t("common.viewDetails") }}
       </button>
     </div>
   </div>

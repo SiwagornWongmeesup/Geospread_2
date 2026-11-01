@@ -1,6 +1,7 @@
 <script setup>
 import DesktopView from '~/components/views/register/Desktop.vue'
 import MobileView from '~/components/views/register/Mobile.vue'
+const { t } = useLocale()
 
 // ---------------------------------------------------------------------------
 // Register Page — Controller Layer
@@ -28,15 +29,15 @@ const handleRegister = async () => {
   validationError.value = ''
 
   if (!form.value.name || !form.value.email || !form.value.password) {
-    validationError.value = 'กรุณากรอกข้อมูลให้ครบถ้วน'
+    validationError.value = t('auth.fillAll')
     return
   }
   if (form.value.password.length < 8) {
-    validationError.value = 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร'
+    validationError.value = t('auth.passwordTooShort')
     return
   }
   if (!acceptTerms.value) {
-    validationError.value = 'กรุณายอมรับเงื่อนไขการใช้งาน'
+    validationError.value = t('auth.acceptTermsRequired')
     return
   }
 

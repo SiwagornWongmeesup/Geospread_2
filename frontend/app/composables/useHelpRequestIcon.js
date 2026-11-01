@@ -10,15 +10,9 @@ export const getHelpRequestIcon = (helpType) => (
   helpRequestIcons[helpType] || '/icons/Life-saving.svg'
 )
 
-// ชื่อประเภทคำขอภาษาไทย ตรงกับตัวเลือกใน RequestHelpForm
-const helpRequestLabels = {
-  evacuation: 'ต้องการอพยพ',
-  medical: 'ต้องการความช่วยเหลือทางการแพทย์',
-  food: 'ต้องการอาหารและน้ำ',
-  shelter: 'ต้องการที่พักพิง',
-  vehicle: 'ต้องการพาหนะ',
-}
+// ชื่อประเภทคำขอ (ข้อความอยู่ใน locales: helpTypes.*) ตรงกับตัวเลือกใน RequestHelpForm
+const knownHelpTypes = ['evacuation', 'medical', 'food', 'shelter', 'vehicle']
 
-export const getHelpRequestLabel = (helpType) => (
-  helpRequestLabels[helpType] || 'คำขอความช่วยเหลือ'
+export const getHelpRequestLabel = (helpType, t) => (
+  knownHelpTypes.includes(helpType) ? t(`helpTypes.${helpType}`) : t('help.category')
 )

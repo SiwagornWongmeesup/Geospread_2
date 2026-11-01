@@ -1,4 +1,5 @@
 <script setup>
+const { t } = useLocale()
 definePageMeta({
   showRightPanel: false
 });
@@ -6,8 +7,8 @@ definePageMeta({
 
 <template>
   <section class="dashboard-page">
-    <h1>คู่มือความปลอดภัย</h1>
-    <p>คำแนะนำด้านความปลอดภัยตามประเภทเหตุการณ์จะแสดงในส่วนนี้</p>
+    <h1>{{ t('nav.safetyGuide') }}</h1>
+    <p>{{ t('pages.safetyGuide') }}</p>
   </section>
 </template>
 

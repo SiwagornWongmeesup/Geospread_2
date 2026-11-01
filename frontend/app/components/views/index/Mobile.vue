@@ -3,7 +3,7 @@
     <section
       class="mobile-home__map-section"
       :class="{ 'mobile-home__map-section--popup-open': selectedIncident }"
-      aria-label="แผนที่เหตุการณ์"
+      :aria-label="t('common.incidentMap')"
     >
       <MapboxMap
         :center="activeMapCenter"
@@ -43,6 +43,7 @@
 
 <script setup>
 import { computed, ref } from "vue";
+const { t } = useLocale();
 import MapboxMap from "~/components/map/MapboxMap.vue";
 import MapLocationSearch from "~/components/map/MapLocationSearch.vue";
 import IncidentBottomSheet from "~/components/map/IncidentBottomSheet.vue";

@@ -2,23 +2,36 @@
   <section class="nearby-incidents" aria-labelledby="nearby-incidents-heading">
     <div class="nearby-incidents__header">
       <div>
-        <h2 id="nearby-incidents-heading">{{ title }}</h2>
-        <p>เหตุการณ์ล่าสุดที่เกิดขึ้นใกล้ตำแหน่งปัจจุบันของคุณ</p>
+        <h2 id="nearby-incidents-heading">{{ title || t('nearby.title') }}</h2>
+        <p>{{ nearbySort === 'recent' ? t('nearby.subtitleRecent') : t('nearby.subtitleNearest') }}</p>
       </div>
       <NuxtLink
         v-if="viewAllTo"
         :to="viewAllTo"
         class="nearby-incidents__view-all"
       >
-        ดูทั้งหมด
+        {{ t('common.viewAll') }}
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M5 12h14m-6-6 6 6-6 6" />
         </svg>
       </NuxtLink>
     </div>
 
+    <div class="nearby-incidents__sort" role="group" :aria-label="t('nearby.sortLabel')">
+      <button
+        v-for="option in sortOptions"
+        :key="option.value"
+        type="button"
+        class="nearby-incidents__sort-option"
+        :aria-pressed="nearbySort === option.value"
+        @click="nearbySort = option.value"
+      >
+        {{ t(option.label) }}
+      </button>
+    </div>
+
     <p v-if="isLoading" class="nearby-incidents__state">
-      กำลังโหลดเหตุการณ์บนแผนที่...
+      {{ t('nearby.loading') }}
     </p>
     <p
       v-else-if="errorMessage"
@@ -29,23 +42,23 @@
 
     <!-- ยังไม่รู้ตำแหน่งผู้ใช้: ไม่แสดงการ์ด เพราะคำนวณระยะทางจริงไม่ได้ -->
     <div
-      v-else-if="!hasUserLocation"
+      v-else-if="nearbySort === 'nearest' && !hasUserLocation"
       class="nearby-incidents__state nearby-incidents__state--location"
     >
-      <p>{{ locationError || "เปิดตำแหน่งปัจจุบันเพื่อดูเหตุการณ์ที่อยู่ใกล้คุณ" }}</p>
+      <p>{{ locationError || t('nearby.enableLocation') }}</p>
       <button
         type="button"
         class="nearby-incidents__location-button"
         :disabled="isLocating"
         @click="$emit('request-location')"
       >
-        <span v-if="isLocating">กำลังหาตำแหน่ง...</span>
-        <span v-else>ใช้ตำแหน่งปัจจุบัน</span>
+        <span v-if="isLocating">{{ t('location.locating') }}</span>
+        <span v-else>{{ t('location.useCurrent') }}</span>
       </button>
     </div>
 
     <p v-else-if="!incidents.length" class="nearby-incidents__state">
-      ยังไม่มีเหตุการณ์ที่แสดงบนแผนที่
+      {{ t('nearby.empty') }}
     </p>
 
     <div v-else class="nearby-incidents__list">
@@ -57,7 +70,8 @@
         :class="{
           'incident-card--selected': selectedIncidentId === incident.id,
         }"
-        :aria-label="`เลือกเหตุการณ์ ${incident.title || 'ที่เลือก'}`"
+        :style="{ '--incident-color': incident.markerColor || 'var(--gs-line-strong)' }"
+        :aria-label="t('nearby.selectIncident', { name: incident.category || incidentTitle(incident) })"
         @click="$emit('select', incident)"
       >
         <div
@@ -83,7 +97,7 @@
           <span
             v-if="incident.imageCount > 1"
             class="incident-card__photo-count"
-            :aria-label="`มีรูปทั้งหมด ${incident.imageCount} รูป`"
+            :aria-label="t('nearby.photoCount', { count: incident.imageCount })"
           >
             <img src="/icons/Photo.svg" alt="" aria-hidden="true" />
             {{ incident.imageCount }}
@@ -91,15 +105,14 @@
         </div>
 
         <div class="incident-card__body">
+          <!-- ใช้ประเภทเหตุการณ์เป็นหัวข้อเดียว (ชื่อเหตุการณ์มักซ้ำกับประเภท) -->
           <div class="incident-card__eyebrow">
-            <span class="incident-card__category">
+            <h3 class="incident-card__category">
               <img :src="incident.iconUrl || '/icons/Alert.svg'" alt="" />
-              {{ incident.category || "เหตุการณ์" }}
-            </span>
+              <span>{{ incident.category || incidentTitle(incident) }}</span>
+            </h3>
             <StatusBadge :tone="incident.statusTone" :label="incident.statusLabel" />
           </div>
-
-          <h3 :title="incidentTitle(incident)">{{ incidentTitle(incident) }}</h3>
           <p class="incident-card__summary">{{ incidentSummary(incident) }}</p>
 
           <p class="incident-card__location">
@@ -112,12 +125,12 @@
           <div class="incident-card__meta">
             <span>{{ distanceLabel(incident) }}</span>
             <span aria-hidden="true">·</span>
-            <span>{{ incident.time || "เมื่อสักครู่" }}</span>
+            <span>{{ incident.time || t('time.justNow') }}</span>
           </div>
 
           <!-- จำนวนรายงานที่ถูกรวมอยู่ในเหตุการณ์นี้ -->
           <p class="incident-card__report-count">
-            {{ incident.reportCount ? `${incident.reportCount} รายงาน` : "ยังไม่ทราบจำนวนรายงาน" }}
+            {{ incident.reportCount ? t('units.reports', { count: incident.reportCount }) : t('nearby.unknownReportCount') }}
           </p>
         </div>
       </button>
@@ -134,7 +147,7 @@ const props = defineProps({
   hasUserLocation: { type: Boolean, default: false },
   isLocating: { type: Boolean, default: false },
   locationError: { type: String, default: "" },
-  title: { type: String, default: "เหตุการณ์ใกล้คุณ" },
+  title: { type: String, default: "" },
   viewAllTo: { type: String, default: "/incidents" },
   selectedIncidentId: { type: String, default: null },
   incidents: { type: Array, default: () => [] },
@@ -143,23 +156,30 @@ const props = defineProps({
 });
 
 const incidentTitle = (incident) =>
-  String(incident?.title || "").trim() || "เหตุการณ์ที่รายงาน";
+  String(incident?.title || "").trim() || t("incident.reportedTitle");
 
 const incidentSummary = (incident) => {
   const summary = String(incident?.description || "").trim();
   return summary && summary !== incidentTitle(incident)
     ? summary
-    : "ยังไม่มีรายละเอียดเพิ่มเติม";
+    : t("incident.noDetails");
 };
 
 const { loadPlaceNames, getPlaceLabel } = usePlaceNames();
+const { nearbySort } = useHomeDashboard();
+const { t } = useLocale();
+
+const sortOptions = [
+  { value: "nearest", label: "nearby.sortNearest" },
+  { value: "recent", label: "nearby.sortRecent" },
+];
 
 // ทุกครั้งที่รายการการ์ดเปลี่ยน ให้หาชื่อสถานที่ของการ์ดที่แสดงอยู่ (2 ใบแรก)
 // ถ้ายังไม่รู้ตำแหน่งผู้ใช้ การ์ดถูกซ่อนอยู่ จึงยังไม่ต้องถาม Mapbox (ประหยัดโควตา)
 watch(
-  () => [props.incidents, props.hasUserLocation],
+  () => [props.incidents, props.hasUserLocation, nearbySort.value],
   () => {
-    if (!props.hasUserLocation) {
+    if (nearbySort.value === "nearest" && !props.hasUserLocation) {
       return;
     }
     loadPlaceNames(props.incidents.slice(0, 2));
@@ -168,7 +188,7 @@ watch(
 );
 
 const distanceLabel = (incident) =>
-  incident?.distanceFromUserLabel || "ไม่ทราบระยะทาง";
+  incident?.distanceFromUserLabel || t("units.unknownDistance");
 </script>
 
 <style scoped>
@@ -224,6 +244,39 @@ const distanceLabel = (incident) =>
 .incident-card:focus-visible {
   outline: 3px solid rgb(29 53 87 / 30%);
   outline-offset: 3px;
+}
+.nearby-incidents__sort {
+  display: inline-flex;
+  gap: 2px;
+  margin-bottom: 0.9rem;
+  padding: 3px;
+  border-radius: var(--gs-radius-sm);
+  background: var(--gs-surface-sunken);
+  box-shadow: inset 0 0 0 1px var(--gs-line);
+}
+.nearby-incidents__sort-option {
+  min-height: 2rem;
+  padding: 0.25rem 0.9rem;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--gs-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.nearby-incidents__sort-option:hover {
+  color: var(--gs-ink);
+}
+.nearby-incidents__sort-option[aria-pressed="true"] {
+  background: var(--gs-surface);
+  color: var(--gs-ink);
+  box-shadow: 0 1px 2px rgb(23 32 46 / 12%), inset 0 0 0 1px var(--gs-line);
+}
+.nearby-incidents__sort-option:focus-visible {
+  outline: 3px solid rgb(29 53 87 / 30%);
+  outline-offset: 1px;
 }
 .nearby-incidents__list {
   display: grid;
@@ -350,43 +403,46 @@ const distanceLabel = (incident) =>
 }
 .incident-card__eyebrow {
   display: flex;
+  flex-wrap: wrap;
   min-width: 0;
   align-items: center;
+  row-gap: 0.35rem;
   gap: 0.42rem;
 }
 .incident-card__category {
   display: inline-flex;
   min-width: 0;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.4rem;
+  margin: 0;
+  /* ไม่ใช้ overflow: hidden ที่ตัวป้าย เพราะจะตัดไอคอนชิดขอบ ให้ span ข้างในตัดข้อความแทน */
+  padding: 5px 12px 5px 10px;
+  flex: 0 1 auto;
+  max-width: 100%;
+  box-sizing: border-box;
+  border-radius: var(--gs-radius-sm);
+  background: color-mix(in srgb, var(--incident-color) 18%, var(--gs-surface));
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 22px;
+}
+.incident-card__category {
+  color: var(--gs-ink);
+}
+.incident-card__category span {
+  min-width: 0;
   overflow: hidden;
-  font-size: 0.78rem;
-  font-weight: 600;
-  line-height: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.incident-card__category {
-  color: var(--gs-ink-2);
-}
 .incident-card__category img {
-  width: 0.78rem;
-  height: 0.78rem;
+  flex: 0 0 auto;
+  width: 1.1rem;
+  height: 1.1rem;
   object-fit: contain;
 }
 .incident-card__eyebrow .status-badge {
   margin-left: auto;
-}
-.incident-card h3 {
-  display: -webkit-box;
-  margin: 0;
-  overflow: hidden;
-  color: var(--gs-ink);
-  font-size: 0.95rem;
-  font-weight: 700;
-  line-height: 1.28;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 1;
 }
 .incident-card__summary {
   display: -webkit-box;
@@ -453,9 +509,6 @@ const distanceLabel = (incident) =>
   }
   .incident-card__body {
     padding: 0.72rem 0.78rem;
-  }
-  .incident-card h3 {
-    font-size: 0.88rem;
   }
 }
 </style>

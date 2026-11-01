@@ -1,12 +1,12 @@
 <template>
   <section class="recent-activity" aria-labelledby="recent-activity-heading">
     <header class="recent-activity__header">
-      <h2 id="recent-activity-heading">{{ title }}</h2>
-      <NuxtLink to="/notifications">ดูทั้งหมด</NuxtLink>
+      <h2 id="recent-activity-heading">{{ title || t('activity.title') }}</h2>
+      <NuxtLink to="/notifications">{{ t('common.viewAll') }}</NuxtLink>
     </header>
 
     <p v-if="!activities.length" class="recent-activity__empty">
-      ยังไม่มีความเคลื่อนไหวในตอนนี้
+      {{ t('activity.empty') }}
     </p>
 
     <ol v-else class="recent-activity__list">
@@ -23,13 +23,14 @@
 </template>
 
 <script setup>
-defineProps({ title: { type: String, default: 'กิจกรรมล่าสุด' } })
+defineProps({ title: { type: String, default: '' } })
+const { t } = useLocale()
 
 const { recentActivity: activities } = useHomeDashboard()
 
 const kindLabel = (activity) => {
-  if (activity.kind === 'help_request') return 'ขอความช่วยเหลือ:'
-  if (activity.kind === 'pending_report') return 'รายงานใหม่:'
+  if (activity.kind === 'help_request') return `${t('help.category')}:`
+  if (activity.kind === 'pending_report') return `${t('incident.newReport')}:`
   return `${activity.statusLabel}:`
 }
 

@@ -1,37 +1,38 @@
 <template>
   <section class="today-summary" aria-labelledby="today-summary-heading">
     <header>
-      <h2 id="today-summary-heading">{{ title }}</h2>
-      <NuxtLink to="/incidents">ดูรายละเอียด</NuxtLink>
+      <h2 id="today-summary-heading">{{ title || t('summary.title') }}</h2>
+      <NuxtLink to="/incidents">{{ t('common.viewDetails') }}</NuxtLink>
     </header>
     <dl class="today-summary__stats">
       <div>
-        <dt>รายงานใหม่วันนี้</dt>
+        <dt>{{ t('summary.reportedToday') }}</dt>
         <dd>{{ summary.reportedToday }}</dd>
       </div>
       <div>
-        <dt>เหตุการณ์ที่ยืนยันแล้ว</dt>
+        <dt>{{ t('summary.verified') }}</dt>
         <dd class="today-summary__value--verified">{{ summary.verified }}</dd>
       </div>
       <div>
-        <dt>รอตรวจสอบ</dt>
+        <dt>{{ t('status.pending') }}</dt>
         <dd class="today-summary__value--pending">{{ summary.pending }}</dd>
       </div>
       <div>
-        <dt>คำขอช่วยเหลือที่เปิดอยู่</dt>
+        <dt>{{ t('summary.openHelp') }}</dt>
         <dd class="today-summary__value--help">{{ summary.helpRequests }}</dd>
       </div>
     </dl>
     <p class="today-summary__freshness">
-      {{ summary.updatedLabel ? `อัปเดตข้อมูล${summary.updatedLabel}` : 'กำลังโหลดข้อมูล…' }}
+      {{ summary.updatedLabel ? t('summary.updated', { time: summary.updatedLabel }) : t('summary.loading') }}
     </p>
   </section>
 </template>
 
 <script setup>
-defineProps({ title: { type: String, default: 'สรุปเหตุการณ์วันนี้' } })
+defineProps({ title: { type: String, default: '' } })
 
 const { todaySummary: summary } = useHomeDashboard()
+const { t } = useLocale()
 </script>
 
 <style scoped>

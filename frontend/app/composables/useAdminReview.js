@@ -16,10 +16,11 @@ export const useAdminReview = () => {
 
   const config = useRuntimeConfig()
   const { getToken } = useAuth()
+  const { t } = useLocale()
 
   const authorizedFetch = (path, options = {}) => {
     const token = getToken()
-    if (!token) throw new Error('ไม่พบเซสชันผู้ดูแลระบบ')
+    if (!token) throw new Error(t('review.noSession'))
 
     return $fetch(`${config.public.apiBase}${path}`, {
       ...options,
@@ -45,7 +46,7 @@ export const useAdminReview = () => {
         .flatMap((category) => category.types ?? [])
         .sort((left, right) => left.type_name.localeCompare(right.type_name, 'th'))
     } catch (caughtError) {
-      error.value = messageFromError(caughtError, 'โหลดคิวตรวจสอบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง')
+      error.value = messageFromError(caughtError, t('review.loadFailed'))
     } finally {
       isLoading.value = false
     }
@@ -62,7 +63,7 @@ export const useAdminReview = () => {
       await load()
       return true
     } catch (caughtError) {
-      error.value = messageFromError(caughtError, 'บันทึกการตรวจสอบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง')
+      error.value = messageFromError(caughtError, t('review.saveFailed'))
       return false
     } finally {
       activeAction.value = ''
@@ -74,7 +75,7 @@ export const useAdminReview = () => {
     path: `/incidents/admin/report-candidates/${candidateId}`,
     method: 'PATCH',
     body: { action },
-    successMessage: 'บันทึกการตรวจสอบรายงานแล้ว',
+    successMessage: t('review.savedReport'),
   })
 
   const reviewCandidateGroup = ({ candidateGroupId, action, typeId }) => submit({
@@ -82,7 +83,7 @@ export const useAdminReview = () => {
     path: `/incidents/admin/candidate-groups/${candidateGroupId}`,
     method: 'PATCH',
     body: { action, ...(action === 'accept' ? { type_id: Number(typeId) } : {}) },
-    successMessage: 'บันทึกการตรวจสอบกลุ่มรายงานแล้ว',
+    successMessage: t('review.savedGroup'),
   })
 
   const createFromPendingReport = ({ reportId, typeId }) => submit({
@@ -90,7 +91,7 @@ export const useAdminReview = () => {
     path: `/incidents/admin/pending-reports/${reportId}/confirm-type`,
     method: 'POST',
     body: { type_id: Number(typeId) },
-    successMessage: 'ยืนยันประเภทและจัดการเหตุการณ์แล้ว',
+    successMessage: t('review.savedType'),
   })
 
   const rejectPendingReport = ({ reportId }) => submit({
@@ -98,7 +99,7 @@ export const useAdminReview = () => {
     path: `/incidents/admin/pending-reports/${reportId}/reject`,
     method: 'PATCH',
     body: {},
-    successMessage: 'ปฏิเสธรายงานแล้ว',
+    successMessage: t('review.rejected'),
   })
 
   const totalPending = computed(() => (

@@ -15,6 +15,7 @@ const {
   createFromPendingReport,
   rejectPendingReport,
 } = useAdminReview();
+const { t, locale } = useLocale();
 
 const groupTypeSelections = ref({});
 const pendingTypeSelections = ref({});
@@ -25,15 +26,15 @@ const pendingSelection = (report) =>
   pendingTypeSelections.value[report.report_id] ?? "";
 const formatDate = (value) =>
   value
-    ? new Intl.DateTimeFormat("th-TH", {
+    ? new Intl.DateTimeFormat(locale.value === "en" ? "en-GB" : "th-TH", {
         dateStyle: "medium",
         timeStyle: "short",
       }).format(new Date(value))
-    : "ไม่ระบุเวลา";
+    : t("review.noTime");
 const submitGroup = (group) => {
   const typeId = groupSelection(group);
   if (!typeId) {
-    reviewError.value = "กรุณาเลือกประเภทเหตุการณ์ก่อนยืนยันกลุ่มรายงาน";
+    reviewError.value = t("review.chooseTypeGroup");
     return;
   }
   void reviewCandidateGroup({
@@ -45,7 +46,7 @@ const submitGroup = (group) => {
 const submitPending = (report) => {
   const typeId = pendingSelection(report);
   if (!typeId) {
-    reviewError.value = "กรุณาเลือกประเภทเหตุการณ์ก่อนยืนยันรายงาน";
+    reviewError.value = t("review.chooseTypeReport");
     return;
   }
   void createFromPendingReport({ reportId: report.report_id, typeId });
@@ -60,43 +61,43 @@ onMounted(() => {
   <section class="review-page" aria-labelledby="review-title">
     <header class="review-page__heading">
       <div>
-        <h1 id="review-title">ตรวจสอบรายงานเหตุการณ์</h1>
-        <p>คิวข้อมูลจริงสำหรับยืนยัน รวม หรือปฏิเสธรายงานจากชุมชน</p>
+        <h1 id="review-title">{{ t("review.title") }}</h1>
+        <p>{{ t("review.subtitle") }}</p>
       </div>
       <div class="review-page__count">
         <strong>{{ totalPending }}</strong
-        ><span>รายการรอตรวจสอบ</span
+        ><span>{{ t("review.pendingCount") }}</span
         ><button type="button" @click="navigateTo('/admin')">
-          กลับสู่แดชบอร์ด
+          {{ t("review.backToDashboard") }}
         </button>
       </div>
     </header>
     <p v-if="reviewError" class="feedback feedback--error" role="alert">
       {{ reviewError }}
-      <button type="button" @click="loadReview">ลองใหม่</button>
+      <button type="button" @click="loadReview">{{ t("review.retry") }}</button>
     </p>
     <p v-if="reviewNotice" class="feedback feedback--success" role="status">
       {{ reviewNotice }}
     </p>
-    <p v-if="isReviewLoading" class="loading">กำลังโหลดคิวตรวจสอบ…</p>
+    <p v-if="isReviewLoading" class="loading">{{ t("review.loading") }}</p>
     <template v-else>
       <p v-if="!totalPending" class="empty">
-        ไม่มีรายงานที่ต้องตรวจสอบในขณะนี้
-        <button type="button" @click="loadReview">รีเฟรชคิว</button>
+        {{ t("review.empty") }}
+        <button type="button" @click="loadReview">{{ t("review.refresh") }}</button>
       </p>
       <section v-if="queue.report_candidates.length" class="review-group">
-        <h2>รายงานที่อาจซ้ำกับเหตุการณ์เดิม</h2>
+        <h2>{{ t("review.duplicateHeading") }}</h2>
         <article
           v-for="item in queue.report_candidates"
           :key="item.candidate_id"
         >
           <div>
-            <b>รายงาน #{{ item.report_id }}</b
+            <b>{{ t("review.reportNumber", { id: item.report_id }) }}</b
             ><strong>{{ item.description }}</strong
             ><span
-              >เหตุการณ์เป้าหมาย:
+              >{{ t("review.targetIncident") }}
               {{ item.target_title || `#${item.target_incident_id}` }} ·
-              ระยะห่าง {{ Math.round(item.distance_m) }} เมตร</span
+              {{ t("review.distance", { value: Math.round(item.distance_m) }) }}</span
             >
           </div>
           <footer>
@@ -110,7 +111,7 @@ onMounted(() => {
                 })
               "
             >
-              ไม่รวมรายงาน</button
+              {{ t("review.dontMerge") }}</button
             ><button
               class="primary"
               type="button"
@@ -122,32 +123,32 @@ onMounted(() => {
                 })
               "
             >
-              ยืนยันการรวม
+              {{ t("review.confirmMerge") }}
             </button>
           </footer>
         </article>
       </section>
       <section v-if="queue.candidate_groups.length" class="review-group">
-        <h2>กลุ่มรายงานที่อาจเป็นเหตุการณ์เดียวกัน</h2>
+        <h2>{{ t("review.groupHeading") }}</h2>
         <article
           v-for="group in queue.candidate_groups"
           :key="group.candidate_group_id"
         >
           <div>
             <b
-              >กลุ่ม #{{ group.candidate_group_id }} ·
-              {{ group.reports.length }} รายงาน</b
+              >{{ t("review.groupNumber", { id: group.candidate_group_id }) }} ·
+              {{ t("units.reports", { count: group.reports.length }) }}</b
             ><strong>{{
-              group.reports[0]?.description || "ไม่มีรายละเอียด"
+              group.reports[0]?.description || t("review.noDescription")
             }}</strong
-            ><span>สร้างเมื่อ {{ formatDate(group.created_at) }}</span>
+            ><span>{{ t("review.createdAt", { time: formatDate(group.created_at) }) }}</span>
           </div>
           <footer>
             <select
               v-model="groupTypeSelections[group.candidate_group_id]"
-              aria-label="ประเภทเหตุการณ์"
+              :aria-label="t('review.typeLabel')"
             >
-              <option value="">เลือกประเภท</option>
+              <option value="">{{ t("review.chooseType") }}</option>
               <option
                 v-for="type in reviewTypes"
                 :key="type.type_id"
@@ -165,35 +166,35 @@ onMounted(() => {
                 })
               "
             >
-              ปฏิเสธกลุ่ม</button
+              {{ t("review.rejectGroup") }}</button
             ><button
               class="primary"
               type="button"
               :disabled="isSaving(`group-${group.candidate_group_id}-accept`)"
               @click="submitGroup(group)"
             >
-              ยืนยันกลุ่ม
+              {{ t("review.confirmGroup") }}
             </button>
           </footer>
         </article>
       </section>
       <section v-if="queue.pending_reports.length" class="review-group">
-        <h2>รายงานที่รอระบุประเภท</h2>
+        <h2>{{ t("review.pendingHeading") }}</h2>
         <article
           v-for="report in queue.pending_reports"
           :key="report.report_id"
         >
           <div>
-            <b>รายงาน #{{ report.report_id }}</b
+            <b>{{ t("review.reportNumber", { id: report.report_id }) }}</b
             ><strong>{{ report.description }}</strong
-            ><span>ส่งเมื่อ {{ formatDate(report.created_at) }}</span>
+            ><span>{{ t("review.sentAt", { time: formatDate(report.created_at) }) }}</span>
           </div>
           <footer>
             <select
               v-model="pendingTypeSelections[report.report_id]"
-              aria-label="ประเภทเหตุการณ์"
+              :aria-label="t('review.typeLabel')"
             >
-              <option value="">เลือกประเภท</option>
+              <option value="">{{ t("review.chooseType") }}</option>
               <option
                 v-for="type in reviewTypes"
                 :key="type.type_id"
@@ -206,14 +207,14 @@ onMounted(() => {
               :disabled="isSaving(`pending-${report.report_id}-reject`)"
               @click="rejectPendingReport({ reportId: report.report_id })"
             >
-              ปฏิเสธรายงาน</button
+              {{ t("review.rejectReport") }}</button
             ><button
               class="primary"
               type="button"
               :disabled="isSaving(`pending-${report.report_id}-confirm`)"
               @click="submitPending(report)"
             >
-              ยืนยันประเภท
+              {{ t("review.confirmType") }}
             </button>
           </footer>
         </article>

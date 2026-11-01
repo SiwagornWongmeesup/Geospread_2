@@ -9,7 +9,7 @@
         <span class="mobile-logo__icon">📍</span>
         <h1 class="mobile-logo__title">GEO<span class="mobile-logo__accent">SPREAD</span>
       </h1>
-      <p class="mobile-logo__tagline">ร่วมเป็นส่วนหนึ่งของเครือข่ายการช่วยเหลือ</p>
+      <p class="mobile-logo__tagline">{{ t('auth.mobileRegisterTagline') }}</p>
     </div>
     <!-- Card -->
     <div class="mobile-card">
@@ -26,7 +26,7 @@
       <!-- Divider -->
       <div class="divider">
         <span class="divider__line" />
-        <span class="divider__text">หรือสมัครด้วยอีเมล</span>
+        <span class="divider__text">{{ t('auth.orRegisterEmail') }}</span>
         <span class="divider__line" />
       </div>
       <!-- Form -->
@@ -41,7 +41,7 @@
             v-model="form.name"
             type="text"
             required
-            placeholder="ชื่อผู้ใช้งาน"
+            :placeholder="t('auth.username')"
             class="field__input"
             />
           </div>
@@ -54,7 +54,7 @@
             v-model="form.email"
             type="email"
             required
-            placeholder="อีเมลของคุณ"
+            :placeholder="t('auth.emailPlaceholder')"
             class="field__input"
             />
           </div>
@@ -67,7 +67,7 @@
             v-model="form.password"
             type="password"
             required
-            placeholder="รหัสผ่าน (อย่างน้อย 8 ตัว)"
+            :placeholder="t('auth.passwordMinShort')"
             class="field__input"
             />
           </div>
@@ -85,9 +85,9 @@
             <span class="terms-checkmark">✓</span>
           </div>
           <span class="terms-text">
-            ฉันยอมรับ
-            <NuxtLink to="/terms" class="terms-link">เงื่อนไขการใช้งาน</NuxtLink>
-            และนโยบายความเป็นส่วนตัว
+            {{ t('auth.acceptBefore') }}
+            <NuxtLink to="/terms" class="terms-link">{{ t('auth.terms') }}</NuxtLink>
+            {{ t('auth.acceptAfter') }}
           </span>
         </label>
         <button
@@ -96,19 +96,20 @@
           :disabled="loading"
           class="submit-btn"
           >
-          {{ loading ? 'กำลังสร้างบัญชี...' : 'สร้างบัญชีใหม่' }}
+          {{ loading ? t('auth.creating') : t('auth.createAccount') }}
         </button>
       </form>
     </div>
     <p class="mobile-register__footer">
-      มีบัญชีอยู่แล้ว?
-      <NuxtLink to="/login" class="link">เข้าสู่ระบบ</NuxtLink>
+      {{ t('auth.haveAccount') }}
+      <NuxtLink to="/login" class="link">{{ t('header.login') }}</NuxtLink>
     </p>
   </div>
 </div>
 </template>
 
 <script setup>
+const { t } = useLocale()
 defineProps({
   form: { type: Object, required: true },
   loading: { type: Boolean, default: false },

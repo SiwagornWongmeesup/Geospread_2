@@ -1,4 +1,5 @@
 <script setup>
+const { t } = useLocale()
 definePageMeta({
   showRightPanel: false
 });
@@ -6,8 +7,8 @@ definePageMeta({
 
 <template>
   <section class="dashboard-page">
-    <h1>พื้นที่ที่ติดตาม</h1>
-    <p>จัดการพื้นที่สำคัญและการแจ้งเตือนของแต่ละพื้นที่ได้จากหน้านี้</p>
+    <h1>{{ t('pages.followedTitle') }}</h1>
+    <p>{{ t('pages.followed') }}</p>
   </section>
 </template>
 

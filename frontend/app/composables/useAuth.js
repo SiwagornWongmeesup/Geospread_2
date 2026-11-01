@@ -7,6 +7,7 @@
 export const useAuth = () => {
   const loading = ref(false)
   const error = ref('')
+  const { t } = useLocale()
 
   // ดึง user จาก cookie (ถ้ามี)
   const getUser = () => {
@@ -48,7 +49,7 @@ export const useAuth = () => {
         error.value = err.data.message // ถ้า Backend แจ้งชัดเจนว่ารหัสผิด ให้แสดงตามนั้น
       } else {
         // ถ้าเป็น Error อื่นๆ เช่น Server ล่ม, เน็ตหลุด ให้แสดงข้อความนี้
-        error.value = 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ หรือเกิดข้อผิดพลาดขัดข้อง'
+        error.value = t('auth.connectionError')
       }
       return false
     } finally {
@@ -68,7 +69,7 @@ export const useAuth = () => {
       })
       return true
     } catch (err) {
-      error.value = err?.data?.message || 'เกิดข้อผิดพลาดในการสมัครสมาชิก'
+      error.value = err?.data?.message || t('auth.registerError')
       return false
     } finally {
       loading.value = false

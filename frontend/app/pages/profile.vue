@@ -1,4 +1,5 @@
 <script setup>
+const { t } = useLocale()
 definePageMeta({
   showRightPanel: false
 });
@@ -6,8 +7,8 @@ definePageMeta({
 
 <template>
   <section class="dashboard-page">
-    <h1>โปรไฟล์</h1>
-    <p>ข้อมูลผู้ใช้และตัวเลือกบัญชีจะแสดงในส่วนนี้</p>
+    <h1>{{ t('nav.profile') }}</h1>
+    <p>{{ t('pages.profile') }}</p>
   </section>
 </template>
 

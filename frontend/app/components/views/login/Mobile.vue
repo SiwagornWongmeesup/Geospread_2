@@ -5,44 +5,45 @@
       <span class="mobile-login__pin" />
     </div>
     <div class="mobile-login__content">
-      <NuxtLink to="/" class="brand" aria-label="กลับสู่หน้าแรก GeoSpread">
+      <NuxtLink to="/" class="brand" :aria-label="t('auth.backHome')">
         <img src="/logos/logo.png" alt="" class="brand__logo" />
         <span>GeoSpread</span>
       </NuxtLink>
       <header class="mobile-login__header">
-        <p>ข้อมูลความปลอดภัยตามพื้นที่</p>
-        <h1>เข้าสู่ระบบ</h1>
-        <span>ติดตามสถานการณ์รอบตัวคุณได้ในที่เดียว</span>
+        <p>{{ t('auth.mobileKicker') }}</p>
+        <h1>{{ t('header.login') }}</h1>
+        <span>{{ t('auth.mobileTagline') }}</span>
       </header>
-      <section class="mobile-card" aria-label="แบบฟอร์มเข้าสู่ระบบ">
+      <section class="mobile-card" :aria-label="t('auth.loginForm')">
         <form @submit.prevent="emit('submitLogin')">
           <div v-if="error" class="error-alert" role="alert" aria-live="assertive">{{ error }}</div>
           <div class="field">
-            <label for="mobile-email">อีเมล</label>
+            <label for="mobile-email">{{ t('auth.email') }}</label>
             <input id="mobile-email" v-model="form.email" type="email" required autocomplete="email" inputmode="email" placeholder="name@example.com" />
           </div>
           <div class="field">
-            <label for="mobile-password">รหัสผ่าน</label>
-            <input id="mobile-password" v-model="form.password" type="password" required autocomplete="current-password" placeholder="รหัสผ่าน" />
+            <label for="mobile-password">{{ t('auth.password') }}</label>
+            <input id="mobile-password" v-model="form.password" type="password" required autocomplete="current-password" :placeholder="t('auth.password')" />
           </div>
           <button id="mobile-login-btn" type="submit" :disabled="loading" class="submit-btn">
-            {{ loading ? 'กำลังตรวจสอบข้อมูล...' : 'เข้าสู่ระบบ' }}
+            {{ loading ? t('auth.checking') : t('header.login') }}
           </button>
         </form>
-        <div class="divider">หรือเข้าสู่ระบบด้วย</div>
+        <div class="divider">{{ t('auth.orLoginWith') }}</div>
         <button type="button" class="google-btn">
-          <span>G</span>เข้าสู่ระบบด้วย Google</button>
+          <span>G</span>{{ t('auth.loginGoogle') }}</button>
         </section>
         <footer class="mobile-login__footer">
-          <p>ยังไม่มีบัญชี? <NuxtLink to="/register">สมัครสมาชิก</NuxtLink>
+          <p>{{ t('auth.noAccount') }} <NuxtLink to="/register">{{ t('header.register') }}</NuxtLink>
         </p>
-        <span>การกู้รหัสผ่านจะเปิดให้ใช้งานเร็ว ๆ นี้</span>
+        <span>{{ t('auth.recoverySoon') }}</span>
       </footer>
     </div>
   </main>
 </template>
 
 <script setup>
+const { t } = useLocale()
 defineProps({
   form: { type: Object, required: true },
   loading: { type: Boolean, default: false },

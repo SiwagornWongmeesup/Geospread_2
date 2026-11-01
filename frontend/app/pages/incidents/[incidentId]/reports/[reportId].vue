@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import VueEasyLightbox from 'vue-easy-lightbox'
 import { getIncidentIconUrl } from '~/composables/useIncidentIcon'
 import { usePlaceNames } from '~/composables/usePlaceNames'
+import { getReportStatusTone } from '~/composables/useHomeDashboard'
 
 definePageMeta({
   showRightPanel: false,
@@ -10,6 +11,7 @@ definePageMeta({
 
 const route = useRoute()
 const config = useRuntimeConfig()
+const { t, locale } = useLocale()
 const apiBase = config.public.apiBase || 'http://localhost:5000'
 
 const incident = ref(null)
@@ -24,12 +26,12 @@ const reportId = computed(() => Number(route.params.reportId))
 
 const incidentTitle = computed(() => {
   const title = String(incident.value?.title || '').trim()
-  if (!title) return incident.value?.type_name || 'เหตุการณ์ที่รายงาน'
+  if (!title) return incident.value?.type_name || t('incident.reportedTitle')
 
   return title.replace(/\s*—\s*รอตรวจสอบ$/, '')
 })
 
-const incidentTypeName = computed(() => incident.value?.type_name || 'เหตุการณ์')
+const incidentTypeName = computed(() => incident.value?.type_name || t('incident.generic'))
 
 const incidentIconUrl = computed(() => {
   return getIncidentIconUrl({
@@ -56,7 +58,7 @@ const reportPlace = computed(() => {
 // ชื่อสถานที่ของรายงานนี้ พอ Mapbox ส่งชื่อมา ค่านี้จะเปลี่ยนเองอัตโนมัติ
 const reportPlaceLabel = computed(() => {
   if (!reportPlace.value) {
-    return 'พื้นที่ที่รายงาน'
+    return t('place.reportedArea')
   }
   return getPlaceLabel(reportPlace.value)
 })
@@ -91,18 +93,18 @@ const imageUrls = computed(() => {
 
 const formattedCreatedAt = computed(() => {
   const date = new Date(report.value?.created_at)
-  if (Number.isNaN(date.getTime())) return 'ไม่ทราบเวลาที่รายงาน'
+  if (Number.isNaN(date.getTime())) return t('reportDetail.unknownTime')
 
-  return new Intl.DateTimeFormat('th-TH', {
+  return new Intl.DateTimeFormat(locale.value === 'en' ? 'en-GB' : 'th-TH', {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(date)
 })
 
 const getMediaLabel = (media) => {
-  if (media?.media_type === 'video') return 'วิดีโอจากผู้รายงาน'
-  if (media?.media_type === 'image') return 'รูปภาพจากผู้รายงาน'
-  return 'ไฟล์แนบจากผู้รายงาน'
+  if (media?.media_type === 'video') return t('reportDetail.mediaVideo')
+  if (media?.media_type === 'image') return t('reportDetail.mediaImage')
+  return t('reportDetail.mediaFile')
 }
 
 const openImageLightbox = (media) => {
@@ -135,7 +137,7 @@ const loadReport = async () => {
 
   if (!Number.isInteger(incidentId.value) || !Number.isInteger(reportId.value)) {
     isLoading.value = false
-    errorMessage.value = 'ลิงก์รายงานไม่ถูกต้อง'
+    errorMessage.value = t('reportDetail.invalidLink')
     return
   }
 
@@ -151,7 +153,7 @@ const loadReport = async () => {
     incident.value = incidentResponse.data?.incident || null
   } catch (error) {
     console.error('ไม่สามารถโหลดรายละเอียดรายงานได้', error)
-    errorMessage.value = 'ไม่พบรายงานนี้ หรือรายงานอาจไม่อยู่ในกลุ่มเหตุการณ์นี้'
+    errorMessage.value = t('reportDetail.notFound')
   } finally {
     isLoading.value = false
   }
@@ -175,17 +177,17 @@ watch([incidentId, reportId], () => {
     <section class="report-detail-page__content" aria-labelledby="report-detail-title">
       <button type="button" class="report-detail-page__back" @click="goBackToMap">
         <img src="/icons/Previous-item.svg" alt="" aria-hidden="true">
-        กลับไปแผนที่เหตุการณ์
+        {{ t('reportDetail.backToMap') }}
       </button>
 
       <p v-if="isLoading" class="report-detail-page__state" aria-live="polite">
-        กำลังโหลดรายละเอียดรายงาน…
+        {{ t('reportDetail.loading') }}
       </p>
 
       <section v-else-if="errorMessage" class="report-detail-page__state report-detail-page__state--error" role="alert">
-        <h1 id="report-detail-title">เปิดรายงานไม่สำเร็จ</h1>
+        <h1 id="report-detail-title">{{ t('reportDetail.loadFailed') }}</h1>
         <p>{{ errorMessage }}</p>
-        <button type="button" class="report-detail-page__retry" @click="loadReport">ลองอีกครั้ง</button>
+        <button type="button" class="report-detail-page__retry" @click="loadReport">{{ t('reportDetail.retry') }}</button>
       </section>
 
       <article v-else-if="report && incident" class="report-detail">
@@ -195,7 +197,7 @@ watch([incidentId, reportId], () => {
               <img :src="incidentIconUrl" alt="">
             </div>
             <h1 id="report-detail-title">{{ incidentTitle }}</h1>
-            <span>รอตรวจสอบ</span>
+            <span>{{ t(`status.${getReportStatusTone(report?.report_status)}`) }}</span>
           </div>
 
 
@@ -205,9 +207,9 @@ watch([incidentId, reportId], () => {
               <span v-else>{{ reporterInitial }}</span>
             </div>
 
-            <strong>{{ report.reporter_name || 'ไม่ระบุชื่อผู้รายงาน' }}</strong>
+            <strong>{{ report.reporter_name || t('reportDetail.anonymousReporter') }}</strong>
             <span class="report-detail__separator" aria-hidden="true">•</span>
-            <time :datetime="report.created_at">รายงานเมื่อ {{ formattedCreatedAt }}</time>
+            <time :datetime="report.created_at">{{ t('reportDetail.reportedAt', { time: formattedCreatedAt }) }}</time>
             <span class="report-detail__separator" aria-hidden="true">•</span>
             <span class="report-detail__location">
               <img src="/icons/Location.svg" alt="" aria-hidden="true">
@@ -217,20 +219,20 @@ watch([incidentId, reportId], () => {
         </header>
 
         <section class="report-detail__body" aria-labelledby="report-description-title">
-          <h2 id="report-description-title">รายละเอียดเหตุการณ์</h2>
+          <h2 id="report-description-title">{{ t('reportDetail.descriptionTitle') }}</h2>
           <p class="report-detail__description">
-            {{ report.description || 'ผู้รายงานไม่ได้ระบุรายละเอียดเพิ่มเติม' }}
+            {{ report.description || t('reportDetail.noDescription') }}
           </p>
         </section>
 
         <section class="report-detail__media-section" aria-labelledby="report-media-title">
           <div class="report-detail__media-heading">
-            <h2 id="report-media-title">สื่อที่แนบ</h2>
-            <span v-if="mediaList.length">{{ mediaList.length }} ไฟล์</span>
+            <h2 id="report-media-title">{{ t('reportDetail.mediaTitle') }}</h2>
+            <span v-if="mediaList.length">{{ t('reportDetail.fileCount', { count: mediaList.length }) }}</span>
           </div>
 
           <p v-if="!mediaList.length" class="report-detail__empty">
-            ไม่มีรูปภาพหรือสื่อแนบในรายงานนี้
+            {{ t('reportDetail.noMedia') }}
           </p>
 
           <div v-else class="report-detail__media-grid">
@@ -243,7 +245,7 @@ watch([incidentId, reportId], () => {
                 v-if="media.media_type === 'image'"
                 type="button"
                 class="report-detail__media-button"
-                :aria-label="`เปิด${getMediaLabel(media)}แบบเต็มหน้าจอ`"
+                :aria-label="t('reportDetail.openFullscreen', { media: getMediaLabel(media) })"
                 @click="openImageLightbox(media)"
               >
                 <img
@@ -260,10 +262,10 @@ watch([incidentId, reportId], () => {
                 controls
                 preload="metadata"
               >
-                เบราว์เซอร์นี้ไม่รองรับการเล่นวิดีโอ
+                {{ t('reportDetail.videoUnsupported') }}
               </video>
               <a v-else :href="media.media_url" target="_blank" rel="noopener noreferrer">
-                เปิด{{ getMediaLabel(media) }}
+                {{ t('reportDetail.openMedia', { media: getMediaLabel(media) }) }}
               </a>
               <span v-if="media.media_type !== 'image' && index === 2 && mediaList.length > 3" class="report-detail__more-media">
                 + {{ mediaList.length - 3 }}
@@ -286,7 +288,7 @@ watch([incidentId, reportId], () => {
           v-if="imageUrls.length > 1"
           class="lightbox-dots"
           role="tablist"
-          aria-label="เลือกรูปภาพ"
+          :aria-label="t('reportDetail.chooseImage')"
         >
           <button
             v-for="(image, index) in imageUrls"
@@ -296,9 +298,9 @@ watch([incidentId, reportId], () => {
             :class="{ active: index === lightboxIndex }"
             role="tab"
             :aria-selected="index === lightboxIndex"
-            :aria-label="`รูปที่ ${index + 1} จาก ${imageUrls.length}`"
+            :aria-label="t('reportDetail.imageOf', { index: index + 1, total: imageUrls.length })"
             @click="goToLightboxImage(index)"
-          />
+          ></button>
         </div>
       </template>
     </VueEasyLightbox>

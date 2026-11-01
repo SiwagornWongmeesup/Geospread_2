@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from "vue";
 import StatusBadge from "~/components/common/StatusBadge.vue";
-import { getReportStatus } from "~/composables/useHomeDashboard";
+import { formatRelativeTime, getReportStatusTone } from "~/composables/useHomeDashboard";
 
 const props = defineProps({
   incident: { type: Object, required: true },
@@ -10,12 +10,15 @@ const props = defineProps({
   getPlaceLabel: { type: Function, default: null },
   // true = แสดงอยู่ใน bottom sheet บนมือถือ (กว้างเต็มจอ แทนกล่อง popup)
   inSheet: { type: Boolean, default: false },
+  // ฟังก์ชันแปลภาษา: popup ถูก mount ด้วย createApp แยกจาก Nuxt จึงเรียก useLocale เองไม่ได้
+  t: { type: Function, required: true },
 });
+const t = (...args) => props.t(...args);
 
 // ชื่อสถานที่ของหมุดนี้ พอ Mapbox ส่งชื่อมา ค่านี้จะเปลี่ยนเองอัตโนมัติ
 const placeLabel = computed(() => {
   if (!props.getPlaceLabel) {
-    return "พื้นที่ที่รายงาน";
+    return t("place.reportedArea");
   }
   return props.getPlaceLabel(props.incident);
 });
@@ -57,28 +60,13 @@ const getReporterInitial = (reporterName) => {
   return name ? name.slice(0, 1).toUpperCase() : "?";
 };
 
-const getRelativeTime = (createdAt) => {
-  const date = new Date(createdAt);
-  if (Number.isNaN(date.getTime())) return "เมื่อสักครู่";
+const getRelativeTime = (createdAt) => formatRelativeTime(createdAt, t);
 
-  const minutesAgo = Math.max(
-    0,
-    Math.floor((Date.now() - date.getTime()) / 60000),
-  );
-  if (minutesAgo < 1) return "เมื่อสักครู่";
-  if (minutesAgo < 60) return `${minutesAgo} นาทีที่แล้ว`;
-
-  const hoursAgo = Math.floor(minutesAgo / 60);
-  if (hoursAgo < 24) return `${hoursAgo} ชั่วโมงที่แล้ว`;
-
-  return `${Math.floor(hoursAgo / 24)} วันที่แล้ว`;
-};
-
-const getImageLabel = (imageCount) => `${Number(imageCount) || 0} รูป`;
+const getImageLabel = (imageCount) => t("units.photos", { count: Number(imageCount) || 0 });
 
 const incidentSummary = (incident) => {
   return (
-    String(incident?.description || "").trim() || "ยังไม่มีรายละเอียดเพิ่มเติม"
+    String(incident?.description || "").trim() || t("incident.noDetails")
   );
 };
 </script>
@@ -93,15 +81,15 @@ const incidentSummary = (incident) => {
       <div class="incident-map-popup__group-title">
         <img :src="props.incident.iconUrl || '/icons/Alert.svg'" alt="" />
         <div>
-          <h2>กลุ่มรายงาน{{ props.incident.category || "เหตุการณ์" }}</h2>
-          <p>{{ reportCount }} รายงานในบริเวณนี้</p>
+          <h2>{{ t("popup.groupTitle", { category: props.incident.category || t("incident.generic") }) }}</h2>
+          <p>{{ t("popup.reportsInArea", { count: reportCount }) }}</p>
         </div>
       </div>
 
       <button
         class="incident-map-popup__close"
         type="button"
-        aria-label="ปิดรายละเอียดเหตุการณ์"
+        :aria-label="t('popup.close')"
         @click="$emit('close')"
       >
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -112,7 +100,7 @@ const incidentSummary = (incident) => {
 
     <section
       class="incident-map-popup__context"
-      aria-label="ข้อมูลพื้นที่เหตุการณ์"
+      :aria-label="t('popup.areaInfo')"
     >
       <p>
         <img src="/icons/Location.svg" alt="" aria-hidden="true" />
@@ -130,12 +118,12 @@ const incidentSummary = (incident) => {
     <section
       v-if="props.incident.kind === 'incident'"
       class="incident-map-popup__reports"
-      aria-label="รายงานในกลุ่มเหตุการณ์"
+      :aria-label="t('popup.reportsInGroup')"
     >
-      <span class="incident-map-popup__reports-heading">ล่าสุดก่อน</span>
+      <span class="incident-map-popup__reports-heading">{{ t("popup.latestFirst") }}</span>
 
       <p v-if="!reports.length" class="incident-map-popup__loading">
-        กำลังโหลดรายงาน…
+        {{ t("popup.loadingReports") }}
       </p>
 
       <div
@@ -155,18 +143,18 @@ const incidentSummary = (incident) => {
         <div class="incident-map-popup__report-content">
           <div class="incident-map-popup__report-meta">
             <p>
-              <strong>{{ report.reporter_name || "ไม่ระบุชื่อ" }}</strong>
+              <strong>{{ report.reporter_name || t("common.unknownName") }}</strong>
               <span aria-hidden="true">·</span>
               {{ getRelativeTime(report.created_at) }}
             </p>
             <StatusBadge
-              :tone="getReportStatus(report.report_status).tone"
-              :label="getReportStatus(report.report_status).label"
+              :tone="getReportStatusTone(report.report_status)"
+              :label="t(`status.${getReportStatusTone(report.report_status)}`)"
             />
           </div>
 
           <p class="incident-map-popup__report-description">
-            {{ report.description || "ยังไม่มีรายละเอียดเพิ่มเติม" }}
+            {{ report.description || t("incident.noDetails") }}
           </p>
           <div class="incident-map-popup__report-footer">
             <div
@@ -181,7 +169,7 @@ const incidentSummary = (incident) => {
               type="button"
               @click="openReport(report)"
               >
-              ดูรายละเอียดเพิ่มเติม
+              {{ t("popup.moreDetails") }}
             </button>
           </div>
         </div>

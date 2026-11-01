@@ -1,18 +1,18 @@
 <template>
-  <aside class="side" aria-label="เลือกตำแหน่งที่ต้องการความช่วยเหลือ">
+  <aside class="side" :aria-label="t('requestHelp.sideLabel')">
     <section class="map">
       <header class="map__header">
         <div>
-          <h2>ตำแหน่งที่ต้องการความช่วยเหลือ</h2>
-          <p>กดใช้ตำแหน่งปัจจุบัน หรือคลิกบนแผนที่เพื่อเลือกจุด</p>
+          <h2>{{ t('requestHelp.locationHeading') }}</h2>
+          <p>{{ t('requestHelp.locationHint') }}</p>
         </div>
         <button type="button" class="map__current-button" :disabled="isLocating" :aria-busy="isLocating" @click="useCurrentLocation">
-          {{ isLocating ? 'กำลังขอตำแหน่ง…' : 'ใช้ตำแหน่งปัจจุบัน' }}
+          {{ isLocating ? t('location.requesting') : t('location.useCurrent') }}
         </button>
       </header>
 
       <section class="map__selection" :class="{ 'map__selection--ready': location }" aria-live="polite">
-        <strong>{{ location ? 'เลือกตำแหน่งแล้ว' : 'ยังไม่ได้เลือกตำแหน่ง' }}</strong>
+        <strong>{{ location ? t('report.locationChosen') : t('requestHelp.noLocation') }}</strong>
         <span>{{ locationLabel }}</span>
       </section>
 
@@ -20,19 +20,21 @@
 
       <div class="map__canvas">
         <MapboxMap :center="mapCenter" :zoom="14" :show-geolocate-control="false" :editable-location="location" :allow-location-selection="true" class="map__canvas-map" @location-select="setMapLocation" />
+        <!-- ค้นหาสถานที่ หรือวางพิกัด/ลิงก์ Google Maps เพื่อปักหมุด -->
+        <MapLocationSearch variant="pick" @select="setSearchLocation" />
       </div>
 
       <!-- ช่องกรอกรายละเอียดที่อยู่ (ตอนนี้ยังไม่ได้ส่งไป API) -->
       <label class="map__address">
         <span class="map__address-label">
-          บ้านเลขที่ ชั้น จุดสังเกต
-          <span class="map__new-badge">ใหม่</span>
+          {{ t('requestHelp.addressLabel') }}
+          <span class="map__new-badge">{{ t('requestHelp.new') }}</span>
         </span>
         <input
           v-model="addressDetail"
           type="text"
           maxlength="200"
-          placeholder="เช่น บ้านเลขที่ 45 ชั้น 2 ตรงข้ามร้านสะดวกซื้อ"
+          :placeholder="t('requestHelp.addressPlaceholder')"
         />
       </label>
 
@@ -42,23 +44,23 @@
           <rect x="5" y="11" width="14" height="10" rx="2" />
           <path d="M8 11V8a4 4 0 0 1 8 0v3" />
         </svg>
-        <span>คนทั่วไปเห็นแค่วงกลมพื้นที่โดยประมาณ จุดจริง ที่อยู่ และเบอร์โทร จะเปิดให้เฉพาะคนที่คุณกดอนุมัติ</span>
+        <span>{{ t('requestHelp.privacy') }}</span>
       </p>
 
       <p v-if="submissionFeedback" class="map__submission-feedback" role="status">{{ submissionFeedback }}</p>
       <div class="map__action">
         <button type="button" class="map__submit-button" :disabled="isSubmitting" @click="emit('submit')">
-          {{ isSubmitting ? 'กำลังส่งคำขอ…' : 'ส่งคำขอความช่วยเหลือ' }}
+          {{ isSubmitting ? t('requestHelp.submitting') : t('requestHelp.submit') }}
         </button>
       </div>
 
       <!-- เบอร์ฉุกเฉิน: กดแล้วเปิดหน้าโทรออกของโทรศัพท์ -->
       <p class="map__emergency">
-        อันตรายต่อชีวิต? โทร
+        {{ t('requestHelp.emergencyBefore') }}
         <a href="tel:1669">1669</a>
-        หรือ
+        {{ t('requestHelp.emergencyOr') }}
         <a href="tel:1784">1784</a>
-        ควบคู่ไปด้วย
+        {{ t('requestHelp.emergencyAfter') }}
       </p>
     </section>
   </aside>
@@ -66,6 +68,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import MapboxMap from '~/components/map/MapboxMap.vue'
+import MapLocationSearch from '~/components/map/MapLocationSearch.vue'
 import { useGeolocation } from '~/composables/useGeolocation'
 
 const props = defineProps({
@@ -75,17 +78,20 @@ const props = defineProps({
 })
 const emit = defineEmits(['update:location', 'submit'])
 const { getCurrentLocation, isLocating, locationError } = useGeolocation()
+const { t } = useLocale()
 // รายละเอียดที่อยู่ที่ผู้ใช้พิมพ์ เช่น บ้านเลขที่ ชั้น จุดสังเกต (ยังไม่ได้ส่งไป API)
 const addressDetail = ref('')
 const defaultMapCenter = [100.5018, 13.7563]
 const mapCenter = computed(() => props.location ? [props.location.lng, props.location.lat] : defaultMapCenter)
 const locationLabel = computed(() => {
-  if (!props.location) return 'ยังไม่ได้เลือกตำแหน่ง'
+  if (!props.location) return t('requestHelp.noLocation')
   const { lat, lng, accuracyM } = props.location
-  const accuracyLabel = accuracyM !== null && accuracyM !== undefined ? ` · ความแม่นยำประมาณ ${Math.round(accuracyM)} ม.` : ''
+  const accuracyLabel = accuracyM !== null && accuracyM !== undefined ? ` · ${t('report.accuracy', { value: Math.round(accuracyM) })}` : ''
   return `${lat.toFixed(6)}, ${lng.toFixed(6)}${accuracyLabel}`
 })
 const setMapLocation = (location) => emit('update:location', { ...location, accuracyM: null, source: 'map' })
+// ผลค้นหา/พิกัดที่กรอก ถือเป็นจุดที่ผู้ใช้เลือกเอง (source 'map' ตามที่ฐานข้อมูลรองรับ)
+const setSearchLocation = (item) => emit('update:location', { lat: item.center[1], lng: item.center[0], accuracyM: null, source: 'map' })
 const useCurrentLocation = async () => {
   try {
     const location = await getCurrentLocation()

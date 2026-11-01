@@ -1,4 +1,5 @@
 <script setup>
+const { t } = useLocale()
 import HelpRequests from '~/components/dashboard/HelpRequests.vue';
 
 definePageMeta({
@@ -9,8 +10,8 @@ definePageMeta({
 <template>
   <section class="dashboard-page">
     <header class="dashboard-page__header">
-      <h1>คำขอความช่วยเหลือ</h1>
-      <p>ดูและจัดการคำขอความช่วยเหลือที่เกี่ยวข้องกับพื้นที่ของคุณ</p>
+      <h1>{{ t('pages.helpRequestsTitle') }}</h1>
+      <p>{{ t('pages.helpRequests') }}</p>
     </header>
 
     <HelpRequests />

@@ -282,6 +282,18 @@ const updateIncidentForAutoMerge = async (incidentId, queryable = db) => {
   return result.rows[0] ?? null;
 };
 
+// แอดมินยืนยัน Report แล้ว = Incident ที่ Report นั้นอยู่ถือว่ายืนยันแล้วด้วย
+// เรียกใน transaction เดียวกับการอัปเดต report_status เพื่อไม่ให้สองตารางไม่ตรงกัน
+const markIncidentVerified = async (incidentId, queryable = db) => {
+  await queryable.query(
+    `UPDATE tb_incidents
+         SET verification_status = 'verified',
+             updated_at = CURRENT_TIMESTAMP
+         WHERE incident_id = $1`,
+    [incidentId],
+  );
+};
+
 const createReportCandidate = async (
   { reportId, targetIncidentId, match },
   queryable = db,
@@ -707,6 +719,7 @@ const acceptOrRejectReportCandidate = async ({
         ],
       );
       await updateIncidentForAutoMerge(candidate.target_incident_id, client);
+      await markIncidentVerified(candidate.target_incident_id, client);
     }
 
     await client.query(
@@ -858,6 +871,7 @@ const acceptOrRejectCandidateGroup = async ({
                  WHERE incident_id = $1`,
         [incident.incident_id, reportIds.length],
       );
+      await markIncidentVerified(incident.incident_id, client);
     }
 
     await client.query(
@@ -947,9 +961,10 @@ const createIncidentFromPendingReport = async ({
              WHERE report_id = $3`,
       [incident.incident_id, selectedType.type_id, reportId],
     );
+    await markIncidentVerified(incident.incident_id, client);
     await client.query("COMMIT");
     return {
-      incident,
+      incident: { ...incident, verification_status: "verified" },
       report_id: reportId,
       merge_status: matchingIncident ? "auto_merged" : "created",
       reviewed_by: adminId,
@@ -1070,6 +1085,7 @@ const separateReportFromIncident = async ({
              WHERE report_id = $3`,
       [incident.incident_id, selectedType.type_id, reportId],
     );
+    await markIncidentVerified(incident.incident_id, client);
     await client.query(
       `UPDATE tb_incidents
              SET report_count = report_count - 1,
@@ -1078,7 +1094,11 @@ const separateReportFromIncident = async ({
       [report.incident_id],
     );
     await client.query("COMMIT");
-    return { incident, report_id: reportId, reviewed_by: adminId };
+    return {
+      incident: { ...incident, verification_status: "verified" },
+      report_id: reportId,
+      reviewed_by: adminId,
+    };
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;
