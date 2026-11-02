@@ -416,7 +416,7 @@ FROM (
       ('accident', 'vehicle_obstruction', 'รถเสียกีดขวาง', 'car-front', '#F0B429', 'nearby', 300, 3),
       ('accident', 'road_obstruction', 'ถนนถูกกีดขวาง', 'construction', '#F0B429', 'nearby', 500, 4),
       ('accident', 'other_road_accident', 'อุบัติเหตุทางถนนอื่น ๆ', 'triangle-alert', '#F47B22', 'nearby', 500, 5),
-      ('safety', 'building_fire', 'ไฟไหม้อาคาร', 'flame', '#E8333C', 'nearby', 500, 1),
+      ('safety', 'building_fire', 'ไฟไหม้', 'flame', '#E8333C', 'nearby', 500, 1),
       ('safety', 'conflict', 'เหตุทะเลาะวิวาท', 'shield-alert', '#E8333C', 'nearby', 300, 2),
       ('safety', 'violent_incident', 'เหตุรุนแรง', 'shield-alert', '#E8333C', 'nearby', 500, 3),
       ('safety', 'missing_person', 'บุคคลสูญหาย', 'search', '#6D5DFB', 'nearby', 2000, 4),
@@ -446,6 +446,11 @@ FROM (
 ) AS seed(category_code, type_code, type_name, icon_name, marker_color, display_mode, default_radius_m, sort_order)
 JOIN tb_incident_categories category ON category.category_code = seed.category_code
 ON CONFLICT (type_code) DO NOTHING;
+
+-- เปลี่ยนชื่อ 'ไฟไหม้อาคาร' เป็น 'ไฟไหม้' ให้ Database เดิมด้วย (seed ข้างบนเป็น DO NOTHING)
+UPDATE tb_incident_types
+SET type_name = 'ไฟไหม้'
+WHERE type_code = 'building_fire' AND type_name = 'ไฟไหม้อาคาร';
 
 UPDATE tb_incident_types
 SET is_quick = TRUE

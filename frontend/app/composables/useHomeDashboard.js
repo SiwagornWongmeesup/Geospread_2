@@ -414,9 +414,7 @@ export const useHomeDashboard = () => {
     helpRequestCards,
     recentActivity,
     todaySummary,
-    mapUpdatedAt,
     isLoadingMap,
-    isLoadingIncidentDetail,
     mapError,
     mapCenter,
     selectIncident,
@@ -424,6 +422,5 @@ export const useHomeDashboard = () => {
     clearSelectedIncident,
     setUserLocation,
     fetchPublicMapItems,
-    fetchIncidentDetail
   }
 }

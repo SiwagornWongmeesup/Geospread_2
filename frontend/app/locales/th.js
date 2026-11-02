@@ -1,8 +1,7 @@
 // ข้อความภาษาไทย (ภาษาหลัก) — key เดียวกับ en.js
 export default {
   brand: {
-    tagline: 'รู้ก่อน ช่วยกันทัน',
-    homeLink: 'GeoSpread หน้าหลัก',
+      homeLink: 'GeoSpread หน้าหลัก',
   },
   common: {
     viewAll: 'ดูทั้งหมด',
@@ -58,7 +57,7 @@ export default {
     requestHelp: 'ขอความช่วยเหลือ',
     followedLocations: 'พื้นที่ติดตาม',
     notifications: 'การแจ้งเตือน',
-    safetyGuide: 'คู่มือความปลอดภัย',
+    safetyGuide: 'คู่มือรับมือเหตุฉุกเฉิน',
     profile: 'โปรไฟล์',
     settings: 'ตั้งค่า',
     reportDetail: 'รายละเอียดรายงาน',
@@ -72,15 +71,20 @@ export default {
     notifications: 'แจ้งเตือน',
     profile: 'โปรไฟล์',
   },
+  guideCategories: {
+    natural: 'ภัยธรรมชาติ',
+    accident: 'อุบัติภัย',
+    violence: 'เหตุรุนแรง',
+  },
   guideTopics: {
-    flood: 'น้ำท่วม',
-    'flash-flood': 'น้ำป่าไหลหลาก',
-    storm: 'พายุ',
-    wildfire: 'ไฟป่า',
+    flood: 'น้ำท่วม / น้ำป่า',
+    storm: 'พายุ / ฟ้าผ่า',
     earthquake: 'แผ่นดินไหว',
-    tsunami: 'สึนามิ',
     landslide: 'ดินถล่ม',
-    drought: 'ภัยแล้ง',
+    fire: 'ไฟไหม้ / ระเบิด',
+    collapse: 'อาคาร / ป้ายถล่ม',
+    crowd: 'ฝูงชนเบียด',
+    violence: 'กราดยิง / ทำร้ายร่างกาย',
   },
   header: {
     searchPlaceholder: 'ค้นหาสถานที่ เหตุการณ์...',

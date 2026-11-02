@@ -5,7 +5,6 @@
       <img src="/logos/logo.png" alt="" class="app-header__brand-logo" />
       <span class="app-header__brand-text">
         <span class="app-header__brand-name">GeoSpread</span>
-        <span class="app-header__brand-tagline">{{ t('brand.tagline') }}</span>
       </span>
     </NuxtLink>
 
@@ -143,8 +142,18 @@
 
     <template v-else>
       <div class="auth-buttons">
-        <button type="button" class="btn-login" @click="goToLogin">{{ t('header.login') }}</button>
-        <NuxtLink to="/register" class="btn-register">{{ t('header.register') }}</NuxtLink>
+        <NuxtLink
+          to="/login"
+          class="btn-login"
+          :class="{ 'btn-auth--current': currentAuthPage === 'login' }"
+          :aria-current="currentAuthPage === 'login' ? 'page' : undefined"
+        >{{ t('header.login') }}</NuxtLink>
+        <NuxtLink
+          to="/register"
+          class="btn-register"
+          :class="{ 'btn-auth--current': currentAuthPage === 'register', 'btn-register--outline': currentAuthPage === 'login' }"
+          :aria-current="currentAuthPage === 'register' ? 'page' : undefined"
+        >{{ t('header.register') }}</NuxtLink>
       </div>
     </template>
   </header>
@@ -192,9 +201,12 @@ const pageTitle = computed(() => {
   return 'GeoSpread'
 })
 
-const goToLogin = () => {
-  navigateTo('/login') 
-}
+// หน้า login/register ที่เปิดอยู่ ใช้ไฮไลต์ปุ่มให้รู้ว่ากำลังอยู่เมนูไหน
+const currentAuthPage = computed(() => {
+  if (route.path === '/login') return 'login'
+  if (route.path === '/register') return 'register'
+  return null
+})
 
 const currentUser = computed(() => getUser()?.user)
 
@@ -805,6 +817,38 @@ const handleLogout = () => {
 
 .btn-register:hover {
   background: var(--gs-action-hover);
+}
+
+/* ตอนกด: ยุบลงเล็กน้อยให้รู้ว่ากดโดน */
+.btn-login:active,
+.btn-register:active {
+  transform: scale(0.96);
+}
+
+.btn-login:focus-visible,
+.btn-register:focus-visible {
+  outline: 3px solid var(--gs-action-tint);
+  outline-offset: 2px;
+}
+
+/* อยู่หน้า login: ปุ่มสมัครสมาชิกกลายเป็นแบบขอบ ให้ปุ่มเข้าสู่ระบบเด่นแทน */
+.btn-register--outline {
+  color: var(--gs-action);
+  background: var(--gs-surface);
+  box-shadow: inset 0 0 0 1px var(--gs-line-strong);
+}
+
+.btn-register--outline:hover {
+  background: var(--gs-action-tint);
+}
+
+/* ปุ่มของหน้าที่เปิดอยู่: ทึบสีหลัก */
+.btn-login.btn-auth--current,
+.btn-register.btn-auth--current {
+  color: #ffffff;
+  background: var(--gs-action);
+  border-color: var(--gs-action);
+  box-shadow: none;
 }
 
 .arrow {

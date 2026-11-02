@@ -13,16 +13,32 @@ const emit = defineEmits(['toggle']);
 
 const guideMenuOpen = ref(route.path === '/safety-guide');
 
-const guideItems = [
-  { id: 'flood' },
-  { id: 'flash-flood' },
-  { id: 'storm' },
-  { id: 'wildfire' },
-  { id: 'earthquake' },
-  { id: 'tsunami' },
-  { id: 'landslide' },
-  { id: 'drought' }
+// หัวข้อใหญ่ของคู่มือ แต่ละหัวข้อกดเปิด/ปิดหัวข้อย่อยได้ (หัวข้อย่อยลิงก์ไป /safety-guide#id)
+const guideCategories = [
+  { id: 'natural', topics: ['flood', 'storm', 'earthquake', 'landslide'] },
+  { id: 'accident', topics: ['fire', 'collapse', 'crowd'] },
+  { id: 'violence', topics: ['violence'] }
 ];
+
+const openGuideCategories = ref(new Set([guideCategories[0].id]));
+
+const toggleGuideCategory = (id) => {
+  const next = new Set(openGuideCategories.value);
+  if (next.has(id)) next.delete(id);
+  else next.add(id);
+  openGuideCategories.value = next;
+};
+
+// เปิดหัวข้อใหญ่ที่มีหัวข้อย่อยตรงกับ hash ปัจจุบันไว้ให้
+// (ทำหลัง mount เพราะตอน SSR เซิร์ฟเวอร์ไม่รู้ hash ของ URL)
+const openGuideCategoryForHash = () => {
+  const category = guideCategories.find((item) => item.topics.some((topic) => route.hash === `#${topic}`));
+  if (!category || openGuideCategories.value.has(category.id)) return;
+  openGuideCategories.value = new Set([...openGuideCategories.value, category.id]);
+};
+
+onMounted(openGuideCategoryForHash);
+watch(() => route.hash, openGuideCategoryForHash);
 
 const menuGroups = [
   {
@@ -66,7 +82,6 @@ const accountItems = [
 
         <span v-if="!collapsed" class="app-sidebar__brand-text">
           <span class="app-sidebar__brand-name">GeoSpread</span>
-          <span class="app-sidebar__brand-tagline">{{ t('brand.tagline') }}</span>
         </span>
       </NuxtLink>
 
@@ -118,16 +133,41 @@ const accountItems = [
             <Transition name="guide-submenu">
               <div v-if="guideMenuOpen" id="safety-guide-submenu" class="app-sidebar__guide-submenu">
                 <div class="app-sidebar__guide-submenu-content">
-                  <NuxtLink
-                    v-for="guide in guideItems"
-                    :key="guide.id"
-                    :to="{ path: '/safety-guide', hash: `#${guide.id}` }"
-                    class="app-sidebar__guide-link"
-                    :class="{ 'app-sidebar__guide-link--current': route.hash === `#${guide.id}` }"
-                  >
-                    <span class="app-sidebar__guide-dot" aria-hidden="true"></span>
-                    <span>{{ t(`guideTopics.${guide.id}`) }}</span>
-                  </NuxtLink>
+                  <div v-for="category in guideCategories" :key="category.id" class="app-sidebar__guide-category">
+                    <button
+                      type="button"
+                      class="app-sidebar__guide-category-toggle"
+                      :aria-expanded="openGuideCategories.has(category.id)"
+                      :aria-controls="`guide-category-${category.id}`"
+                      @click="toggleGuideCategory(category.id)"
+                    >
+                      <span>{{ t(`guideCategories.${category.id}`) }}</span>
+                      <svg class="app-sidebar__guide-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="m7 9 5 5 5-5" />
+                      </svg>
+                    </button>
+
+                    <Transition name="guide-submenu">
+                      <div
+                        v-if="openGuideCategories.has(category.id)"
+                        :id="`guide-category-${category.id}`"
+                        class="app-sidebar__guide-submenu"
+                      >
+                        <div class="app-sidebar__guide-submenu-content">
+                          <NuxtLink
+                            v-for="topic in category.topics"
+                            :key="topic"
+                            :to="{ path: '/safety-guide', hash: `#${topic}` }"
+                            class="app-sidebar__guide-link"
+                            :class="{ 'app-sidebar__guide-link--current': route.hash === `#${topic}` }"
+                          >
+                            <span class="app-sidebar__guide-dot" aria-hidden="true"></span>
+                            <span>{{ t(`guideTopics.${topic}`) }}</span>
+                          </NuxtLink>
+                        </div>
+                      </div>
+                    </Transition>
+                  </div>
                 </div>
               </div>
             </Transition>
@@ -371,6 +411,49 @@ const accountItems = [
 .app-sidebar__link--guide-active {
   background: var(--gs-action-tint);
   color: var(--gs-action);
+}
+
+.app-sidebar__guide-category {
+  display: grid;
+}
+
+/* หัวข้อใหญ่ในคู่มือ: ตัวเล็กกว่าเมนูหลัก เยื้องเข้าให้ตรงกับข้อความของเมนู */
+.app-sidebar__guide-category-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 2.1rem;
+  padding: 0.35rem 0.65rem 0.35rem 2.35rem;
+  cursor: pointer;
+  border: 0;
+  border-radius: 0.55rem;
+  background: transparent;
+  color: var(--gs-ink);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 750;
+  text-align: left;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.app-sidebar__guide-category-toggle:hover {
+  background: var(--gs-action-tint);
+  color: var(--gs-action);
+}
+
+.app-sidebar__guide-category-toggle:focus-visible {
+  outline: 3px solid rgb(29 53 87 / 30%);
+  outline-offset: 2px;
+}
+
+.app-sidebar__guide-category-toggle[aria-expanded='true'] .app-sidebar__guide-chevron {
+  transform: rotate(180deg);
+}
+
+/* หัวข้อย่อยในหัวข้อใหญ่ เยื้องลึกกว่าหัวข้อใหญ่อีกขั้น */
+.app-sidebar__guide-category .app-sidebar__guide-link {
+  padding-left: 3rem;
 }
 
 .app-sidebar__guide-chevron {

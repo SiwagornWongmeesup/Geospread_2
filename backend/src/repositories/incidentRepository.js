@@ -1298,18 +1298,6 @@ const findSuggestedTypes = async (description, limit) => {
   return result.rows;
 };
 
-const findActiveIncidentTypeIds = async (typeIds) => {
-  const result = await db.query(
-    `SELECT type_id
-         FROM tb_incident_types
-         WHERE is_active = TRUE
-           AND type_id = ANY($1::int[])`,
-    [typeIds],
-  );
-
-  return result.rows.map((row) => row.type_id);
-};
-
 const findActiveIncidentTypeById = async (typeId) => {
   const result = await db.query(
     `SELECT
@@ -1384,13 +1372,10 @@ const findActiveIncidentKeywordRows = async () => {
 };
 
 module.exports = {
-  createIncidentReport,
-  createIncident: createIncidentReport,
   createIncidentReportWithMerge,
   findActiveIncidentById,
   createFalseIncidentReport,
   findSuggestedTypes,
-  findActiveIncidentTypeIds,
   findActiveIncidentTypeById,
   findActiveIncidentCatalogRows,
   findActiveIncidentKeywordRows,

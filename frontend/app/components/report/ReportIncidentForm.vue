@@ -30,7 +30,7 @@
           <span class="suggested-type__icon" :style="{ backgroundColor: iconColor(incidentType) }" aria-hidden="true">
             <img :src="incidentType.iconUrl || '/icons/Alert.svg'" alt="">
           </span>
-          <span>{{ incidentType.label }}</span>
+          <span>{{ typeLabel(incidentType) }}</span>
           <svg v-if="userSelectedTypeId === incidentType.id" class="suggested-type__check" viewBox="0 0 24 24" :aria-label="t('report.selected')"><path d="m7.5 12.5 3 3 6-7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.3" /></svg>
         </button>
       </div>
@@ -94,7 +94,7 @@
               <span class="type-picker-group__icon" :style="{ backgroundColor: groupColor(group.id) }" aria-hidden="true">
                 <img :src="group.iconUrl || '/icons/Alert.svg'" alt="">
               </span>
-              <h3 :id="`type-group-${group.id}`">{{ group.label }}</h3>
+              <h3 :id="`type-group-${group.id}`">{{ categoryLabel(group) }}</h3>
               <span class="type-picker-group__count">{{ t('report.typeCount', { count: group.types.length }) }}</span>
             </header>
             <div class="type-picker-grid">
@@ -102,7 +102,7 @@
                 <span class="type-picker-option__icon" :style="{ backgroundColor: iconColor(incidentType) }" aria-hidden="true">
                   <img :src="incidentType.iconUrl || '/icons/Alert.svg'" alt="">
                 </span>
-                <span>{{ incidentType.label }}</span>
+                <span>{{ typeLabel(incidentType) }}</span>
                 <svg v-if="userSelectedTypeId === incidentType.id" class="type-picker-option__check" viewBox="0 0 24 24" :aria-label="t('report.selected')"><path d="m7.5 12.5 3 3 6-7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.3" /></svg>
               </button>
             </div>
@@ -124,10 +124,10 @@
     <div v-if="isTypeConflictDialogOpen" class="incident-type-modal-backdrop" @click.self="closeTypeConflictDialog">
       <section class="incident-type-modal type-conflict-modal" role="dialog" aria-modal="true" aria-labelledby="type-conflict-title" @keydown.esc="closeTypeConflictDialog">
         <h2 id="type-conflict-title">{{ t('report.conflictTitle') }}</h2>
-        <p>{{ t('report.conflictSuggested') }} <strong>{{ detectedSuggestion?.label }}</strong><br>{{ t('report.conflictChosen') }} <strong>{{ userSelectedType?.label }}</strong></p>
+        <p>{{ t('report.conflictSuggested') }} <strong>{{ typeLabel(detectedSuggestion) }}</strong><br>{{ t('report.conflictChosen') }} <strong>{{ typeLabel(userSelectedType) }}</strong></p>
         <div class="type-conflict-modal__actions">
-          <button type="button" class="button button--secondary" @click="changeToSuggestedType">{{ t('report.conflictChange', { type: detectedSuggestion?.label }) }}</button>
-          <button type="button" class="button button--primary" @click="confirmSelectedTypeDespiteConflict">{{ t('report.conflictKeep', { type: userSelectedType?.label }) }}</button>
+          <button type="button" class="button button--secondary" @click="changeToSuggestedType">{{ t('report.conflictChange', { type: typeLabel(detectedSuggestion) }) }}</button>
+          <button type="button" class="button button--primary" @click="confirmSelectedTypeDespiteConflict">{{ t('report.conflictKeep', { type: typeLabel(userSelectedType) }) }}</button>
         </div>
       </section>
     </div>
@@ -149,6 +149,15 @@ const {
   restoreLocations,
 } = useReportIncident()
 const { t } = useLocale()
+// ชื่อประเภท/หมวดมาจาก Database (ภาษาไทย) ถ้ามีคำแปลใน locale ตาม type_code จะใช้คำแปลแทน
+const localizedLabel = (prefix, item) => {
+  if (!item) return ''
+  const key = `${prefix}.${item.id}`
+  const translated = t(key)
+  return translated === key ? item.label : translated
+}
+const typeLabel = (incidentType) => localizedLabel('incidentTypes', incidentType)
+const categoryLabel = (category) => localizedLabel('incidentCategories', category)
 const details = ref('')
 const fileInput = ref(null)
 // อยู่ใน state ระดับแอป เพื่อให้ไฟล์ที่เลือกยังอยู่เมื่อเปลี่ยนหน้าไปล็อกอินแล้วกลับมา
@@ -195,10 +204,10 @@ const selectedMediaLabel = computed(() => {
   return t('report.filesSelected', { count: selectedFiles.value.length })
 })
 const suggestionNote = computed(() => {
-  if (userSelectedType.value) return t('report.noteSelected', { type: userSelectedType.value.label })
+  if (userSelectedType.value) return t('report.noteSelected', { type: typeLabel(userSelectedType.value) })
   if (details.value.trim().length < 2) return t('report.noteStart')
   if (isLoadingTypeCache.value) return t('report.noteLoading')
-  if (detectedSuggestion.value) return t('report.noteSuggested', { type: detectedSuggestion.value.label })
+  if (detectedSuggestion.value) return t('report.noteSuggested', { type: typeLabel(detectedSuggestion.value) })
   if (catalogLoadError.value) return t('report.noteLoadError')
   return t('report.noteDefault')
 })
@@ -206,9 +215,9 @@ const normalizedSearch = computed(() => typeSearch.value.trim().toLocaleLowerCas
 const filteredTypeGroups = computed(() => incidentTypeGroups.value
   .map((group) => ({
     ...group,
-    types: !normalizedSearch.value || group.label.toLocaleLowerCase().includes(normalizedSearch.value)
+    types: !normalizedSearch.value || categoryLabel(group).toLocaleLowerCase().includes(normalizedSearch.value)
       ? group.types
-      : group.types.filter((type) => type.label.toLocaleLowerCase().includes(normalizedSearch.value)),
+      : group.types.filter((type) => typeLabel(type).toLocaleLowerCase().includes(normalizedSearch.value)),
   }))
   .filter((group) => group.types.length))
 

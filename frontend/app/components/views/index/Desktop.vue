@@ -9,7 +9,7 @@
         :selected-item-id="selectedIncident?.id"
         :selected-item="selectedIncidentPreview"
         :selected-incident-detail="selectedIncidentDetail"
-        :popup-padding="{ top: 280, right: 32, bottom: 48, left: 32 }"
+        :popup-padding="{ top: 330, right: 32, bottom: 48, left: 32 }"
         :reporter-location="userLocation"
         class="desktop-home__map-canvas"
         @select-item="selectIncident"

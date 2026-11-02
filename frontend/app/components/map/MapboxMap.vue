@@ -34,6 +34,7 @@ const radiusLineLayerId = 'incident-radius-line'
 const clusterRadiusPx = 44
 // ซูมถึงระดับนี้แล้วกลุ่มที่ยังไม่แยก จะกางหมุดออกเป็นวงรอบจุดแทน
 const spiderfyZoom = 16
+const popupMarkerOffsetPx = 52
 
 const props = defineProps({
   center: { type: Array, default: () => [100.5018, 13.7563] },
@@ -105,7 +106,8 @@ const renderIncidentPopup = () => {
     closeOnMove: false,
     focusAfterOpen: false,
     maxWidth: 'none',
-    offset: 0,
+    // ยก popup ขึ้นพ้นตัวหมุด (หมุดสูง 2.8rem ≈ 45px ปักอยู่เหนือพิกัด) ไม่งั้น popup จะบังหมุด
+    offset: popupMarkerOffsetPx,
     className: 'geospread-incident-popup',
   })
   // เลือก popup ให้ตรงกับประเภทหมุด: คำขอความช่วยเหลือใช้ popup ของตัวเอง ที่เหลือใช้ popup รายงาน
