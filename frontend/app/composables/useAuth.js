@@ -7,6 +7,9 @@
 export const useAuth = () => {
   const loading = ref(false)
   const error = ref('')
+  // ชนิดของ error จาก server ให้หน้าเลือกแสดงใต้ช่องที่เกี่ยวข้องได้:
+  // 'emailTaken' | 'invalidCredentials' | 'emailNotVerified' | 'invalidCode' | 'codeExpired' | 'tooManyAttempts' | ''
+  const errorCode = ref('')
   const { t } = useLocale()
 
   // ดึง user จาก cookie (ถ้ามี)
@@ -28,6 +31,7 @@ export const useAuth = () => {
   const login = async (form) => {
     loading.value = true
     error.value = ''
+    errorCode.value = ''
 
     try {
       const res = await $fetch('http://localhost:5000/users/login', {
@@ -44,9 +48,15 @@ export const useAuth = () => {
 
       return true
     } catch (err) {
-      console.log('Login Error Detail:', err?.data || err)
-      if (err?.data?.message) {
-        error.value = err.data.message // ถ้า Backend แจ้งชัดเจนว่ารหัสผิด ให้แสดงตามนั้น
+      // ข้อความจาก Backend เป็นภาษาไทยอย่างเดียว จึงแปลงตามรหัสสถานะแทน เพื่อให้แสดงตามภาษาที่เลือก
+      if (err?.data?.code === 'EMAIL_NOT_VERIFIED') {
+        errorCode.value = 'emailNotVerified'
+        error.value = t('auth.emailNotVerified')
+      } else if (err?.statusCode === 401 || err?.status === 401) {
+        errorCode.value = 'invalidCredentials'
+        error.value = t('auth.invalidCredentials')
+      } else if (err?.data?.message) {
+        error.value = err.data.message
       } else {
         // ถ้าเป็น Error อื่นๆ เช่น Server ล่ม, เน็ตหลุด ให้แสดงข้อความนี้
         error.value = t('auth.connectionError')
@@ -61,18 +71,71 @@ export const useAuth = () => {
   const register = async (form) => {
     loading.value = true
     error.value = ''
+    errorCode.value = ''
 
     try {
-      await $fetch('http://localhost:5000/users', {
+      const res = await $fetch('http://localhost:5000/users', {
         method: 'POST',
         body: form
       })
+      // สมัครแล้วต้องยืนยันอีเมลต่อ: emailSent = false แปลว่าส่งอีเมลไม่สำเร็จ ให้กดส่งรหัสใหม่ในหน้ายืนยัน
+      return { ok: true, emailSent: res?.data?.emailSent !== false, retryAfterSeconds: res?.data?.retryAfterSeconds ?? 0 }
+    } catch (err) {
+      const status = err?.statusCode ?? err?.status
+      if (err?.data?.code === 'EMAIL_TAKEN') {
+        errorCode.value = 'emailTaken'
+        error.value = t('auth.emailTaken')
+      } else if (!status) {
+        error.value = t('auth.connectionError')
+      } else {
+        error.value = t('auth.registerError')
+      }
+      return { ok: false }
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // ยืนยันอีเมลด้วยรหัส 6 หลัก
+  const verifyEmail = async ({ email, code }) => {
+    loading.value = true
+    error.value = ''
+    errorCode.value = ''
+
+    try {
+      await $fetch('http://localhost:5000/users/verify-email', { method: 'POST', body: { email, code } })
       return true
     } catch (err) {
-      error.value = err?.data?.message || t('auth.registerError')
+      const codeMap = {
+        INVALID_CODE: ['invalidCode', 'auth.invalidCode'],
+        CODE_EXPIRED: ['codeExpired', 'auth.codeExpired'],
+        TOO_MANY_ATTEMPTS: ['tooManyAttempts', 'auth.tooManyAttempts'],
+      }
+      const match = codeMap[err?.data?.code]
+      if (match) {
+        errorCode.value = match[0]
+        const attemptsLeft = err?.data?.errors?.[0]?.attemptsLeft
+        error.value = attemptsLeft ? t('auth.invalidCodeLeft', { count: attemptsLeft }) : t(match[1])
+      } else if (err?.statusCode ?? err?.status) {
+        errorCode.value = 'invalidCode'
+        error.value = t('auth.invalidCode')
+      } else {
+        error.value = t('auth.connectionError')
+      }
       return false
     } finally {
       loading.value = false
+    }
+  }
+
+  // ขอรหัสยืนยันใหม่ คืนจำนวนวินาทีที่ต้องรอก่อนขอได้อีก (null = ส่งไม่สำเร็จ)
+  const resendVerification = async (email) => {
+    try {
+      const res = await $fetch('http://localhost:5000/users/resend-verification', { method: 'POST', body: { email } })
+      return res?.data?.retryAfterSeconds ?? 60
+    } catch (err) {
+      error.value = err?.data?.code === 'EMAIL_SEND_FAILED' ? t('auth.emailSendFailed') : t('auth.connectionError')
+      return null
     }
   }
 
@@ -95,12 +158,15 @@ export const useAuth = () => {
   return {
     loading,
     error,
+    errorCode,
     isLoggedIn,
     isAdmin,
     getUser,
     getToken,
     login,
     register,
+    verifyEmail,
+    resendVerification,
     logout
   }
 }

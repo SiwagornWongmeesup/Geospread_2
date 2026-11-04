@@ -31,6 +31,18 @@
       <p v-if="mapError" class="mobile-home__map-error">{{ mapError }}</p>
     </section>
 
+    <!-- ยังไม่ได้เลือกหมุด: แสดงรายการเหตุ/คำขอความช่วยเหลือใกล้คุณ กดรายการแล้วเปิดรายละเอียด -->
+    <NearbySheet
+      v-show="!selectedIncident"
+      :incidents="sheetIncidentList"
+      :help-requests="sheetHelpRequestList"
+      :is-loading="isLoadingMap"
+      :has-user-location="Boolean(userLocation)"
+      :is-locating="isLocating"
+      @select="selectIncident"
+      @request-location="focusCurrentLocation"
+    />
+
     <!-- กดหมุดแล้วแสดงรายละเอียดเป็นแผ่นเลื่อนขึ้นจากด้านล่าง (แทน popup บนแผนที่) -->
     <IncidentBottomSheet
       :incident="selectedIncidentPreview"
@@ -47,6 +59,7 @@ const { t } = useLocale();
 import MapboxMap from "~/components/map/MapboxMap.vue";
 import MapLocationSearch from "~/components/map/MapLocationSearch.vue";
 import IncidentBottomSheet from "~/components/map/IncidentBottomSheet.vue";
+import NearbySheet from "~/components/mobile/NearbySheet.vue";
 import { useGeolocation } from "~/composables/useGeolocation";
 
 const {
@@ -54,6 +67,9 @@ const {
   selectedIncidentPreview,
   selectedIncidentDetail,
   publicMapItems,
+  sheetIncidentList,
+  sheetHelpRequestList,
+  isLoadingMap,
   userLocation,
   mapError,
   mapCenter,

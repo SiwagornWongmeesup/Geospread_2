@@ -1,4 +1,6 @@
 <script setup>
+import { guideCategories } from '~/utils/emergencyGuides';
+
 const route = useRoute();
 const { t } = useLocale();
 
@@ -14,11 +16,7 @@ const emit = defineEmits(['toggle']);
 const guideMenuOpen = ref(route.path === '/safety-guide');
 
 // หัวข้อใหญ่ของคู่มือ แต่ละหัวข้อกดเปิด/ปิดหัวข้อย่อยได้ (หัวข้อย่อยลิงก์ไป /safety-guide#id)
-const guideCategories = [
-  { id: 'natural', topics: ['flood', 'storm', 'earthquake', 'landslide'] },
-  { id: 'accident', topics: ['fire', 'collapse', 'crowd'] },
-  { id: 'violence', topics: ['violence'] }
-];
+// รายการหมวดอยู่ที่ utils/emergencyGuides.js ใช้ร่วมกับหน้าคู่มือ
 
 const openGuideCategories = ref(new Set([guideCategories[0].id]));
 
@@ -29,9 +27,12 @@ const toggleGuideCategory = (id) => {
   openGuideCategories.value = next;
 };
 
-// เปิดหัวข้อใหญ่ที่มีหัวข้อย่อยตรงกับ hash ปัจจุบันไว้ให้
-// (ทำหลัง mount เพราะตอน SSR เซิร์ฟเวอร์ไม่รู้ hash ของ URL)
+// hash ของ URL (#flood) ใช้ไฮไลต์หัวข้อย่อย และเปิดหัวข้อใหญ่ที่มีหัวข้อย่อยนั้นไว้ให้
+// อ่านหลัง mount เท่านั้น เพราะตอน SSR เซิร์ฟเวอร์ไม่รู้ hash ถ้าอ่านตรงๆ class จะไม่ตรงกันตอน hydrate
+const currentGuideHash = ref('');
+
 const openGuideCategoryForHash = () => {
+  currentGuideHash.value = route.hash;
   const category = guideCategories.find((item) => item.topics.some((topic) => route.hash === `#${topic}`));
   if (!category || openGuideCategories.value.has(category.id)) return;
   openGuideCategories.value = new Set([...openGuideCategories.value, category.id]);
@@ -61,7 +62,6 @@ const menuGroups = [
     label: 'nav.groups.mine',
     items: [
       { label: 'nav.followedLocations', to: '/followed-locations', icon: '/icons/Location.svg' },
-      { label: 'nav.notifications', to: '/notifications', icon: '/icons/Notification.svg', badge: '3' },
       { label: 'nav.safetyGuide', to: '/safety-guide', icon: '/icons/Safety-and-security.svg', kind: 'guide' }
     ]
   }
@@ -159,7 +159,7 @@ const accountItems = [
                             :key="topic"
                             :to="{ path: '/safety-guide', hash: `#${topic}` }"
                             class="app-sidebar__guide-link"
-                            :class="{ 'app-sidebar__guide-link--current': route.hash === `#${topic}` }"
+                            :class="{ 'app-sidebar__guide-link--current': currentGuideHash === `#${topic}` }"
                           >
                             <span class="app-sidebar__guide-dot" aria-hidden="true"></span>
                             <span>{{ t(`guideTopics.${topic}`) }}</span>

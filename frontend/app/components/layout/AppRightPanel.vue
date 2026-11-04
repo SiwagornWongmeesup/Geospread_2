@@ -43,20 +43,16 @@
       </ul>
     </section>
 
-    <section v-if="showSafetyGuide" class="app-right-panel__section safety-guide">
+    <section v-if="emergencyGuide" class="app-right-panel__section safety-guide">
       <div class="app-right-panel__section-heading">
-        <h2>{{ t('rightPanel.guideTitle', { category: selectedIncident.category }) }}</h2>
+        <h2>{{ t('rightPanel.guideTitle', { topic: emergencyGuide.title }) }}</h2>
         <button type="button" :aria-label="t('rightPanel.closeGuide')" @click="clearSelectedIncident">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="m7 7 10 10M17 7 7 17" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2" />
           </svg>
         </button>
       </div>
-      <p class="safety-guide__title">{{ selectedIncident.title }}</p>
-      <ol>
-        <li v-for="step in selectedIncident.safetySteps" :key="step">{{ step }}</li>
-      </ol>
-      <NuxtLink to="/safety-guide" class="safety-guide__link">{{ t('rightPanel.fullGuide') }}</NuxtLink>
+      <QuickGuide :guide="emergencyGuide" />
     </section>
 
     <TodaySummary />
@@ -67,10 +63,12 @@
 import { computed } from 'vue'
 import TodaySummary from '~/components/dashboard/TodaySummary.vue'
 import ReportIncidentRightPanel from '~/components/report/ReportIncidentRightPanel.vue'
+import QuickGuide from '~/components/guide/QuickGuide.vue'
+import { getEmergencyGuideForType } from '~/utils/emergencyGuides'
 
 const route = useRoute()
 const { selectedIncident, clearSelectedIncident } = useHomeDashboard()
-const { t } = useLocale()
+const { t, locale } = useLocale()
 
 const quickActions = [
   { label: 'rightPanel.reportAction', description: 'rightPanel.reportActionHint', to: '/report-incident', tone: 'report', icon: 'M12 2a2 2 0 0 1 1.8 1.12l8 16A2 2 0 0 1 20 22H4a2 2 0 0 1-1.8-2.88l8-16A2 2 0 0 1 12 2Zm0 5.5a1 1 0 0 0-1 1v5a1 1 0 1 0 2 0v-5a1 1 0 0 0-1-1Zm0 9a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5Z' },
@@ -81,7 +79,11 @@ const quickActions = [
 // รูปแบบ: { name, area, distance, to }
 const followedLocations = []
 
-const showSafetyGuide = computed(() => route.path === '/' && selectedIncident.value)
+// เลือกหมุดบนหน้าหลักแล้ว ถ้าประเภทนั้นมีคู่มือ ให้แสดงคู่มือย่อ (คำสั่งหลัก + 3 ข้อแรกของ "ทำทันที")
+const emergencyGuide = computed(() => {
+  if (route.path !== '/' || !selectedIncident.value?.typeCode) return null
+  return getEmergencyGuideForType(selectedIncident.value.typeCode, locale.value)
+})
 const isReportIncident = computed(() => route.path === '/report-incident')
 </script>
 
@@ -263,14 +265,6 @@ const isReportIncident = computed(() => route.path === '/report-incident')
   border-color: var(--gs-action);
 }
 
-.safety-guide__title {
-  margin: 0 0 0.55rem;
-  color: var(--gs-ink-2);
-  font-size: 0.875rem;
-  font-weight: 600;
-  line-height: 1.45;
-}
-
 .safety-guide button {
   display: grid;
   flex: 0 0 auto;
@@ -295,29 +289,4 @@ const isReportIncident = computed(() => route.path === '/report-incident')
   color: var(--gs-ink);
 }
 
-.safety-guide ol {
-  display: grid;
-  gap: 0.4rem;
-  margin: 0 0 0.8rem;
-  padding-left: 1.2rem;
-  color: var(--gs-ink-2);
-  font-size: 0.85rem;
-  line-height: 1.55;
-}
-
-.safety-guide__link {
-  display: block;
-  padding: 0.6rem;
-  border-radius: var(--gs-radius-sm);
-  background: var(--gs-action);
-  color: #fff;
-  font-size: 0.85rem;
-  font-weight: 600;
-  text-align: center;
-  text-decoration: none;
-}
-
-.safety-guide__link:hover {
-  background: var(--gs-action-hover);
-}
 </style>

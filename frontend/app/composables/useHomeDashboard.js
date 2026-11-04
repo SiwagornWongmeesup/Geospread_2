@@ -122,6 +122,7 @@ const normalizeIncident = (incident, t) => {
     // ใช้เรียกapiตอนเลือกmarker
     incidentId:incident.incident_id,
     kind: 'incident',
+    typeCode: hasFinalType ? incident.type_code : null,
     title: withoutStatusSuffix(incident.title, incident.type_name || t('incident.generic')),
     description: incident.description,
     category: hasFinalType ? incident.type_name || t('incident.generic') : t('status.pending'),
@@ -349,6 +350,17 @@ export const useHomeDashboard = () => {
     .sort(byDistanceThenRecent)
     .slice(0, 3))
 
+  // แผ่นเลื่อนหน้ามือถือ: รายการทั้งหมด (ไม่ตัดจำนวน) เรียงจากใกล้ไปไกล ถ้าไม่รู้ตำแหน่งจะเรียงตามเวลาล่าสุด
+  const sheetIncidentList = computed(() => publicMapItems.value
+    .filter((item) => item.kind === 'incident')
+    .map(withDistance)
+    .sort(byDistanceThenRecent))
+
+  const sheetHelpRequestList = computed(() => publicMapItems.value
+    .filter((item) => item.kind === 'help_request')
+    .map(withDistance)
+    .sort(byDistanceThenRecent))
+
   // ความเคลื่อนไหวล่าสุด: รวมทุกชนิดบนแผนที่ เรียงตามเวลา
   const recentActivity = computed(() => publicMapItems.value
     .filter((item) => item.occurredAt)
@@ -412,6 +424,8 @@ export const useHomeDashboard = () => {
     nearbyIncidentCards,
     nearbySort,
     helpRequestCards,
+    sheetIncidentList,
+    sheetHelpRequestList,
     recentActivity,
     todaySummary,
     isLoadingMap,

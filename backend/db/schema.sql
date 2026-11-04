@@ -29,6 +29,25 @@ CREATE TABLE IF NOT EXISTS tb_users (
     last_login_at TIMESTAMP
 );
 
+-- ยืนยันอีเมล: บัญชีที่มีอยู่ก่อนเพิ่มคอลัมน์นี้ถือว่ายืนยันแล้ว (DEFAULT TRUE ตอนเพิ่ม)
+-- แล้วเปลี่ยนค่าเริ่มต้นเป็น FALSE ให้บัญชีที่สมัครใหม่ต้องยืนยันอีเมลก่อนเข้าสู่ระบบ
+ALTER TABLE tb_users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE tb_users ALTER COLUMN email_verified SET DEFAULT FALSE;
+
+-- รหัสยืนยันอีเมล 6 หลักที่ยังไม่ได้ใช้ (หนึ่งแถวต่อผู้ใช้ ส่งรหัสใหม่จะเขียนทับของเดิม)
+CREATE TABLE IF NOT EXISTS tb_email_verifications (
+    -- ผู้ใช้ที่ต้องยืนยันอีเมล
+    user_id INT PRIMARY KEY REFERENCES tb_users(id) ON DELETE CASCADE,
+    -- รหัสที่ผ่าน HMAC แล้ว (ไม่เก็บตัวเลขจริง)
+    code_hash TEXT NOT NULL,
+    -- เวลาหมดอายุของรหัส
+    expires_at TIMESTAMPTZ NOT NULL,
+    -- จำนวนครั้งที่กรอกรหัสผิด ใช้กันการเดารหัส
+    attempts SMALLINT NOT NULL DEFAULT 0,
+    -- เวลาที่ส่งรหัสล่าสุด ใช้จำกัดการกดส่งรหัสใหม่
+    last_sent_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 -- หมวดใหญ่ ใช้จัดกลุ่มประเภทเหตุการณ์ในหน้าจอและการค้นหา
 CREATE TABLE IF NOT EXISTS tb_incident_categories (
     -- รหัสหมวดหมู่ ใช้ระบุหมวดของประเภทเหตุการณ์

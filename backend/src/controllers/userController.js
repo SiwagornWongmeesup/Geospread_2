@@ -57,9 +57,31 @@ const loginUser = async (req, res, next) => {
     }
 };
 
+// POST /users/verify-email — ยืนยันอีเมลด้วยรหัส 6 หลัก
+const verifyEmail = async (req, res, next) => {
+    try {
+        const result = await userService.verifyEmail(req.body);
+        res.status(200).json({ success: true, message: 'ยืนยันอีเมลสำเร็จ', data: result });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// POST /users/resend-verification — ขอรหัสยืนยันใหม่
+const resendVerification = async (req, res, next) => {
+    try {
+        const result = await userService.resendVerification(req.body);
+        res.status(200).json({ success: true, message: 'ถ้าอีเมลนี้รอยืนยันอยู่ ระบบได้ส่งรหัสใหม่แล้ว', data: result });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getAllUsers,
     getUserById,
     createUser,
-    loginUser
+    loginUser,
+    verifyEmail,
+    resendVerification
 };

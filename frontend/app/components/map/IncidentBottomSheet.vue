@@ -37,14 +37,21 @@
         @close="$emit('close')"
         @open-report="(report) => $emit('open-report', report)"
       />
+
+      <!-- คู่มือย่อของประเภทเหตุนี้ (แสดงเฉพาะประเภทที่มีไฟล์คู่มือ) -->
+      <section v-if="emergencyGuide" class="incident-sheet__guide" :aria-label="t('quickGuide.label', { topic: emergencyGuide.title })">
+        <QuickGuide :guide="emergencyGuide" compact />
+      </section>
     </section>
   </Transition>
 </template>
 
 <script setup>
-import { watch } from 'vue'
+import { computed, watch } from 'vue'
 import IncidentMapPopup from '~/components/map/IncidentMapPopup.vue'
 import HelpRequestMapPopup from '~/components/map/HelpRequestMapPopup.vue'
+import QuickGuide from '~/components/guide/QuickGuide.vue'
+import { getEmergencyGuideForType } from '~/utils/emergencyGuides'
 import { usePlaceNames } from '~/composables/usePlaceNames'
 
 const props = defineProps({
@@ -57,7 +64,12 @@ const props = defineProps({
 defineEmits(['close', 'open-report'])
 
 const { loadPlaceNames, getPlaceLabel } = usePlaceNames()
-const { t } = useLocale()
+const { t, locale } = useLocale()
+
+const emergencyGuide = computed(() => {
+  if (!props.incident || props.incident.kind === 'help_request' || !props.incident.typeCode) return null
+  return getEmergencyGuideForType(props.incident.typeCode, locale.value)
+})
 
 // ทุกครั้งที่เลือกหมุดใหม่ ให้หาชื่อสถานที่ของหมุดนั้น (ถ้าเคยหาแล้วจะไม่ถามซ้ำ)
 watch(
@@ -94,6 +106,13 @@ watch(
 .incident-sheet > :deep(.help-popup) {
   flex: 1;
   min-height: 0;
+}
+
+.incident-sheet__guide {
+  flex: 0 0 auto;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--gs-line);
 }
 
 .incident-sheet__handle {

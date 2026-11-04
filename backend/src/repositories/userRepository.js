@@ -13,7 +13,7 @@ const getUserById = async (id) => {
 //เช็คemail
 const getUserByEmail = async (email) => {
     // ใช้แค่ email ในการค้นหา ($1)
-    const result = await db.query('SELECT id, email, password, role FROM tb_users WHERE email = $1', [email]);
+    const result = await db.query('SELECT id, email, password, role, email_verified FROM tb_users WHERE email = $1', [email]);
     return result.rows[0];
 }
 //สร้างuser
@@ -26,6 +26,57 @@ const createUser = async (userData) => {
         [email, password, name, lastname, phone]
     );
     return result.rows[0];
+};
+
+// สมัครซ้ำด้วยอีเมลที่ยังไม่ยืนยัน: อัปเดตรหัสผ่านและชื่อเป็นค่าล่าสุด (เจ้าของอีเมลจริงต้องยืนยันรหัสอยู่ดี)
+const updateUnverifiedUser = async (id, { password, name = null }) => {
+    const result = await db.query(
+        `UPDATE tb_users SET password = $1, name = $2, updated_at = CURRENT_TIMESTAMP
+         WHERE id = $3 AND email_verified = FALSE
+         RETURNING id, email, name, role, created_at`,
+        [password, name, id]
+    );
+    return result.rows[0];
+};
+
+const markEmailVerified = async (id) => {
+    await db.query('UPDATE tb_users SET email_verified = TRUE, updated_at = CURRENT_TIMESTAMP WHERE id = $1', [id]);
+};
+
+// ---- รหัสยืนยันอีเมล ----
+const getEmailVerification = async (userId) => {
+    const result = await db.query(
+        `SELECT user_id, code_hash, expires_at, attempts, last_sent_at,
+                EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - last_sent_at)) AS seconds_since_sent,
+                expires_at < CURRENT_TIMESTAMP AS is_expired
+         FROM tb_email_verifications WHERE user_id = $1`,
+        [userId]
+    );
+    return result.rows[0];
+};
+
+// เขียนทับรหัสเดิม และนับจำนวนครั้งที่ผิดใหม่
+const saveEmailVerification = async (userId, codeHash, expiresInMinutes) => {
+    await db.query(
+        `INSERT INTO tb_email_verifications (user_id, code_hash, expires_at, attempts, last_sent_at)
+         VALUES ($1, $2, CURRENT_TIMESTAMP + make_interval(mins => $3), 0, CURRENT_TIMESTAMP)
+         ON CONFLICT (user_id) DO UPDATE
+         SET code_hash = EXCLUDED.code_hash, expires_at = EXCLUDED.expires_at,
+             attempts = 0, last_sent_at = EXCLUDED.last_sent_at`,
+        [userId, codeHash, expiresInMinutes]
+    );
+};
+
+const incrementVerificationAttempts = async (userId) => {
+    const result = await db.query(
+        'UPDATE tb_email_verifications SET attempts = attempts + 1 WHERE user_id = $1 RETURNING attempts',
+        [userId]
+    );
+    return result.rows[0]?.attempts ?? 0;
+};
+
+const deleteEmailVerification = async (userId) => {
+    await db.query('DELETE FROM tb_email_verifications WHERE user_id = $1', [userId]);
 };
 
 //แก้ไขข้อมูล user
@@ -51,6 +102,12 @@ module.exports = {
     getUserById,
     getUserByEmail,
     createUser,
+    updateUnverifiedUser,
+    markEmailVerified,
+    getEmailVerification,
+    saveEmailVerification,
+    incrementVerificationAttempts,
+    deleteEmailVerification,
     updateUser,
     deleteUser
 };

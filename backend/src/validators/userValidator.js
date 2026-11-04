@@ -46,6 +46,34 @@ const loginValidator = [
 ];
 
 /**
+ * verifyEmailValidator — POST /users/verify-email
+ */
+const verifyEmailValidator = [
+    body('email')
+        .notEmpty().withMessage('กรุณากรอกอีเมล')
+        .isEmail().withMessage('รูปแบบอีเมลไม่ถูกต้อง')
+        .normalizeEmail(),
+
+    body('code')
+        .trim()
+        .matches(/^\d{6}$/).withMessage('รหัสยืนยันต้องเป็นตัวเลข 6 หลัก'),
+
+    validateRequest
+];
+
+/**
+ * resendVerificationValidator — POST /users/resend-verification
+ */
+const resendVerificationValidator = [
+    body('email')
+        .notEmpty().withMessage('กรุณากรอกอีเมล')
+        .isEmail().withMessage('รูปแบบอีเมลไม่ถูกต้อง')
+        .normalizeEmail(),
+
+    validateRequest
+];
+
+/**
  * getUserByIdValidator
  * -----------------------------------------------------------------------
  * ใช้กับ GET /users/:id
@@ -62,5 +90,7 @@ const getUserByIdValidator = [
 module.exports = {
     registerValidator,
     loginValidator,
+    verifyEmailValidator,
+    resendVerificationValidator,
     getUserByIdValidator
 };

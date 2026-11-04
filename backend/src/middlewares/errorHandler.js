@@ -14,6 +14,7 @@ const errorHandler = (err, req, res, next) => {
     res.status(err.statusCode).json({
         success: false,
         message: err.message,
+        code: err.code || null,
         errors: err.errors || null,
         // (Optional) เปิด stack trace ตอน dev ได้
         // stack: process.env.NODE_ENV === 'development' ? err.stack : undefined

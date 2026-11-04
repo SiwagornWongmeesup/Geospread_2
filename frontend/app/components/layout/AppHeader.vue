@@ -11,7 +11,8 @@
     <!-- ชื่อหน้าที่กำลังเปิดอยู่ -->
     <h1 v-else class="app-header__title">{{ pageTitle }}</h1>
 
-    <div class="app-header__search">
+    <!-- ช่องค้นหาแสดงเฉพาะตอนเข้าสู่ระบบแล้ว (หน้าเข้าสู่ระบบ/สมัครจึงเหลือแค่โลโก้ ภาษา และปุ่มเข้าสู่ระบบ/สมัคร) -->
+    <div v-if="isLoggedIn" class="app-header__search">
       <span class="search-icon">⌕</span>
       <input
         type="text"
@@ -47,10 +48,7 @@
           aria-controls="header-notifications"
           @click="toggleMenu('notifications')"
         >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M6 9a6 6 0 1 1 12 0c0 4.5 1.5 6.5 2.5 7.5h-17C4.5 15.5 6 13.5 6 9Z" />
-            <path d="M10 19.5a2 2 0 0 0 4 0" />
-          </svg>
+          <img src="/icons/Notification.svg" alt="" class="icon-button__icon" />
           <span v-if="unreadCount" class="icon-button__badge">{{ unreadCount }}</span>
         </button>
 
@@ -185,6 +183,7 @@ const pageTitles = {
   '/safety-guide': 'nav.safetyGuide',
   '/profile': 'nav.profile',
   '/settings': 'nav.settings',
+  '/terms': 'termsPage.title',
 }
 
 const pageTitle = computed(() => {
@@ -485,6 +484,12 @@ const handleLogout = () => {
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 1.8;
+}
+
+.icon-button__icon {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
 }
 
 .icon-button__badge {

@@ -1,7 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
-const { registerValidator, loginValidator, getUserByIdValidator } = require('../validators/userValidator');
+const {
+    registerValidator,
+    loginValidator,
+    verifyEmailValidator,
+    resendVerificationValidator,
+    getUserByIdValidator
+} = require('../validators/userValidator');
 const authMiddleware = require('../middlewares/authMiddleware');
 const checkRole = require('../middlewares/checkRole');
 
@@ -14,6 +20,12 @@ router.post('/', registerValidator, userController.createUser);
 
 // POST /users/login — เข้าสู่ระบบ
 router.post('/login', loginValidator, userController.loginUser);
+
+// POST /users/verify-email — ยืนยันอีเมลด้วยรหัส 6 หลัก
+router.post('/verify-email', verifyEmailValidator, userController.verifyEmail);
+
+// POST /users/resend-verification — ขอรหัสยืนยันใหม่ (รอได้ทุก 60 วินาที)
+router.post('/resend-verification', resendVerificationValidator, userController.resendVerification);
 
 // ---------------------------------------------------------------------------
 // Protected Routes (ต้อง login)
