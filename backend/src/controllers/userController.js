@@ -77,11 +77,33 @@ const resendVerification = async (req, res, next) => {
     }
 };
 
+// POST /users/forgot-password — ขอรหัสตั้งรหัสผ่านใหม่ทางอีเมล
+const forgotPassword = async (req, res, next) => {
+    try {
+        const result = await userService.forgotPassword(req.body);
+        res.status(200).json({ success: true, message: 'ถ้าอีเมลนี้มีบัญชีอยู่ ระบบได้ส่งรหัสไปแล้ว', data: result });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// POST /users/reset-password — ตั้งรหัสผ่านใหม่ด้วยรหัส 6 หลัก
+const resetPassword = async (req, res, next) => {
+    try {
+        const result = await userService.resetPassword(req.body);
+        res.status(200).json({ success: true, message: 'ตั้งรหัสผ่านใหม่สำเร็จ', data: result });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getAllUsers,
     getUserById,
     createUser,
     loginUser,
     verifyEmail,
-    resendVerification
+    resendVerification,
+    forgotPassword,
+    resetPassword
 };

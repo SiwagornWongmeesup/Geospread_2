@@ -46,26 +46,46 @@ const sendMail = async ({ to, subject, text, html }) => {
     }
 };
 
-// อีเมลรหัสยืนยัน 6 หลัก (ภาษาไทยและอังกฤษในฉบับเดียว เพราะยังไม่รู้ภาษาที่ผู้ใช้เลือก)
-const sendVerificationCode = (to, code, expiresInMinutes) => {
+// อีเมลรหัส 6 หลัก (ภาษาไทยและอังกฤษในฉบับเดียว เพราะยังไม่รู้ภาษาที่ผู้ใช้เลือก)
+const sendCodeEmail = (to, code, expiresInMinutes, copy) => {
     const text = [
-        `รหัสยืนยันอีเมล GeoSpread ของคุณคือ ${code}`,
-        `รหัสนี้ใช้ได้ ${expiresInMinutes} นาที ถ้าคุณไม่ได้สมัคร GeoSpread ไม่ต้องทำอะไร`,
+        `${copy.th} ${code}`,
+        `รหัสนี้ใช้ได้ ${expiresInMinutes} นาที ${copy.ignoreTh}`,
         '',
-        `Your GeoSpread verification code is ${code}`,
-        `It expires in ${expiresInMinutes} minutes. If you did not sign up, you can ignore this email.`,
+        `${copy.en} ${code}`,
+        `It expires in ${expiresInMinutes} minutes. ${copy.ignoreEn}`,
     ].join('\n');
 
     const html = `
         <div style="font-family: system-ui, sans-serif; color: #102968; max-width: 420px">
-            <p style="margin: 0 0 12px">รหัสยืนยันอีเมล GeoSpread ของคุณ</p>
+            <p style="margin: 0 0 12px">${copy.th}</p>
             <p style="margin: 0 0 12px; font-size: 32px; font-weight: 800; letter-spacing: 8px">${code}</p>
-            <p style="margin: 0 0 20px; color: #3f5a80">รหัสนี้ใช้ได้ ${expiresInMinutes} นาที ถ้าคุณไม่ได้สมัคร GeoSpread ไม่ต้องทำอะไร</p>
-            <p style="margin: 0; color: #52708b; font-size: 13px">Your GeoSpread verification code is ${code}. It expires in ${expiresInMinutes} minutes.</p>
+            <p style="margin: 0 0 20px; color: #3f5a80">รหัสนี้ใช้ได้ ${expiresInMinutes} นาที ${copy.ignoreTh}</p>
+            <p style="margin: 0; color: #52708b; font-size: 13px">${copy.en} ${code}. It expires in ${expiresInMinutes} minutes. ${copy.ignoreEn}</p>
         </div>`;
 
-    return sendMail({ to, subject: `${code} คือรหัสยืนยัน GeoSpread ของคุณ`, text, html });
+    return sendMail({ to, subject: `${code} ${copy.subject}`, text, html });
 };
+
+// รหัสยืนยันอีเมลตอนสมัคร
+const sendVerificationCode = (to, code, expiresInMinutes) =>
+    sendCodeEmail(to, code, expiresInMinutes, {
+        subject: 'คือรหัสยืนยัน GeoSpread ของคุณ',
+        th: 'รหัสยืนยันอีเมล GeoSpread ของคุณคือ',
+        en: 'Your GeoSpread verification code is',
+        ignoreTh: 'ถ้าคุณไม่ได้สมัคร GeoSpread ไม่ต้องทำอะไร',
+        ignoreEn: 'If you did not sign up, you can ignore this email.',
+    });
+
+// รหัสตั้งรหัสผ่านใหม่ (ลืมรหัสผ่าน)
+const sendPasswordResetCode = (to, code, expiresInMinutes) =>
+    sendCodeEmail(to, code, expiresInMinutes, {
+        subject: 'คือรหัสตั้งรหัสผ่านใหม่ GeoSpread ของคุณ',
+        th: 'รหัสสำหรับตั้งรหัสผ่านใหม่ GeoSpread ของคุณคือ',
+        en: 'Your GeoSpread password reset code is',
+        ignoreTh: 'ถ้าคุณไม่ได้ขอเปลี่ยนรหัสผ่าน ไม่ต้องทำอะไร รหัสผ่านเดิมยังใช้ได้',
+        ignoreEn: 'If you did not ask to reset your password, you can ignore this email.',
+    });
 
 // ทดสอบว่าเข้าสู่ระบบ Gmail ได้ไหม โดยไม่ส่งอีเมลจริง
 const verifyConnection = () => getTransporter().verify();
@@ -75,4 +95,5 @@ module.exports = {
     verifyConnection,
     sendMail,
     sendVerificationCode,
+    sendPasswordResetCode,
 };

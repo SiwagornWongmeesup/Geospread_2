@@ -24,6 +24,7 @@
         required
         :error="fieldErrors.password"
       />
+      <AuthForgotLink :email="form.email" :to="forgotTo" />
       <AuthSubmitButton :loading="loading" :label="t('header.login')" :loading-label="t('auth.checking')" />
     </form>
     <GoogleAuthButton mode="login" />
@@ -38,6 +39,7 @@
 import AuthMobileLayout from '~/components/auth/AuthMobileLayout.vue'
 import AuthAlert from '~/components/auth/AuthAlert.vue'
 import AuthField from '~/components/auth/AuthField.vue'
+import AuthForgotLink from '~/components/auth/AuthForgotLink.vue'
 import AuthSubmitButton from '~/components/auth/AuthSubmitButton.vue'
 import GoogleAuthButton from '~/components/auth/GoogleAuthButton.vue'
 
@@ -48,6 +50,7 @@ defineProps({
   fieldErrors: { type: Object, default: () => ({}) },
   successNotice: { type: String, default: '' },
   registerTo: { type: [String, Object], default: '/register' },
+  forgotTo: { type: [String, Object], default: '/forgot-password' },
 })
 
 const emit = defineEmits(['submitLogin'])

@@ -98,6 +98,26 @@ export const useAuth = () => {
     }
   }
 
+  // error ของรหัส 6 หลัก (ใช้ทั้งยืนยันอีเมลและลืมรหัสผ่าน) แปลงเป็นข้อความตามภาษาที่เลือก
+  const setCodeError = (err) => {
+    const codeMap = {
+      INVALID_CODE: ['invalidCode', 'auth.invalidCode'],
+      CODE_EXPIRED: ['codeExpired', 'auth.codeExpired'],
+      TOO_MANY_ATTEMPTS: ['tooManyAttempts', 'auth.tooManyAttempts'],
+    }
+    const match = codeMap[err?.data?.code]
+    if (match) {
+      errorCode.value = match[0]
+      const attemptsLeft = err?.data?.errors?.[0]?.attemptsLeft
+      error.value = attemptsLeft ? t('auth.invalidCodeLeft', { count: attemptsLeft }) : t(match[1])
+    } else if (err?.statusCode ?? err?.status) {
+      errorCode.value = 'invalidCode'
+      error.value = t('auth.invalidCode')
+    } else {
+      error.value = t('auth.connectionError')
+    }
+  }
+
   // ยืนยันอีเมลด้วยรหัส 6 หลัก
   const verifyEmail = async ({ email, code }) => {
     loading.value = true
@@ -108,22 +128,7 @@ export const useAuth = () => {
       await $fetch(`${apiBase}/users/verify-email`, { method: 'POST', body: { email, code } })
       return true
     } catch (err) {
-      const codeMap = {
-        INVALID_CODE: ['invalidCode', 'auth.invalidCode'],
-        CODE_EXPIRED: ['codeExpired', 'auth.codeExpired'],
-        TOO_MANY_ATTEMPTS: ['tooManyAttempts', 'auth.tooManyAttempts'],
-      }
-      const match = codeMap[err?.data?.code]
-      if (match) {
-        errorCode.value = match[0]
-        const attemptsLeft = err?.data?.errors?.[0]?.attemptsLeft
-        error.value = attemptsLeft ? t('auth.invalidCodeLeft', { count: attemptsLeft }) : t(match[1])
-      } else if (err?.statusCode ?? err?.status) {
-        errorCode.value = 'invalidCode'
-        error.value = t('auth.invalidCode')
-      } else {
-        error.value = t('auth.connectionError')
-      }
+      setCodeError(err)
       return false
     } finally {
       loading.value = false
@@ -138,6 +143,38 @@ export const useAuth = () => {
     } catch (err) {
       error.value = err?.data?.code === 'EMAIL_SEND_FAILED' ? t('auth.emailSendFailed') : t('auth.connectionError')
       return null
+    }
+  }
+
+  // ลืมรหัสผ่าน: ขอรหัส 6 หลักทางอีเมล คืนจำนวนวินาทีที่ต้องรอก่อนขอได้อีก (null = ส่งไม่สำเร็จ)
+  const requestPasswordReset = async (email) => {
+    loading.value = true
+    error.value = ''
+    errorCode.value = ''
+    try {
+      const res = await $fetch(`${apiBase}/users/forgot-password`, { method: 'POST', body: { email } })
+      return res?.data?.retryAfterSeconds ?? 60
+    } catch (err) {
+      error.value = err?.data?.code === 'EMAIL_SEND_FAILED' ? t('auth.emailSendFailed') : t('auth.connectionError')
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // ตั้งรหัสผ่านใหม่ด้วยรหัส 6 หลัก
+  const resetPassword = async ({ email, code, password }) => {
+    loading.value = true
+    error.value = ''
+    errorCode.value = ''
+    try {
+      await $fetch(`${apiBase}/users/reset-password`, { method: 'POST', body: { email, code, password } })
+      return true
+    } catch (err) {
+      setCodeError(err)
+      return false
+    } finally {
+      loading.value = false
     }
   }
 
@@ -169,6 +206,8 @@ export const useAuth = () => {
     register,
     verifyEmail,
     resendVerification,
+    requestPasswordReset,
+    resetPassword,
     logout
   }
 }

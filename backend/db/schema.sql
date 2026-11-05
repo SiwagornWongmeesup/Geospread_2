@@ -48,6 +48,15 @@ CREATE TABLE IF NOT EXISTS tb_email_verifications (
     last_sent_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- รหัสรีเซ็ตรหัสผ่าน 6 หลัก (ลืมรหัสผ่าน) โครงสร้างเดียวกับรหัสยืนยันอีเมล
+CREATE TABLE IF NOT EXISTS tb_password_resets (
+    user_id INT PRIMARY KEY REFERENCES tb_users(id) ON DELETE CASCADE,
+    code_hash TEXT NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
+    attempts SMALLINT NOT NULL DEFAULT 0,
+    last_sent_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 -- หมวดใหญ่ ใช้จัดกลุ่มประเภทเหตุการณ์ในหน้าจอและการค้นหา
 CREATE TABLE IF NOT EXISTS tb_incident_categories (
     -- รหัสหมวดหมู่ ใช้ระบุหมวดของประเภทเหตุการณ์

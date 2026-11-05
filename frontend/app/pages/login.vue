@@ -26,6 +26,11 @@ const registerTo = computed(() => (
     ? { path: '/register', query: { redirect: route.query.redirect } }
     : '/register'
 ))
+const forgotTo = computed(() => (
+  typeof route.query.redirect === 'string'
+    ? { path: '/forgot-password', query: { redirect: route.query.redirect } }
+    : '/forgot-password'
+))
 const redirectAfterLogin = () => {
   const redirect = route.query.redirect
 
@@ -64,6 +69,8 @@ const form = ref({
 
 // เพิ่งยืนยันอีเมลเสร็จ: หน้ายืนยันฝากอีเมลไว้ใน state (ไม่ใส่ใน URL) ให้กรอกไว้รอและแสดงข้อความสำเร็จ
 const registeredEmail = useState('auth-registered-email', () => '')
+// เพิ่งตั้งรหัสผ่านใหม่จากหน้าลืมรหัสผ่าน
+const passwordResetEmail = useState('auth-password-reset-email', () => '')
 const successNotice = ref('')
 
 // ย้ายเคอร์เซอร์ไปช่องที่ต้องทำต่อ (มีช่องเดียวต่อหน้า เพราะแสดงแค่ Desktop หรือ Mobile)
@@ -83,6 +90,11 @@ onMounted(() => {
     form.value.email = registeredEmail.value
     successNotice.value = t('auth.registerSuccess')
     registeredEmail.value = ''
+    focusField('input[type="password"]')
+  } else if (passwordResetEmail.value) {
+    form.value.email = passwordResetEmail.value
+    successNotice.value = t('auth.resetSuccess')
+    passwordResetEmail.value = ''
     focusField('input[type="password"]')
   }
 })
@@ -137,6 +149,7 @@ const handleLogin = async () => {
     :field-errors="fieldErrors"
     :success-notice="successNotice"
     :register-to="registerTo"
+    :forgot-to="forgotTo"
     @submit-login="handleLogin"
   />
   <DesktopView
@@ -147,6 +160,7 @@ const handleLogin = async () => {
     :field-errors="fieldErrors"
     :success-notice="successNotice"
     :register-to="registerTo"
+    :forgot-to="forgotTo"
     @submit-login="handleLogin"
   />
 </template>

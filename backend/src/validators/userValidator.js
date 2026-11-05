@@ -74,6 +74,31 @@ const resendVerificationValidator = [
 ];
 
 /**
+ * forgotPasswordValidator — POST /users/forgot-password
+ */
+const forgotPasswordValidator = resendVerificationValidator;
+
+/**
+ * resetPasswordValidator — POST /users/reset-password
+ */
+const resetPasswordValidator = [
+    body('email')
+        .notEmpty().withMessage('กรุณากรอกอีเมล')
+        .isEmail().withMessage('รูปแบบอีเมลไม่ถูกต้อง')
+        .normalizeEmail(),
+
+    body('code')
+        .trim()
+        .matches(/^\d{6}$/).withMessage('รหัสต้องเป็นตัวเลข 6 หลัก'),
+
+    body('password')
+        .notEmpty().withMessage('กรุณากรอกรหัสผ่านใหม่')
+        .isLength({ min: 8 }).withMessage('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร'),
+
+    validateRequest
+];
+
+/**
  * getUserByIdValidator
  * -----------------------------------------------------------------------
  * ใช้กับ GET /users/:id
@@ -92,5 +117,7 @@ module.exports = {
     loginValidator,
     verifyEmailValidator,
     resendVerificationValidator,
+    forgotPasswordValidator,
+    resetPasswordValidator,
     getUserByIdValidator
 };

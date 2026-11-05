@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const AppError = require('../utils/AppError');
 const emailVerificationService = require('./emailVerificationService');
+const passwordResetService = require('./passwordResetService');
 
 const getAllUsers = async () => {
     // Service จัดการ Business Logic และเรียก Repository หากต้องการติดต่อ Database
@@ -106,11 +107,17 @@ const verifyEmail = ({ email, code }) => emailVerificationService.verify(email, 
 
 const resendVerification = ({ email }) => emailVerificationService.resend(email);
 
+const forgotPassword = ({ email }) => passwordResetService.requestReset(email);
+
+const resetPassword = ({ email, code, password }) => passwordResetService.resetPassword(email, code, password);
+
 module.exports = {
     getAllUsers,
     getUserById,
     createUser,
     loginUser,
     verifyEmail,
-    resendVerification
+    resendVerification,
+    forgotPassword,
+    resetPassword
 };

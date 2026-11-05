@@ -43,40 +43,54 @@ const markEmailVerified = async (id) => {
     await db.query('UPDATE tb_users SET email_verified = TRUE, updated_at = CURRENT_TIMESTAMP WHERE id = $1', [id]);
 };
 
-// ---- รหัสยืนยันอีเมล ----
-const getEmailVerification = async (userId) => {
-    const result = await db.query(
-        `SELECT user_id, code_hash, expires_at, attempts, last_sent_at,
-                EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - last_sent_at)) AS seconds_since_sent,
-                expires_at < CURRENT_TIMESTAMP AS is_expired
-         FROM tb_email_verifications WHERE user_id = $1`,
-        [userId]
-    );
-    return result.rows[0];
-};
+// ---- รหัส 6 หลักทางอีเมล (ยืนยันอีเมล / รีเซ็ตรหัสผ่าน) ----
+// สองตารางมีโครงสร้างเหมือนกัน จึงใช้ฟังก์ชันชุดเดียวกัน (ชื่อตารางมาจากในโค้ดเท่านั้น ไม่ได้มาจากผู้ใช้)
+const createCodeStore = (table) => ({
+    get: async (userId) => {
+        const result = await db.query(
+            `SELECT user_id, code_hash, expires_at, attempts, last_sent_at,
+                    EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - last_sent_at)) AS seconds_since_sent,
+                    expires_at < CURRENT_TIMESTAMP AS is_expired
+             FROM ${table} WHERE user_id = $1`,
+            [userId]
+        );
+        return result.rows[0];
+    },
 
-// เขียนทับรหัสเดิม และนับจำนวนครั้งที่ผิดใหม่
-const saveEmailVerification = async (userId, codeHash, expiresInMinutes) => {
+    // เขียนทับรหัสเดิม และนับจำนวนครั้งที่ผิดใหม่
+    save: async (userId, codeHash, expiresInMinutes) => {
+        await db.query(
+            `INSERT INTO ${table} (user_id, code_hash, expires_at, attempts, last_sent_at)
+             VALUES ($1, $2, CURRENT_TIMESTAMP + make_interval(mins => $3), 0, CURRENT_TIMESTAMP)
+             ON CONFLICT (user_id) DO UPDATE
+             SET code_hash = EXCLUDED.code_hash, expires_at = EXCLUDED.expires_at,
+                 attempts = 0, last_sent_at = EXCLUDED.last_sent_at`,
+            [userId, codeHash, expiresInMinutes]
+        );
+    },
+
+    incrementAttempts: async (userId) => {
+        const result = await db.query(
+            `UPDATE ${table} SET attempts = attempts + 1 WHERE user_id = $1 RETURNING attempts`,
+            [userId]
+        );
+        return result.rows[0]?.attempts ?? 0;
+    },
+
+    remove: async (userId) => {
+        await db.query(`DELETE FROM ${table} WHERE user_id = $1`, [userId]);
+    },
+});
+
+const emailVerifications = createCodeStore('tb_email_verifications');
+const passwordResets = createCodeStore('tb_password_resets');
+
+// ตั้งรหัสผ่านใหม่ (ลืมรหัสผ่าน) และถือว่าอีเมลยืนยันแล้ว เพราะผู้ใช้พิสูจน์แล้วว่าเปิดอีเมลนี้ได้
+const updatePasswordAndVerify = async (id, password) => {
     await db.query(
-        `INSERT INTO tb_email_verifications (user_id, code_hash, expires_at, attempts, last_sent_at)
-         VALUES ($1, $2, CURRENT_TIMESTAMP + make_interval(mins => $3), 0, CURRENT_TIMESTAMP)
-         ON CONFLICT (user_id) DO UPDATE
-         SET code_hash = EXCLUDED.code_hash, expires_at = EXCLUDED.expires_at,
-             attempts = 0, last_sent_at = EXCLUDED.last_sent_at`,
-        [userId, codeHash, expiresInMinutes]
+        'UPDATE tb_users SET password = $1, email_verified = TRUE, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+        [password, id]
     );
-};
-
-const incrementVerificationAttempts = async (userId) => {
-    const result = await db.query(
-        'UPDATE tb_email_verifications SET attempts = attempts + 1 WHERE user_id = $1 RETURNING attempts',
-        [userId]
-    );
-    return result.rows[0]?.attempts ?? 0;
-};
-
-const deleteEmailVerification = async (userId) => {
-    await db.query('DELETE FROM tb_email_verifications WHERE user_id = $1', [userId]);
 };
 
 //แก้ไขข้อมูล user
@@ -104,10 +118,15 @@ module.exports = {
     createUser,
     updateUnverifiedUser,
     markEmailVerified,
-    getEmailVerification,
-    saveEmailVerification,
-    incrementVerificationAttempts,
-    deleteEmailVerification,
+    getEmailVerification: emailVerifications.get,
+    saveEmailVerification: emailVerifications.save,
+    incrementVerificationAttempts: emailVerifications.incrementAttempts,
+    deleteEmailVerification: emailVerifications.remove,
+    getPasswordReset: passwordResets.get,
+    savePasswordReset: passwordResets.save,
+    incrementPasswordResetAttempts: passwordResets.incrementAttempts,
+    deletePasswordReset: passwordResets.remove,
+    updatePasswordAndVerify,
     updateUser,
     deleteUser
 };

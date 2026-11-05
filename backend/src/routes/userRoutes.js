@@ -6,6 +6,8 @@ const {
     loginValidator,
     verifyEmailValidator,
     resendVerificationValidator,
+    forgotPasswordValidator,
+    resetPasswordValidator,
     getUserByIdValidator
 } = require('../validators/userValidator');
 const authMiddleware = require('../middlewares/authMiddleware');
@@ -26,6 +28,12 @@ router.post('/verify-email', verifyEmailValidator, userController.verifyEmail);
 
 // POST /users/resend-verification — ขอรหัสยืนยันใหม่ (รอได้ทุก 60 วินาที)
 router.post('/resend-verification', resendVerificationValidator, userController.resendVerification);
+
+// POST /users/forgot-password — ขอรหัสตั้งรหัสผ่านใหม่ (ส่งทางอีเมล รอได้ทุก 60 วินาที)
+router.post('/forgot-password', forgotPasswordValidator, userController.forgotPassword);
+
+// POST /users/reset-password — ตั้งรหัสผ่านใหม่ด้วยรหัส 6 หลัก
+router.post('/reset-password', resetPasswordValidator, userController.resetPassword);
 
 // ---------------------------------------------------------------------------
 // Protected Routes (ต้อง login)
