@@ -399,8 +399,9 @@ watch([incidentId, reportId], () => {
 
 .report-detail__type-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 16px;
+  gap: 12px 16px;
   min-width: 0;
 }
 
@@ -439,16 +440,16 @@ watch([incidentId, reportId], () => {
 }
 
 .report-detail__type-row h1 {
+  /* ภาษาไทยมีวรรณยุกต์ซ้อนด้านบน (เช่น ไม้โทใน "น้ำ") ต้องให้บรรทัดสูงพอ และห้ามตัดส่วนที่ล้นทิ้ง
+     ไม่อย่างนั้นวรรณยุกต์จะหายไป ("น้ำท่วม" กลายเป็น "นำท่วม") ชื่อยาวให้ขึ้นบรรทัดใหม่แทนการตัด */
   min-width: 0;
   margin: 0;
-  overflow: hidden;
   color: #102e61;
-  font-size: clamp(30px, 4vw, 48px);
-  font-weight: 900;
-  letter-spacing: -0.03em;
-  line-height: 1.12;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: clamp(28px, 4vw, 44px);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .report-detail__byline {
@@ -671,13 +672,35 @@ watch([incidentId, reportId], () => {
     padding: 22px 20px;
   }
 
-  .report-detail__type-row h1 {
-    font-size: 32px;
+  .report-detail__type-row {
+    gap: 10px 12px;
   }
 
+  .report-detail__type-icon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .report-detail__type-icon img {
+    width: 26px;
+    height: 26px;
+  }
+
+  .report-detail__type-row h1 {
+    font-size: 26px;
+  }
+
+  /* ผู้แจ้ง: รูป | ชื่อ + เวลา (ซ้อนกัน) / สถานที่อยู่บรรทัดล่าง ตรงกับแนวชื่อ */
   .report-detail__byline {
-    gap: 7px;
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr);
+    column-gap: 10px;
+    row-gap: 2px;
     font-size: 14px;
+  }
+
+  .report-detail__avatar {
+    grid-row: span 2;
   }
 
   .report-detail__separator {
@@ -685,8 +708,18 @@ watch([incidentId, reportId], () => {
   }
 
   .report-detail__location {
-    width: 100%;
-    margin-left: 51px;
+    grid-column: 2;
+    align-items: flex-start;
+    margin-top: 6px;
+  }
+
+  .report-detail__location img {
+    margin-top: 1px;
+  }
+
+  .report-detail__body h2,
+  .report-detail__media-heading h2 {
+    font-size: 19px;
   }
 
   .report-detail__description {

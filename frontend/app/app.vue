@@ -4,9 +4,12 @@
   <NuxtLayout>
     <NuxtPage />
   </NuxtLayout>
+  <!-- วิธีติดตั้งแอปบน iPhone (เปิดจากปุ่ม "ติดตั้งแอป") -->
+  <InstallAppHelp />
 </template>
 
 <script setup>
+import InstallAppHelp from '~/components/common/InstallAppHelp.vue'
 // ตั้งภาษาของหน้า (<html lang>) ตามภาษาที่ผู้ใช้เลือก ให้ screen reader อ่านถูกภาษา
 const { locale } = useLocale()
 useHead({ htmlAttrs: { lang: locale } })

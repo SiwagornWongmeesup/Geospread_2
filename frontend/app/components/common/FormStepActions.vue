@@ -30,10 +30,11 @@ const { t } = useLocale()
 
 <style scoped>
 .step-actions {
-  /* ติดอยู่ล่างจอเหนือแถบเมนูล่าง (สูง 71px) กดได้ด้วยนิ้วโป้งเสมอ ไม่ต้องเลื่อนหา */
+  /* ติดอยู่ล่างจอพอดีเหนือแถบเมนูล่าง กดได้ด้วยนิ้วโป้งเสมอ ไม่ต้องเลื่อนหา
+     bottom: 0 เพราะกล่องที่เลื่อนได้ของหน้าเว้นที่ให้แถบเมนูล่างไว้แล้ว (ถ้าใส่ 71px จะลอยสูงขึ้นไปบังเนื้อหา) */
   position: sticky;
   z-index: 5;
-  bottom: calc(71px + env(safe-area-inset-bottom));
+  bottom: 0;
   display: grid;
   grid-auto-columns: minmax(0, 1fr);
   grid-auto-flow: column;

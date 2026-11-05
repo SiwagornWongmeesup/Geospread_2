@@ -534,6 +534,8 @@ watch(() => route.hash, openGuideCategoryForHash);
 
 .app-sidebar__link-label {
   overflow: hidden;
+  /* บรรทัดสูง 1.45 เท่า ให้วรรณยุกต์ไทยด้านบน/ล่างไม่โดนตัด (เพราะซ่อนส่วนที่ล้นไว้ตัดชื่อยาวเป็น …) */
+  line-height: 1.45;
   text-overflow: ellipsis;
   white-space: nowrap;
 }

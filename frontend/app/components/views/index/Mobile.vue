@@ -41,8 +41,10 @@
       :is-loading="isLoadingMap"
       :has-user-location="Boolean(userLocation)"
       :is-locating="isLocating"
+      :radius-meters="nearbyRadiusMeters"
       @select="selectIncident"
       @request-location="focusCurrentLocation"
+      @change-radius="changeNearbyRadius"
     />
 
     <!-- กดหมุดแล้วแสดงรายละเอียดเป็นแผ่นเลื่อนขึ้นจากด้านล่าง (แทน popup บนแผนที่) -->
@@ -71,6 +73,7 @@ const {
   publicMapItems,
   sheetIncidentList,
   sheetHelpRequestList,
+  nearbyRadiusMeters,
   isLoadingMap,
   userLocation,
   mapError,
@@ -102,6 +105,11 @@ const openReportDetail = ({incidentId, reportId}) => {
 }
 
 
+// ลูก (NearbySheet) บอกว่าผู้ใช้กดปุ่มรัศมีใหม่ → เปลี่ยนค่าในกล่อง รายการเหตุรอบตัวจะกรองใหม่เอง
+const changeNearbyRadius = (meters) => {
+  nearbyRadiusMeters.value = meters;
+};
+
 const focusCurrentLocation = async () => {
   try {
     const location = await getCurrentLocation();
@@ -114,6 +122,10 @@ const focusCurrentLocation = async () => {
 };
 onMounted(() => {
   void fetchPublicMapItems();
+  // เปิดหน้าแล้วขอตำแหน่งเลย แผ่นรายการจะได้แสดงเหตุรอบตัวผู้ใช้ทันที (ถ้ารู้ตำแหน่งแล้วไม่ต้องขอซ้ำ)
+  if (!userLocation.value) {
+    void focusCurrentLocation();
+  }
 });
 </script>
 

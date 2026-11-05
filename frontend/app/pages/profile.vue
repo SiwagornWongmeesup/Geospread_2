@@ -6,6 +6,7 @@
 // ---------------------------------------------------------------------------
 import ProfileSummary from '~/components/profile/ProfileSummary.vue'
 import MobileProfileMenu from '~/components/profile/MobileProfileMenu.vue'
+import InstallAppBanner from '~/components/common/InstallAppBanner.vue'
 
 definePageMeta({
   showRightPanel: false
@@ -35,6 +36,8 @@ const confirmLogout = () => {
 <template>
   <section class="profile-page" :class="{ 'profile-page--mobile': isMobile }">
     <ProfileSummary :account="account" />
+    <!-- ติดตั้งแอปลงเครื่อง (แสดงเฉพาะเครื่องที่ติดตั้งได้และยังไม่ได้ติดตั้ง) -->
+    <InstallAppBanner variant="row" />
     <MobileProfileMenu v-if="isMobile" :is-logged-in="isLoggedIn" @logout="confirmLogout" />
   </section>
 </template>

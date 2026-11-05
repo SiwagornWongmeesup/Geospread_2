@@ -221,11 +221,12 @@ const isSameLocalDay = (value, now = new Date()) => {
   return !Number.isNaN(date.getTime()) && date.toDateString() === now.toDateString()
 }
 
+// รัศมีที่ถือว่า "รอบตัวผู้ใช้" ในแผ่นรายการหน้ามือถือ (เมตร)
+  
 export const useHomeDashboard = () => {
   const config = useRuntimeConfig()
   const apiBase = config.public.apiBase || 'http://localhost:5000'
   const { t } = useLocale()
-
   const selectedIncident = useState('home-selected-incident', () => null)
   // เก็บข้อมูลดิบจาก API แล้วแปลงเป็นรายการบนแผนที่ใน computed เพื่อให้ข้อความเปลี่ยนตามภาษาที่เลือก
   const rawMapData = useState('home-raw-map-data', () => ({ incidents: [], pendingReports: [], helpRequests: [] }))
@@ -243,6 +244,8 @@ export const useHomeDashboard = () => {
   const mapUpdatedAt = useState('home-map-updated-at', () => null)
   // ตัวเรียงการ์ดเหตุการณ์ใกล้คุณ: 'nearest' = ใกล้ที่สุด, 'recent' = ล่าสุด
   const nearbySort = useState('home-nearby-sort', () => 'nearest')
+  // รัศมีที่ถือว่า "รอบตัวผู้ใช้" ในแผ่นรายการหน้ามือถือ (เมตร) ผู้ใช้กดเปลี่ยนได้ที่ปุ่ม 1/5/10/25 กม.
+  const nearbyRadiusMeters = useState('home-nearby-radius', () => 5000)
   // ที่เก็บข้อมูลรายระเอียดของ Marker ที่กำลังกด 
   const selectedIncidentDetail = useState('home-selected-incident-detail',() => null,)
 
@@ -317,6 +320,7 @@ export const useHomeDashboard = () => {
       return cards.slice(0, 2)
     }
 
+
     const hasUserLocation = cards.some((item) => item.distanceMeters !== null)
     //เงื่อนไขเช็คว่ามีระยะคำนวนอย่างน้อย1เหตุไหม
     if (hasUserLocation) {
@@ -350,16 +354,24 @@ export const useHomeDashboard = () => {
     .sort(byDistanceThenRecent)
     .slice(0, 3))
 
-  // แผ่นเลื่อนหน้ามือถือ: รายการทั้งหมด (ไม่ตัดจำนวน) เรียงจากใกล้ไปไกล ถ้าไม่รู้ตำแหน่งจะเรียงตามเวลาล่าสุด
-  const sheetIncidentList = computed(() => publicMapItems.value
-    .filter((item) => item.kind === 'incident')
-    .map(withDistance)
-    .sort(byDistanceThenRecent))
 
-  const sheetHelpRequestList = computed(() => publicMapItems.value
-    .filter((item) => item.kind === 'help_request')
-    .map(withDistance)
-    .sort(byDistanceThenRecent))
+  // แผ่นรายการหน้ามือถือ: แสดงเฉพาะสิ่งที่เกิดขึ้น "รอบตัวผู้ใช้" (ในรัศมี nearbyRadiusMeters)
+  // ยังไม่รู้ตำแหน่งผู้ใช้ = ยังบอกไม่ได้ว่าอะไรอยู่รอบตัว จึงคืนรายการว่าง (แผ่นรายการจะชวนเปิดตำแหน่ง)
+  const isAroundUser = (item) => item.distanceMeters !== null && item.distanceMeters <= nearbyRadiusMeters.value
+
+  const getItemsAroundUser = (kind) => {
+    if (!userLocation.value) return []
+    const items = publicMapItems.value
+      .filter((item) => item.kind === kind)
+      .map(withDistance)
+      .filter(isAroundUser)
+    // ที่ใกล้ที่สุดอยู่บนสุด
+    items.sort(byDistanceThenRecent)
+    return items
+  }
+
+  const sheetIncidentList = computed(() => getItemsAroundUser('incident'))
+  const sheetHelpRequestList = computed(() => getItemsAroundUser('help_request'))
 
   // ความเคลื่อนไหวล่าสุด: รวมทุกชนิดบนแผนที่ เรียงตามเวลา
   const recentActivity = computed(() => publicMapItems.value
@@ -426,6 +438,7 @@ export const useHomeDashboard = () => {
     helpRequestCards,
     sheetIncidentList,
     sheetHelpRequestList,
+    nearbyRadiusMeters,
     recentActivity,
     todaySummary,
     isLoadingMap,

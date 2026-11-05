@@ -94,6 +94,11 @@ export default defineNuxtConfig({
       ]
     },
 
+    // เก็บ event ติดตั้งของเบราว์เซอร์ไว้ ให้ปุ่ม "ติดตั้งแอป" ของเราเปิดหน้าต่างติดตั้งได้
+    client: {
+      installPrompt: true
+    },
+
     // ตอนรัน npm run dev ไม่เปิด service worker จะได้ไม่ติด cache ระหว่างเขียนโค้ด
     devOptions: {
       enabled: false

@@ -50,6 +50,9 @@
       :hidden="state === 'collapsed' && dragHeight === null"
       :aria-labelledby="`nearby-tab-${activeTab}`"
     >
+      <!-- ชวนติดตั้งแอป อยู่ในแผ่นรายการ ไม่บังแผนที่ กดปิดได้ -->
+      <InstallAppBanner class="nearby-sheet__install" />
+
       <button
         v-if="!hasUserLocation"
         type="button"
@@ -60,9 +63,25 @@
         {{ isLocating ? t('location.locating') : t('nearbySheet.useLocation') }}
       </button>
 
+      <!-- ปุ่มเลือกรัศมี "รอบตัว" กดแล้วบอกแม่ (Mobile.vue) ให้เปลี่ยนรัศมี รายการจะกรองใหม่ทันที -->
+      <div v-if="hasUserLocation" class="nearby-sheet__radius" role="group" :aria-label="t('nearbySheet.radiusLabel')">
+        <button
+          v-for="option in radiusOptions"
+          :key="option"
+          type="button"
+          class="nearby-sheet__radius-chip"
+          :aria-pressed="radiusMeters === option"
+          @click="$emit('change-radius', option)"
+        >
+          {{ t('units.kilometers', { value: option / 1000 }) }}
+        </button>
+      </div>
+
       <p v-if="isLoading" class="nearby-sheet__state">{{ t('nearby.loading') }}</p>
+      <!-- ยังไม่รู้ตำแหน่ง: บอกว่าต้องเปิดตำแหน่งก่อนถึงจะเห็นเหตุรอบตัว (ปุ่มด้านบน) -->
+      <p v-else-if="!hasUserLocation" class="nearby-sheet__state">{{ t('nearbySheet.needLocation') }}</p>
       <p v-else-if="!activeItems.length" class="nearby-sheet__state">
-        {{ activeTab === 'incidents' ? t('nearbySheet.emptyIncidents') : t('nearbySheet.emptyHelpRequests') }}
+        {{ activeTab === 'incidents' ? t('nearbySheet.emptyIncidents', { radius: radiusLabel }) : t('nearbySheet.emptyHelpRequests', { radius: radiusLabel }) }}
       </p>
 
       <ul v-else class="nearby-sheet__list">
@@ -91,6 +110,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import StatusBadge from '~/components/common/StatusBadge.vue'
+import InstallAppBanner from '~/components/common/InstallAppBanner.vue'
 import { usePlaceNames } from '~/composables/usePlaceNames'
 
 const props = defineProps({
@@ -99,9 +119,17 @@ const props = defineProps({
   isLoading: { type: Boolean, default: false },
   hasUserLocation: { type: Boolean, default: false },
   isLocating: { type: Boolean, default: false },
+  // รัศมีที่ถือว่า "รอบตัว" (เมตร) ใช้บอกในข้อความตอนไม่มีรายการ
+  radiusMeters: { type: Number, default: 5000 },
 })
 
-defineEmits(['select', 'request-location'])
+// รัศมีแบบอ่านง่าย เช่น "5 กม."
+const radiusLabel = computed(() => t('units.kilometers', { value: Math.round(props.radiusMeters / 1000) }))
+
+// ตัวเลือกรัศมี (เมตร) = 1 / 5 / 10 / 25 กม.
+const radiusOptions = [1000, 5000, 10000, 25000]
+
+defineEmits(['select', 'request-location', 'change-radius'])
 
 const { t } = useLocale()
 // ชื่อสถานที่จริงของแต่ละรายการ (แทนข้อความกลางๆ "พื้นที่ที่รายงาน")
@@ -328,6 +356,41 @@ watch(activeItems, (items) => {
   cursor: pointer;
 }
 
+/* ปุ่มรัศมี 4 อันเรียงแถวเดียว ปุ่มที่เลือกอยู่เป็นสีน้ำเงินเข้ม */
+.nearby-sheet__radius {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin: 4px 0 8px;
+}
+
+.nearby-sheet__radius-chip {
+  min-height: 36px;
+  padding: 0 4px;
+  border: 1px solid #cfdbea;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #4a5f86;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+
+.nearby-sheet__radius-chip[aria-pressed='true'] {
+  border-color: #102968;
+  background: #102968;
+  color: #ffffff;
+}
+
+.nearby-sheet__radius-chip:focus-visible {
+  outline: 3px solid rgb(37 99 235 / 35%);
+  outline-offset: 2px;
+}
+
 .nearby-sheet__state {
   margin: 16px 0;
   color: #52708b;
@@ -437,5 +500,9 @@ watch(activeItems, (items) => {
   .nearby-sheet__tab {
     transition: none;
   }
+}
+
+.nearby-sheet__install {
+  margin-bottom: 10px;
 }
 </style>
