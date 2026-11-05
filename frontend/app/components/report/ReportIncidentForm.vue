@@ -5,6 +5,17 @@
       <p>{{ t('report.subtitle') }}</p>
     </header>
 
+    <!-- ยังไม่ได้เข้าสู่ระบบ: บอกตั้งแต่แรก และเก็บข้อความที่กรอกไว้ก่อนไปหน้าเข้าสู่ระบบ -->
+    <LoginRequiredNotice
+      v-if="!isLoggedIn"
+      :message="t('report.loginRequired')"
+      redirect="/report-incident"
+      @before-login="saveLoginDraft"
+    />
+
+    <!-- อันตรายต่อชีวิต: โทรก่อน แล้วค่อยแจ้งในแอป -->
+    <EmergencyCallStrip />
+
     <!-- มือถือ: แบ่งฟอร์มเป็นขั้นตอน แถบนี้บอกว่าอยู่ขั้นไหนและเหลืออีกกี่ขั้นถึงส่งรายงาน -->
     <FormSteps v-if="isWizard" ref="stepStatus" :steps="wizardSteps" :current="currentStep" :label="t('report.stepsLabel')" />
 
@@ -12,7 +23,16 @@
     <div class="report-incident-form__fields">
     <label v-show="showStep('details')" class="report-incident-form__section report-incident-form__details">
       <span>{{ t('report.whatHappened') }} <b aria-hidden="true">*</b></span>
-      <textarea v-model="details" rows="4" maxlength="500" required :placeholder="t('report.detailsPlaceholder')" />
+      <textarea
+        ref="detailsInput"
+        v-model="details"
+        rows="4"
+        maxlength="500"
+        required
+        :placeholder="t('report.detailsPlaceholder')"
+        :aria-invalid="stepErrorField === 'details' ? 'true' : undefined"
+        :aria-describedby="stepErrorField === 'details' ? 'report-feedback' : undefined"
+      />
       <em>{{ details.length }}/500</em>
     </label>
 
@@ -55,12 +75,18 @@
         </li>
       </ul>
     </section>
-    <div v-if="feedback" class="report-incident-form__feedback" role="status">
+    <div
+      v-if="feedback"
+      id="report-feedback"
+      class="report-incident-form__feedback"
+      :class="{ 'report-incident-form__feedback--error': stepErrorField }"
+      role="status"
+    >
       <span>{{ feedback }}</span>
       <button v-if="needsLogin" type="button" class="feedback-login" @click="goToLogin">{{ t('header.login') }}</button>
     </div>
     </div>
-    <ReportIncidentRightPanel v-show="showStep('location')" class="report-incident-form__location">
+    <ReportIncidentRightPanel ref="locationPanel" v-show="showStep('location')" class="report-incident-form__location">
       <template v-if="!isWizard" #action>
         <footer class="report-incident-form__action-row">
           <button type="button" class="button button--secondary" :disabled="isSubmitting" @click="saveMockDraft">{{ t('report.saveDraft') }}</button>
@@ -74,9 +100,10 @@
     <!-- ปุ่มย้อนกลับ / ถัดไป ของแต่ละขั้น ขั้นสุดท้ายเป็นปุ่มส่งรายงาน -->
     <FormStepActions
       v-if="isWizard"
-      :show-back="currentStep > 0"
+      :is-first="currentStep === 0"
       :is-last="isLastStep"
       :disabled="isSubmitting"
+      @cancel="cancelReport"
       @back="goToStep(currentStep - 1)"
       @next="nextStep"
     >
@@ -159,6 +186,8 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { getRecommendedIncidentTypes, toDisplayIncidentCategory, toDisplayKeywordType } from '~/composables/useReportIncident'
 import ReportIncidentRightPanel from '~/components/report/ReportIncidentRightPanel.vue'
 import FormSteps from '~/components/common/FormSteps.vue'
+import LoginRequiredNotice from '~/components/common/LoginRequiredNotice.vue'
+import EmergencyCallStrip from '~/components/common/EmergencyCallStrip.vue'
 import FormStepActions from '~/components/common/FormStepActions.vue'
 
 const {
@@ -191,31 +220,72 @@ const wizardSteps = [
 ]
 const currentStep = ref(0)
 const stepStatus = ref(null)
+const detailsInput = ref(null)
+const locationPanel = ref(null)
+// ช่องที่กรอกไม่ผ่านในขั้นนี้ ('details' | 'location' | '') ใช้ทำกรอบแดงและผูกข้อความ error กับช่อง
+const stepErrorField = ref('')
 const isLastStep = computed(() => currentStep.value === wizardSteps.length - 1)
 const showStep = (id) => !isWizard.value || wizardSteps[currentStep.value].id === id
+
+// เลื่อนหน้าขึ้นบนสุด: หน้านี้เลื่อนอยู่ในกล่องเนื้อหาของ layout ไม่ใช่ทั้งหน้าต่าง
+const scrollPageToTop = () => {
+  window.scrollTo({ top: 0 })
+  const pageScroller = document.querySelector('.desktop-shell__main')
+  if (pageScroller) {
+    pageScroller.scrollTo({ top: 0 })
+  }
+}
+
+// ยังไม่มีตำแหน่ง: ขอตำแหน่งจากเครื่องให้เลย ผู้ใช้ลากหมุดหรือคลิกแผนที่เปลี่ยนเองได้
+const locateIfEmpty = () => {
+  if (!incidentLocation.value) {
+    locationPanel.value?.locate()
+  }
+}
 
 const goToStep = async (index) => {
   currentStep.value = Math.min(Math.max(index, 0), wizardSteps.length - 1)
   feedback.value = ''
+  stepErrorField.value = ''
   needsLogin.value = false
   await nextTick()
   // เลื่อนขึ้นบนสุด และให้โปรแกรมอ่านหน้าจออ่านว่าอยู่ขั้นไหน
-  window.scrollTo({ top: 0 })
+  scrollPageToTop()
   stepStatus.value?.focus()
+  if (wizardSteps[currentStep.value].id === 'location') {
+    locateIfEmpty()
+  }
+}
+
+// แสดง error ของขั้นนี้ใต้ช่องที่กรอกไม่ผ่าน และย้ายเคอร์เซอร์ไปช่องนั้น
+const showStepError = (field, message) => {
+  stepErrorField.value = field
+  feedback.value = message
+  if (field === 'details') {
+    detailsInput.value?.focus()
+  }
 }
 
 // ตรวจเฉพาะขั้นที่บังคับกรอก ก่อนไปขั้นถัดไป
 const nextStep = () => {
   const stepId = wizardSteps[currentStep.value].id
   if (stepId === 'details' && details.value.trim().length < 5) {
-    feedback.value = t('report.needDetails')
+    showStepError('details', t('report.needDetails'))
     return
   }
   if (stepId === 'location' && !incidentLocation.value) {
-    feedback.value = t('report.needLocation')
+    showStepError('location', t('report.needLocation'))
     return
   }
   void goToStep(currentStep.value + 1)
+}
+
+// ปุ่มยกเลิกในขั้นแรก: ข้อความที่พิมพ์ไว้ถูกเก็บเป็นร่าง กลับมาแล้วยังอยู่
+const cancelReport = () => {
+  if (details.value.trim()) {
+    saveLoginDraft()
+  }
+  navigateTo('/')
 }
 
 // กด Enter ในช่องกรอกระหว่างขั้น = ไปขั้นถัดไป ไม่ส่งรายงานก่อนถึงขั้นสุดท้าย
@@ -309,12 +379,22 @@ const fetchReportTypeCache = async () => {
 }
 
 watch(details, () => {
+  // พิมพ์แก้แล้ว ลบกรอบแดงของช่องรายละเอียด
+  if (stepErrorField.value === 'details') {
+    stepErrorField.value = ''
+    feedback.value = ''
+  }
   allowTypeConflict.value = false
 })
 
-onMounted(() => {
+onMounted(async () => {
   restoreLoginDraft()
   void fetchReportTypeCache()
+  // คอมเห็นแผนที่ตั้งแต่เปิดหน้า: ขอตำแหน่งให้เลย (มือถือจะขอตอนถึงขั้นตำแหน่ง)
+  if (!isWizard.value) {
+    await nextTick()
+    locateIfEmpty()
+  }
 })
 const iconColorByType = {
   flood: '#1479ef', storm: '#6d5dfb', drought: '#f0b429', wildfire: '#e8333c', tsunami: '#1479ef', earthquake: '#e8333c',
@@ -388,7 +468,11 @@ const removeSelectedFile = (index) => {
   if (removed?.previewUrl) URL.revokeObjectURL(removed.previewUrl)
   if (!selectedFiles.value.length && fileInput.value) fileInput.value.value = ''
 }
-const saveMockDraft = () => { feedback.value = t('report.draftSaved') }
+// บันทึกร่างไว้ในเครื่องนี้จริง (sessionStorage) เปิดหน้านี้ใหม่ในแท็บเดิมแล้วข้อมูลยังอยู่
+const saveMockDraft = () => {
+  saveLoginDraft()
+  feedback.value = t('report.draftSaved')
+}
 const showLoginPrompt = (message = t('report.loginRequired')) => {
   feedback.value = message
   needsLogin.value = true
@@ -552,7 +636,7 @@ const submitReport = async () => {
 }
 
 .incident-suggestions h2 span {
-  color: #70819b;
+  color: #52708b;
   font-size: 12px;
   font-weight: 650;
 }
@@ -589,7 +673,7 @@ const submitReport = async () => {
   position: absolute;
   right: 13px;
   bottom: 10px;
-  color: #70819b;
+  color: #52708b;
   font-size: 12px;
   font-style: normal;
 }
@@ -776,7 +860,7 @@ const submitReport = async () => {
 
 .upload-zone small {
   margin-top: 3px;
-  color: #70819b;
+  color: #52708b;
   font-size: 12px;
 }
 
@@ -792,6 +876,18 @@ const submitReport = async () => {
   color: #24558e;
   font-size: 13px;
   line-height: 1.4;
+}
+
+/* error ของขั้นตอน: สีแดงให้ต่างจากข้อความแจ้งทั่วไป */
+.report-incident-form__feedback--error {
+  background: var(--gs-danger-tint);
+  color: #8f1d22;
+  font-weight: 650;
+}
+
+.report-incident-form__details textarea[aria-invalid='true'] {
+  border-color: var(--gs-danger);
+  box-shadow: 0 0 0 1px var(--gs-danger);
 }
 
 .feedback-login {
@@ -1038,7 +1134,7 @@ const submitReport = async () => {
   border-radius: 999px;
   background: #f0f4f9;
   color: #7a899d;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -1228,7 +1324,8 @@ const submitReport = async () => {
 
 .report-incident-form__body {
   display: grid;
-  grid-template-columns: minmax(352px, 2fr) minmax(496px, 3fr);
+  /* minmax(0, ...) = คอลัมน์หดได้ ไม่ถูกข้อความยาวๆ (เช่น พิกัด) ดันจนล้นกรอบ */
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
   gap: 18px;
   align-items: stretch;
 }
@@ -1316,7 +1413,7 @@ const submitReport = async () => {
   background: #e4efff;
   color: #345a9f;
   object-fit: cover;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
 }
 
@@ -1334,13 +1431,13 @@ const submitReport = async () => {
 
 .selected-media strong {
   color: #29457a;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .selected-media small {
   margin-top: 1.92px;
   color: #7284a9;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .selected-media button {
@@ -1352,7 +1449,7 @@ const submitReport = async () => {
   background: rgb(130 35 45 / 88%);
   color: #fff;
   font: inherit;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
   line-height: 1;
   padding: 4px 5px;
@@ -1382,8 +1479,8 @@ const submitReport = async () => {
 }
 
 .report-incident-form__actions .button--primary {
-  background: #f52c3c;
-  box-shadow: 0 6px 13px rgb(232 51 60 / 18%);
+  background: var(--gs-action);
+  box-shadow: 0 6px 13px rgb(29 53 87 / 18%);
 }
 
 .report-incident-form__action-row {
@@ -1401,8 +1498,8 @@ const submitReport = async () => {
 }
 
 .report-incident-form__action-row .button--primary {
-  background: #f52c3c;
-  box-shadow: 0 6px 13px rgb(232 51 60 / 18%);
+  background: var(--gs-action);
+  box-shadow: 0 6px 13px rgb(29 53 87 / 18%);
 }
 
 @media (min-width: 928px) {
@@ -1434,9 +1531,11 @@ const submitReport = async () => {
   }
 }
 
-@media (max-width: 928px) {
+/* จอแคบกว่า 1200px (รวม sidebar) ฟอร์มกับแผนที่อยู่คนละแถว สองคอลัมน์จะแคบเกินไป */
+@media (max-width: 1199px) {
   .report-incident-form__body {
-    grid-template-columns: 1fr;
+    /* ใช้ minmax(0, 1fr) แทน 1fr: 1fr จะขยายตามข้อความที่ยาวที่สุด ทำให้แผนที่และพิกัดทะลุกรอบ */
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .report-incident-form__location {
@@ -1453,6 +1552,13 @@ const submitReport = async () => {
     grid-template-columns: 1fr;
   }
 }
+/* ฟอร์มทีละขั้นบนมือถือ: เต็มจอ ไม่มีกรอบการ์ดและเงา */
+.report-incident-form--wizard {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
 /* ในขั้นตอนมือถือ ส่วนตำแหน่งไม่ต้องมีเส้นคั่นด้านบน เพราะแสดงทีละส่วน */
 .report-incident-form--wizard .report-incident-form__location {
   padding-top: 0;

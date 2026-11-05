@@ -26,7 +26,7 @@
         </li>
         <li>
           <div class="profile-menu__row profile-menu__row--static">
-            <span class="profile-menu__icon" aria-hidden="true"><img src="/icons/Internet.svg" alt="" /></span>
+            <span class="profile-menu__icon" aria-hidden="true"><img src="/icons/Chat.svg" alt="" /></span>
             <span class="profile-menu__label">{{ t('profilePage.language') }}</span>
             <AuthLanguageSwitch />
           </div>

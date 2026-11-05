@@ -32,8 +32,11 @@
         role="tab"
         class="nearby-sheet__tab"
         :aria-selected="activeTab === tab.key"
+        :tabindex="activeTab === tab.key ? 0 : -1"
         aria-controls="nearby-sheet-panel"
         @click="selectTab(tab.key)"
+        @keydown.right.prevent="focusOtherTab"
+        @keydown.left.prevent="focusOtherTab"
       >
         {{ t(tab.label) }}
         <span class="nearby-sheet__count">{{ tab.items.length }}</span>
@@ -69,8 +72,11 @@
               <img :src="item.iconUrl" alt="" />
             </span>
             <span class="nearby-sheet__body">
-              <strong>{{ item.title }}</strong>
-              <span>{{ item.areaLabel }} · {{ item.time }}</span>
+              <span class="nearby-sheet__title-row">
+                <strong>{{ item.title }}</strong>
+                <StatusBadge v-if="item.statusLabel" :tone="item.statusTone" :label="item.statusLabel" />
+              </span>
+              <span>{{ getPlaceLabel(item) }} · {{ item.time }}</span>
             </span>
             <span v-if="item.distanceMeters !== null" class="nearby-sheet__distance">
               {{ item.distanceFromUserLabel }}
@@ -83,7 +89,9 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import StatusBadge from '~/components/common/StatusBadge.vue'
+import { usePlaceNames } from '~/composables/usePlaceNames'
 
 const props = defineProps({
   incidents: { type: Array, default: () => [] },
@@ -96,6 +104,8 @@ const props = defineProps({
 defineEmits(['select', 'request-location'])
 
 const { t } = useLocale()
+// ชื่อสถานที่จริงของแต่ละรายการ (แทนข้อความกลางๆ "พื้นที่ที่รายงาน")
+const { loadPlaceNames, getPlaceLabel } = usePlaceNames()
 
 // ความสูงของแผ่น 3 ระดับ: หุบ (เห็นแค่แท็บ) / ครึ่งจอ / เกือบเต็มจอ
 const states = ['collapsed', 'half', 'full']
@@ -168,12 +178,27 @@ const selectTab = (key) => {
   if (state.value === 'collapsed') state.value = 'half'
 }
 
+// ลูกศรซ้าย/ขวาบนแท็บ: สลับไปอีกแท็บและย้ายโฟกัสตาม (มีแค่ 2 แท็บ)
+const focusOtherTab = () => {
+  let nextKey = 'incidents'
+  if (activeTab.value === 'incidents') {
+    nextKey = 'help'
+  }
+  selectTab(nextKey)
+  document.getElementById(`nearby-tab-${nextKey}`)?.focus()
+}
+
 const tabs = computed(() => [
   { key: 'incidents', label: 'nearbySheet.incidents', items: props.incidents },
   { key: 'help', label: 'nearbySheet.helpRequests', items: props.helpRequests },
 ])
 
 const activeItems = computed(() => tabs.value.find((tab) => tab.key === activeTab.value)?.items ?? [])
+
+// ถามชื่อสถานที่เฉพาะรายการที่แสดงอยู่ (ไม่เกิน 20 รายการ) กันการเรียก Mapbox มากเกินไป
+watch(activeItems, (items) => {
+  loadPlaceNames(items.slice(0, 20))
+}, { immediate: true })
 </script>
 
 <style scoped>
@@ -305,7 +330,7 @@ const activeItems = computed(() => tabs.value.find((tab) => tab.key === activeTa
 
 .nearby-sheet__state {
   margin: 16px 0;
-  color: #6b7a99;
+  color: #52708b;
   font-size: 14px;
   text-align: center;
 }
@@ -367,19 +392,28 @@ const activeItems = computed(() => tabs.value.find((tab) => tab.key === activeTa
 }
 
 .nearby-sheet__body strong,
-.nearby-sheet__body span {
+.nearby-sheet__body > span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+/* ชื่อเหตุ + ป้ายสถานะอยู่บรรทัดเดียวกัน ชื่อยาวจะตัดเป็น … ป้ายไม่โดนตัด */
+.nearby-sheet__title-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+}
+
 .nearby-sheet__body strong {
+  min-width: 0;
   color: #102968;
   font-size: 15px;
 }
 
-.nearby-sheet__body span {
-  color: #6b7a99;
+.nearby-sheet__body > span:not(.nearby-sheet__title-row) {
+  color: #52708b;
   font-size: 13px;
 }
 

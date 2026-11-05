@@ -7,7 +7,7 @@ export const menuGroups = [
     items: [
       { label: 'nav.home', to: '/', icon: '/icons/House.svg' },
       { label: 'nav.incidents', to: '/incidents', icon: '/icons/Alert.svg' },
-      { label: 'nav.helpRequests', to: '/help-requests', icon: '/icons/Help.svg' },
+      { label: 'nav.helpRequests', to: '/help-requests', icon: '/icons/People-in-need.svg' },
     ],
   },
   {

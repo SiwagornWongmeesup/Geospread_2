@@ -26,6 +26,9 @@ definePageMeta({
   ]
 })
 
+const { t } = useLocale()
+useHead({ title: () => `${t('nav.home')} | GeoSpread` })
+
 // This page is the smart controller for the map. Incident fetching and report
 // handlers belong here once the planned /incidents endpoint is implemented.
 const { isMobile } = useResponsiveView({ syncLayout: true })

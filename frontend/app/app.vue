@@ -22,7 +22,9 @@ useHead({ htmlAttrs: { lang: locale } })
   --bs-font-sans-serif: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', 'Noto Sans',
     'Liberation Sans', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
     'Noto Color Emoji';
-  --gs-font: var(--bs-font-sans-serif);
+  /* ฟอนต์หลัก IBM Plex Sans Thai: ออกแบบให้ภาษาไทยกับอังกฤษเข้ากัน อ่านง่ายบนจอเล็ก
+     ถ้าโหลดฟอนต์ไม่ได้ (เช่น ออฟไลน์ครั้งแรก) ใช้ฟอนต์ของเครื่องแทน */
+  --gs-font: 'IBM Plex Sans Thai', 'IBM Plex Sans', var(--bs-font-sans-serif);
 
   --gs-paper: #f4f3ef;
   --gs-surface: #ffffff;

@@ -1,7 +1,11 @@
 <template>
-  <!-- ปุ่มย้อนกลับ / ถัดไป ของฟอร์มแบบทีละขั้น ขั้นสุดท้ายแสดงปุ่มส่งที่ฟอร์มส่งมาใน slot "submit" -->
+  <!-- ปุ่มของฟอร์มแบบทีละขั้น: ขั้นแรก = ยกเลิก (ออกจากฟอร์ม), ขั้นอื่น = ย้อนกลับ
+       ขั้นสุดท้ายแสดงปุ่มส่งที่ฟอร์มส่งมาใน slot "submit" -->
   <footer class="step-actions">
-    <button v-if="showBack" type="button" class="step-actions__button" :disabled="disabled" @click="$emit('back')">
+    <button v-if="isFirst" type="button" class="step-actions__button" :disabled="disabled" @click="$emit('cancel')">
+      {{ t('report.stepCancel') }}
+    </button>
+    <button v-else type="button" class="step-actions__button" :disabled="disabled" @click="$emit('back')">
       {{ t('report.stepBack') }}
     </button>
     <button v-if="!isLast" type="button" class="step-actions__button step-actions__button--primary" @click="$emit('next')">
@@ -13,22 +17,31 @@
 
 <script setup>
 defineProps({
-  showBack: { type: Boolean, default: false },
+  // ขั้นแรก: ปุ่มซ้ายเป็น "ยกเลิก" แทน "ย้อนกลับ"
+  isFirst: { type: Boolean, default: false },
   isLast: { type: Boolean, default: false },
   disabled: { type: Boolean, default: false },
 })
 
-defineEmits(['back', 'next'])
+defineEmits(['back', 'next', 'cancel'])
 
 const { t } = useLocale()
 </script>
 
 <style scoped>
 .step-actions {
+  /* ติดอยู่ล่างจอเหนือแถบเมนูล่าง (สูง 71px) กดได้ด้วยนิ้วโป้งเสมอ ไม่ต้องเลื่อนหา */
+  position: sticky;
+  z-index: 5;
+  bottom: calc(71px + env(safe-area-inset-bottom));
   display: grid;
   grid-auto-columns: minmax(0, 1fr);
   grid-auto-flow: column;
   gap: 12px;
+  margin: 0 -4px;
+  padding: 10px 4px;
+  background: var(--gs-surface);
+  box-shadow: 0 -10px 12px -12px rgb(16 41 104 / 35%);
 }
 
 /* ปุ่มส่งที่มาจาก slot ใช้ class เดียวกัน (:slotted ให้สไตล์นี้ติดกับปุ่มจากฟอร์มด้วย) */
@@ -48,10 +61,10 @@ const { t } = useLocale()
 
 .step-actions__button--primary,
 :slotted(.step-actions__button--primary) {
-  border-color: #f52c3c;
-  background: #f52c3c;
+  border-color: var(--gs-action);
+  background: var(--gs-action);
   color: #fff;
-  box-shadow: 0 6px 13px rgb(232 51 60 / 18%);
+  box-shadow: 0 6px 13px rgb(29 53 87 / 18%);
 }
 
 .step-actions__button:disabled,

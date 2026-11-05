@@ -17,7 +17,11 @@ export default defineNuxtConfig({
   app: {
     head: {
       link: [
-        { rel: 'apple-touch-icon', href: '/apple-touch-icon-180x180.png' }
+        { rel: 'apple-touch-icon', href: '/apple-touch-icon-180x180.png' },
+        // ฟอนต์ IBM Plex Sans Thai จาก Google Fonts (ต่อเซิร์ฟเวอร์ฟอนต์ไว้ก่อน จะโหลดเร็วขึ้น)
+        { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
+        { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap' }
       ],
       meta: [
         { name: 'theme-color', content: '#ffffff' }
@@ -66,6 +70,16 @@ export default defineNuxtConfig({
             cacheName: 'geospread-pages',
             networkTimeoutSeconds: 5,
             expiration: { maxEntries: 30, maxAgeSeconds: 7 * 24 * 60 * 60 }
+          }
+        },
+        {
+          // ฟอนต์จาก Google Fonts: เก็บไว้ในเครื่อง เปิดตอนออฟไลน์แล้วตัวอักษรยังเหมือนเดิม
+          urlPattern: ({ url }) => url.origin === 'https://fonts.googleapis.com' || url.origin === 'https://fonts.gstatic.com',
+          handler: 'CacheFirst',
+          options: {
+            cacheName: 'geospread-fonts',
+            expiration: { maxEntries: 20, maxAgeSeconds: 365 * 24 * 60 * 60 },
+            cacheableResponse: { statuses: [0, 200] }
           }
         },
         {

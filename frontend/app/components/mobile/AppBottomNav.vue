@@ -8,7 +8,6 @@
         type="button"
         class="bottom-nav__item bottom-nav__item--create"
         :class="{ 'bottom-nav__item--open': menuOpen, 'bottom-nav__item--current': isCreateRoute }"
-        aria-haspopup="true"
         :aria-expanded="menuOpen"
         aria-controls="bottom-nav-create-menu"
         @click="toggleMenu"
@@ -35,7 +34,9 @@
     <Transition name="create-menu">
       <div v-if="menuOpen" class="create-menu" @keydown.esc="closeMenu(true)">
         <div class="create-menu__backdrop" aria-hidden="true" @click="closeMenu(false)" />
-        <div id="bottom-nav-create-menu" class="create-menu__panel" role="menu" :aria-label="t('bottomNav.createMenu')">
+        <div id="bottom-nav-create-menu" class="create-menu__panel" :aria-label="t('bottomNav.createMenu')">
+          <!-- อันตรายต่อชีวิต: โทรก่อน เห็นตั้งแต่กดปุ่มบวก -->
+          <EmergencyCallStrip compact />
           <NuxtLink
             v-for="(action, index) in createActions"
             :key="action.to"
@@ -43,8 +44,7 @@
             :to="action.to"
             class="create-menu__action"
             :class="`create-menu__action--${action.tone}`"
-            role="menuitem"
-            @click="closeMenu(false)"
+              @click="closeMenu(false)"
             @keydown.down.prevent="focusAction(index + 1)"
             @keydown.up.prevent="focusAction(index - 1)"
           >
@@ -63,6 +63,8 @@
 </template>
 
 <script setup>
+import EmergencyCallStrip from '~/components/common/EmergencyCallStrip.vue'
+
 const { t } = useLocale()
 const route = useRoute()
 

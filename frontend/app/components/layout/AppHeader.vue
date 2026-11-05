@@ -200,6 +200,14 @@ const pageTitle = computed(() => {
   return 'GeoSpread'
 })
 
+// ชื่อแท็บของเบราว์เซอร์ (และที่ screen reader อ่านตอนเปิดหน้า) ใช้ชื่อเดียวกับหัวข้อของหน้า
+useHead({
+  title: () => {
+    if (pageTitle.value === 'GeoSpread') return 'GeoSpread'
+    return `${pageTitle.value} | GeoSpread`
+  },
+})
+
 // หน้า login/register ที่เปิดอยู่ ใช้ไฮไลต์ปุ่มให้รู้ว่ากำลังอยู่เมนูไหน
 const currentAuthPage = computed(() => {
   if (route.path === '/login') return 'login'

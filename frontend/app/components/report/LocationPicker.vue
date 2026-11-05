@@ -47,9 +47,16 @@ const mapCenter = computed(() => incidentLocation.value ? [incidentLocation.valu
 const { t } = useLocale()
 // placeName ของตำแหน่งจากเครื่องเก็บเป็น key (location.currentPlace) เพื่อให้สลับภาษาได้
 const locationLabel = computed(() => {
-  const placeName = incidentLocation.value?.placeName
-  if (!placeName) return t('report.noLocation')
-  return placeName === 'location.currentPlace' ? t(placeName) : placeName
+  // ยังไม่ได้เลือกจุด
+  if (!incidentLocation.value) return t('report.noLocation')
+
+  const placeName = incidentLocation.value.placeName
+  // คลิกบนแผนที่: ไม่มีชื่อสถานที่ แสดงว่าเป็นจุดที่ปักเอง
+  if (!placeName) return t('report.pinnedOnMap')
+  // ใช้ตำแหน่งปัจจุบัน: ชื่อเก็บเป็น key ของข้อความ ต้องแปลก่อน
+  if (placeName === 'location.currentPlace') return t(placeName)
+  // ค้นหาสถานที่: ใช้ชื่อสถานที่ที่ค้นเจอ
+  return placeName
 })
 const locationHint = computed(() => {
   if (!incidentLocation.value) return t('report.noLocationHint')
@@ -88,6 +95,9 @@ const useCurrentLocation = async () => {
     // useGeolocation แปลงและเก็บข้อความผิดพลาดสำหรับแสดงผลแล้ว
   }
 }
+
+// ให้แผงด้านข้าง/ฟอร์มสั่งขอตำแหน่งปัจจุบันได้
+defineExpose({ useCurrentLocation })
 </script>
 
 <style scoped>
@@ -99,55 +109,56 @@ const useCurrentLocation = async () => {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: .8rem
+  gap: 13px
 }
 
 .location-picker h2 {
   margin: 0;
-  font-size: 1.05rem
+  font-size: 17px
 }
 
 .location-picker__header p {
-  margin: .2rem 0 0;
-  color: #62779d;
-  font-size: .76rem
+  margin: 3px 0 0;
+  color: #52708b;
+  font-size: 12px
 }
 
 .location-picker__current-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: .4rem;
-  min-height: 2.45rem;
-  padding: 0 .7rem;
-  border: 0;
-  border-radius: .45rem;
-  background: #eb2631;
-  color: #fff;
+  gap: 6px;
+  min-height: 39px;
+  padding: 0 11px;
+  border: 1px solid var(--gs-action);
+  border-radius: 8px;
+  background: var(--gs-action-tint);
+  color: var(--gs-action);
   font: inherit;
-  font-size: .73rem;
-  font-weight: 800;
+  font-size: 14px;
+  font-weight: 750;
   cursor: pointer
 }
 
 .location-picker__current-button img,
 .location-picker__selection>img {
-  width: 1.05rem;
-  height: 1.05rem
+  width: 17px;
+  height: 17px
 }
 
 .location-picker__current-button img {
-  filter: brightness(0) invert(1)
+  /* ไอคอนเดิมสีดำ ใช้ตามสีตัวอักษรของปุ่ม (น้ำเงินเข้ม) */
+  opacity: .85
 }
 
 .location-picker__selection {
   display: flex;
   align-items: center;
-  gap: .55rem;
-  margin: .75rem 0;
-  padding: .68rem .75rem;
+  gap: 9px;
+  margin: 12px 0;
+  padding: 11px 12px;
   border: 1px solid #dbe7f5;
-  border-radius: .55rem;
+  border-radius: 9px;
   background: #f9fbff
 }
 
@@ -167,42 +178,42 @@ const useCurrentLocation = async () => {
 
 .location-picker__selection strong {
   color: #29457a;
-  font-size: .78rem
+  font-size: 12px
 }
 
 .location-picker__selection span {
-  margin-top: .12rem;
+  margin-top: 1.92px;
   overflow: hidden;
-  color: #62779d;
-  font-size: .67rem;
+  color: #52708b;
+  font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap
 }
 
 .location-picker__selection b {
-  padding: .3rem .45rem;
-  border-radius: .35rem;
+  padding: 5px 7px;
+  border-radius: 6px;
   background: #e8f8ed;
   color: #23874f;
-  font-size: .65rem;
+  font-size: 12px;
   white-space: nowrap
 }
 
 .location-picker__error {
-  margin: 0 0 .65rem;
-  padding: .6rem .7rem;
-  border-radius: .45rem;
+  margin: 0 0 10px;
+  padding: 10px 11px;
+  border-radius: 7px;
   background: #fff1f1;
   color: #b4232a;
-  font-size: .72rem
+  font-size: 12px
 }
 
 .location-picker__map {
   position: relative;
-  height: 27rem;
+  height: 432px;
   overflow: hidden;
   border: 1px solid #d6e3f2;
-  border-radius: .65rem;
+  border-radius: 10px;
   background: #dceef1
 }
 
@@ -215,45 +226,45 @@ const useCurrentLocation = async () => {
 .location-picker__fullscreen {
   position: absolute;
   z-index: 2;
-  right: .75rem;
-  bottom: 3rem;
-  min-height: 2rem;
-  padding: 0 .55rem;
+  right: 12px;
+  bottom: 48px;
+  min-height: 32px;
+  padding: 0 9px;
   border: 0;
-  border-radius: .4rem;
+  border-radius: 6px;
   background: #fff;
   color: #23427c;
   font: inherit;
-  font-size: .66rem;
+  font-size: 12px;
   font-weight: 800;
-  box-shadow: 0 .3rem .8rem rgb(31 72 125 / 18%);
+  box-shadow: 0 5px 13px rgb(31 72 125 / 18%);
   cursor: pointer
 }
 
 .location-picker__legend {
   position: absolute;
   z-index: 2;
-  bottom: .65rem;
-  left: .65rem;
+  bottom: 10px;
+  left: 10px;
   display: flex;
-  gap: .6rem;
-  padding: .45rem .6rem;
-  border-radius: .4rem;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 6px;
   background: rgb(255 255 255 / 93%);
   color: #39517f;
-  font-size: .65rem;
-  box-shadow: 0 .2rem .7rem rgb(31 72 125 / 13%)
+  font-size: 12px;
+  box-shadow: 0 3px 11px rgb(31 72 125 / 13%)
 }
 
 .location-picker__legend span {
   display: flex;
   align-items: center;
-  gap: .25rem
+  gap: 4px
 }
 
 .location-picker__legend i {
-  width: .55rem;
-  height: .55rem;
+  width: 9px;
+  height: 9px;
   border: 2px solid #fff;
   border-radius: 50%;
   box-shadow: 0 0 0 1px rgb(20 48 106 / 15%)
@@ -266,25 +277,25 @@ const useCurrentLocation = async () => {
 .location-picker__map--fullscreen {
   position: fixed;
   z-index: 70;
-  inset: 1rem;
+  inset: 16px;
   height: auto;
-  border-radius: .75rem;
-  box-shadow: 0 .8rem 2rem rgb(15 23 42 / 28%)
+  border-radius: 12px;
+  box-shadow: 0 13px 32px rgb(15 23 42 / 28%)
 }
 
 .location-picker__confirm {
   position: absolute;
   z-index: 3;
-  right: .75rem;
-  bottom: .7rem;
-  min-height: 2.4rem;
-  padding: 0 .8rem;
+  right: 12px;
+  bottom: 11px;
+  min-height: 38px;
+  padding: 0 13px;
   border: 0;
-  border-radius: .45rem;
+  border-radius: 7px;
   background: #1479ef;
   color: #fff;
   font: inherit;
-  font-size: .72rem;
+  font-size: 12px;
   font-weight: 800;
   cursor: pointer
 }
@@ -298,7 +309,7 @@ const useCurrentLocation = async () => {
   white-space: nowrap
 }
 
-@media(max-width:48rem) {
+@media(max-width:768px) {
   .location-picker__header {
     align-items: stretch;
     flex-direction: column
@@ -309,17 +320,17 @@ const useCurrentLocation = async () => {
   }
 
   .location-picker__map {
-    height: 20rem
+    height: 320px
   }
 
   .location-picker__fullscreen {
-    bottom: 3.25rem
+    bottom: 52px
   }
 }
 
-@media(min-width:49rem) {
+@media(min-width:784px) {
   .location-picker__map {
-    height: clamp(32rem, 58dvh, 42rem);
+    height: clamp(512px, 58dvh, 672px);
   }
 
   .location-picker__fullscreen {
@@ -327,13 +338,13 @@ const useCurrentLocation = async () => {
   }
 }
 .location-picker__warning {
-  margin: .6rem 0 0;
-  padding: .6rem .75rem;
+  margin: 10px 0 0;
+  padding: 10px 12px;
   border: 1px solid #ecd3a4;
   border-radius: var(--gs-radius-sm);
   background: var(--gs-pending-tint);
   color: var(--gs-pending);
-  font-size: .82rem;
+  font-size: 13px;
   line-height: 1.5
 }
 </style>

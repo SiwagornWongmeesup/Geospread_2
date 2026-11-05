@@ -2,23 +2,36 @@
   <form class="help-form" :class="{ 'help-form--wizard': step }" @submit.prevent="submit">
     <section v-show="showSection('type')">
       <h2><b>1</b> {{ t('requestHelp.step1') }}</h2>
-      <div class="type-grid">
+      <div
+        id="help-type"
+        class="type-grid"
+        role="group"
+        tabindex="-1"
+        :aria-label="t('requestHelp.step1')"
+        :aria-invalid="invalid('type')"
+        :aria-describedby="describedBy('type')"
+      >
         <button v-for="item in types" :key="item.id"
           type="button"
           :class="{ selected: type === item.id }"
-          @click="type = item.id"><strong>{{ item.icon }}</strong>
+          :aria-pressed="type === item.id"
+          @click="type = item.id">
+          <!-- ไอคอนชุด OCHA (ไอคอนงานด้านมนุษยธรรม) ชุดเดียวกับประเภทเหตุการณ์ -->
+          <img :src="item.icon" alt="" class="type-grid__icon" />
           <span>{{ t(`requestHelp.types.${item.id}.label`) }}</span>
           <small>{{ t(`requestHelp.types.${item.id}.desc`) }}</small>
           </button>
         </div>
       <div v-if="type === 'other'" class="other"><label>{{ t('requestHelp.otherLabel') }}
-        <input v-model="customType" :placeholder="t('requestHelp.otherPlaceholder')" /></label>
+        <input id="help-other" v-model="customType" :placeholder="t('requestHelp.otherPlaceholder')" :aria-invalid="invalid('other')" :aria-describedby="describedBy('other')" /></label>
       </div>
     </section>
 
     <section v-show="showSection('details')">
-      <h2><b>2</b> {{ t('requestHelp.step2') }}</h2><textarea v-model="details" maxlength="500"
-        :placeholder="t('requestHelp.detailsPlaceholder')" />
+      <h2><b>2</b> {{ t('requestHelp.step2') }}</h2><textarea id="help-details" v-model="details" maxlength="500"
+        :placeholder="t('requestHelp.detailsPlaceholder')"
+        :aria-invalid="invalid('details')"
+        :aria-describedby="describedBy('details')" />
         <small class="count">{{ details.length}}/500</small>
     </section>
     <section v-show="showSection('details')">
@@ -28,7 +41,10 @@
         {{ t('requestHelp.peopleLabel') }}
         <span class="people-custom__field">
           <input
+            id="help-people"
             v-model="peopleCount"
+            :aria-invalid="invalid('people')"
+            :aria-describedby="describedBy('people')"
             type="number"
             min="1"
             max="999"
@@ -44,7 +60,7 @@
       <h2><b>4</b> {{ t('requestHelp.step4') }} <span>{{ t('report.optional') }}</span></h2>
       <input ref="fileInput" class="sr-only" type="file" multiple accept="image/jpeg,image/png" :disabled="isSubmitting" @change="selectFiles">
       <button type="button" class="upload" :disabled="isSubmitting" @click="fileInput?.click()">
-        ▣
+        <img src="/icons/Photo.svg" alt="" class="upload__icon" />
         <span>
           <strong>{{ selectedMediaLabel }}</strong>
           <small>{{ selectedFiles.length ? t('requestHelp.imagesAdded', { count: selectedFiles.length, max: maxImageFiles }) : t('requestHelp.imageLimits') }}</small>
@@ -67,7 +83,20 @@ const props = defineProps({
   location: { type: Object, default: null },
   // มือถือแบ่งเป็นขั้นตอน: ส่ง id ของขั้นที่จะแสดง ('type' | 'details' | 'media') ถ้าเป็น null แสดงทุกส่วน (คอม)
   step: { type: String, default: null },
+  // ช่องที่กรอกไม่ผ่านในขั้นนี้ ('type' | 'other' | 'details' | 'people' | '') และ id ของข้อความ error
+  errorField: { type: String, default: '' },
+  errorId: { type: String, default: '' },
 })
+
+// ช่องนี้มี error ไหม: ใช้ทำกรอบแดง และให้ screen reader อ่านข้อความ error พร้อมชื่อช่อง
+const invalid = (field) => {
+  if (props.errorField === field) return 'true'
+  return undefined
+}
+const describedBy = (field) => {
+  if (props.errorField === field) return props.errorId
+  return undefined
+}
 
 // แสดงส่วนนี้ไหม: คอมแสดงทุกส่วน มือถือแสดงเฉพาะส่วนของขั้นปัจจุบัน
 const showSection = (sectionStep) => {
@@ -80,8 +109,16 @@ const apiBase = config.public.apiBase || 'http://localhost:5000'
 const { getToken } = useAuth()
 const { t } = useLocale()
 // ชื่อและคำอธิบายของแต่ละประเภทอยู่ใน locales: requestHelp.types.<id>
-const types = [{ id: 'evacuation', icon: '↗' }, { id: 'medical', icon: '+' }, { id: 'food', icon: '▤' }, { id: 'shelter', icon: '⌂' }, { id: 'vehicle', icon: '▰' }, { id: 'other', icon: '•••' }]
-const type = ref('evacuation'); const customType = ref(''); const details = ref(''); const fileInput = ref(null); const selectedFiles = ref([]); const feedback = ref('')
+const types = [
+  { id: 'evacuation', icon: '/icons/Internally-displaced.svg' },
+  { id: 'medical', icon: '/icons/Health.svg' },
+  { id: 'food', icon: '/icons/Food.svg' },
+  { id: 'shelter', icon: '/icons/Shelter.svg' },
+  { id: 'vehicle', icon: '/icons/Bus.svg' },
+  { id: 'other', icon: '/icons/More-options.svg' },
+]
+// ไม่เลือกประเภทไว้ให้ก่อน คนที่รีบจะได้ไม่ส่งผิดประเภทโดยไม่ตั้งใจ
+const type = ref(''); const customType = ref(''); const details = ref(''); const fileInput = ref(null); const selectedFiles = ref([]); const feedback = ref('')
 const isSubmitting = ref(false)
 // จำนวนคนที่ต้องการความช่วยเหลือ (ผู้ใช้พิมพ์เอง เริ่มต้นที่ 1)
 const peopleCount = ref(1)
@@ -125,25 +162,29 @@ const removeSelectedFile = (index) => {
 
 onBeforeUnmount(clearSelectedFiles)
 
-// ตรวจข้อมูลของแต่ละขั้นก่อนไปขั้นถัดไป คืนข้อความ error หรือ '' ถ้าผ่าน
+// ตรวจข้อมูลของแต่ละขั้นก่อนไปขั้นถัดไป
+// คืน { field, message } ของช่องแรกที่ไม่ผ่าน หรือ null ถ้าผ่านหมด
 const validateStep = (stepId) => {
   if (stepId === 'type') {
+    if (!type.value) {
+      return { field: 'type', message: t('requestHelp.needType') }
+    }
     if (type.value === 'other' && !customType.value.trim()) {
-      return t('requestHelp.needOtherType')
+      return { field: 'other', message: t('requestHelp.needOtherType') }
     }
   }
 
   if (stepId === 'details') {
     if (details.value.trim().length < 5) {
-      return t('requestHelp.needDetails')
+      return { field: 'details', message: t('requestHelp.needDetails') }
     }
     const people = Number(peopleCount.value)
     if (!Number.isInteger(people) || people < 1 || people > 999) {
-      return t('requestHelp.needPeople')
+      return { field: 'people', message: t('requestHelp.needPeople') }
     }
   }
 
-  return ''
+  return null
 }
 
 const submit = async () => {
@@ -157,6 +198,11 @@ const submit = async () => {
 
   if (description.length < 5) {
     feedback.value = t('requestHelp.needDetails')
+    return
+  }
+
+  if (!type.value) {
+    feedback.value = t('requestHelp.needType')
     return
   }
 
@@ -213,14 +259,26 @@ defineExpose({ submit, validateStep, isSubmitting, feedback })
 </script>
 
 <style scoped>
+/* ช่องที่กรอกไม่ผ่าน: กรอบแดง */
+.help-form [aria-invalid='true'] {
+  border-color: var(--gs-danger) !important;
+  box-shadow: 0 0 0 1px var(--gs-danger);
+}
+
+.help-form .type-grid[aria-invalid='true'] {
+  padding: 4px;
+  border: 1px solid var(--gs-danger);
+  border-radius: 12px;
+}
+
 /* มือถือแบบทีละขั้น: ซ่อนเลขหน้าหัวข้อ (1, 2, 3...) เพราะแถบขั้นตอนด้านบนบอกลำดับอยู่แล้ว */
-.help-form--wizard h2 b {
+.help-form.help-form--wizard h2 b {
   display: none;
 }
 
 .help-form {
   display: grid;
-  gap: 1rem;
+  gap: 16px;
   align-content: start;
   min-width: 0;
   padding: 0;
@@ -235,59 +293,65 @@ defineExpose({ submit, validateStep, isSubmitting, feedback })
 }
 
 .help-form h2 {
-  margin: 0 0 .8rem;
-  font-size: 1.02rem;
+  margin: 0 0 13px;
+  font-size: 16px;
 }
 
 .help-form h2 b {
   display: inline-grid;
-  width: 1.8rem;
-  height: 1.8rem;
-  margin-right: .5rem;
+  width: 29px;
+  height: 29px;
+  margin-right: 8px;
   place-items: center;
   border-radius: 50%;
-  background: #eb2631;
+  background: var(--gs-danger);
   color: #fff;
 }
 
 .help-form h2 span {
   color: #72819a;
-  font-size: .8rem;
+  font-size: 13px;
   font-weight: 500;
 }
 
 .type-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: .55rem;
+  gap: 9px;
 }
 
 .type-grid button {
   display: grid;
-  min-height: 5rem;
-  gap: .35rem;
-  padding: .65rem .55rem;
+  min-height: 80px;
+  gap: 6px;
+  padding: 10px 9px;
   border: 1px solid #d8e5f2;
-  border-radius: .7rem;
+  border-radius: 11px;
   background: #fff;
   color: #264b80;
   font: inherit;
   cursor: pointer;
 }
 
-.type-grid strong {
-  color: #1479ef;
-  font-size: 1.7rem;
+.type-grid__icon {
+  width: 30px;
+  height: 30px;
+}
+
+.upload__icon {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
 }
 
 .type-grid span {
-  font-size: .78rem;
+  font-size: 12px;
   font-weight: 800;
 }
 
 .type-grid small {
-  color: #70819b;
-  font-size: .66rem;
+  color: #52708b;
+  font-size: 12px;
   line-height: 1.3;
 }
 
@@ -300,15 +364,15 @@ defineExpose({ submit, validateStep, isSubmitting, feedback })
 .other {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: .75rem;
-  margin-top: .75rem;
+  gap: 12px;
+  margin-top: 12px;
 }
 
 .other label {
   display: grid;
-  gap: .35rem;
+  gap: 6px;
   color: #355477;
-  font-size: .78rem;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -317,24 +381,24 @@ select,
 textarea {
   box-sizing: border-box;
   width: 100%;
-  padding: .75rem;
+  padding: 12px;
   border: 1px solid #c7d8e9;
-  border-radius: .6rem;
+  border-radius: 10px;
   color: #17345f;
   font: inherit;
 }
 
 .help-form textarea {
-  min-height: 6.25rem;
+  min-height: 100px;
   resize: vertical;
 }
 
 .count {
   position: absolute;
-  right: .75rem;
-  bottom: .6rem;
-  color: #70819b;
-  font-size: .7rem;
+  right: 12px;
+  bottom: 10px;
+  color: #52708b;
+  font-size: 12px;
 }
 
 /* ช่องระบุจำนวนคน */
@@ -366,11 +430,11 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: .8rem;
+  gap: 13px;
   width: 100%;
-  min-height: 4.75rem;
+  min-height: 76px;
   border: 1px dashed #89a8cf;
-  border-radius: .7rem;
+  border-radius: 11px;
   background: #fbfdff;
   color: #2b5b9a;
   font: inherit;
@@ -392,8 +456,8 @@ textarea {
 .selected-media {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: .45rem;
-  margin: .6rem 0 0;
+  gap: 7px;
+  margin: 10px 0 0;
   padding: 0;
   list-style: none;
 }
@@ -401,19 +465,19 @@ textarea {
 .selected-media li {
   position: relative;
   display: grid;
-  grid-template-rows: 3.25rem auto;
-  gap: .3rem;
+  grid-template-rows: 52px auto;
+  gap: 5px;
   min-width: 0;
-  padding: .3rem;
+  padding: 5px;
   border: 1px solid #dbe6f2;
-  border-radius: .5rem;
+  border-radius: 8px;
   background: #f9fbff;
 }
 
 .selected-media img {
   width: 100%;
-  height: 3.25rem;
-  border-radius: .3rem;
+  height: 52px;
+  border-radius: 5px;
   object-fit: cover;
 }
 
@@ -429,29 +493,29 @@ textarea {
 .selected-media__details strong {
   overflow: hidden;
   color: #29457a;
-  font-size: .68rem;
+  font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .selected-media__details small {
-  margin-top: .12rem;
+  margin-top: 1.92px;
   color: #7284a9;
-  font-size: .62rem;
+  font-size: 12px;
 }
 
 .selected-media button {
   position: absolute;
-  top: .45rem;
-  right: .45rem;
-  padding: .23rem .3rem;
+  top: 7px;
+  right: 7px;
+  padding: 4px 5px;
   border: 0;
-  border-radius: .25rem;
+  border-radius: 4px;
   background: rgb(130 35 45 / 88%);
   color: #fff;
   cursor: pointer;
   font: inherit;
-  font-size: .6rem;
+  font-size: 12px;
   font-weight: 800;
   line-height: 1;
 }
@@ -467,9 +531,9 @@ textarea {
 }
 
 .upload small {
-  margin-top: .2rem;
-  color: #70819b;
-  font-size: .72rem;
+  margin-top: 3px;
+  color: #52708b;
+  font-size: 12px;
 }
 
 .sr-only {
@@ -480,7 +544,7 @@ textarea {
   clip: rect(0, 0, 0, 0);
 }
 
-@media (max-width: 34rem) {
+@media (max-width: 544px) {
   .other {
     grid-template-columns: 1fr;
   }

@@ -12,11 +12,15 @@
       </header>
 
       <section class="map__selection" :class="{ 'map__selection--ready': location }" aria-live="polite">
-        <strong>{{ location ? t('report.locationChosen') : t('requestHelp.noLocation') }}</strong>
+        <strong>{{ locationTitle }}</strong>
         <span>{{ locationLabel }}</span>
       </section>
 
       <p v-if="locationError" class="map__status map__status--error" role="alert">{{ locationError }}</p>
+      <!-- GPS ไม่แม่น (เช่น คอมที่ไม่มี GPS เดาจาก Wi-Fi) บอกให้ลากหมุดไปจุดจริง คนมาช่วยจะได้ไม่ไปผิดที่ -->
+      <p v-else-if="isLowAccuracy" class="map__status map__status--warning" role="status">
+        {{ t('requestHelp.lowAccuracy', { accuracy: accuracyLabel }) }}
+      </p>
 
       <div class="map__canvas">
         <MapboxMap :center="mapCenter" :zoom="14" :show-geolocate-control="false" :editable-location="location" :allow-location-selection="true" class="map__canvas-map" @location-select="setMapLocation" />
@@ -55,14 +59,6 @@
         </button>
       </div>
 
-      <!-- เบอร์ฉุกเฉิน: กดแล้วเปิดหน้าโทรออกของโทรศัพท์ -->
-      <p class="map__emergency">
-        {{ t('requestHelp.emergencyBefore') }}
-        <a href="tel:1669">1669</a>
-        {{ t('requestHelp.emergencyOr') }}
-        <a href="tel:1784">1784</a>
-        {{ t('requestHelp.emergencyAfter') }}
-      </p>
     </section>
   </aside>
 </template>
@@ -85,15 +81,43 @@ const { t } = useLocale()
 const addressDetail = ref('')
 const defaultMapCenter = [100.5018, 13.7563]
 const mapCenter = computed(() => props.location ? [props.location.lng, props.location.lat] : defaultMapCenter)
-const locationLabel = computed(() => {
+// หัวข้อของกล่องตำแหน่ง: บอกว่าตำแหน่งมาจากไหน
+const locationTitle = computed(() => {
+  // ยังไม่ได้เลือก
   if (!props.location) return t('requestHelp.noLocation')
+  // ใช้ตำแหน่งปัจจุบัน (GPS)
+  if (props.location.source === 'device') return t('location.currentPlace')
+  // ค้นหาสถานที่: ใช้ชื่อสถานที่ที่ค้นเจอ
+  if (props.location.placeName) return props.location.placeName
+  // คลิกบนแผนที่
+  return t('report.pinnedOnMap')
+})
+
+// บรรทัดล่าง: พิกัด + ความแม่นยำ หรือวิธีเลือกตำแหน่งถ้ายังไม่ได้เลือก
+const locationLabel = computed(() => {
+  if (!props.location) return t('requestHelp.noLocationHint')
   const { lat, lng, accuracyM } = props.location
   const accuracyLabel = accuracyM !== null && accuracyM !== undefined ? ` · ${t('report.accuracy', { value: Math.round(accuracyM) })}` : ''
   return `${lat.toFixed(6)}, ${lng.toFixed(6)}${accuracyLabel}`
 })
+// เกินระยะนี้ถือว่าตำแหน่งจากเครื่องไม่แม่นพอ (เท่ากับหน้าแจ้งเหตุ)
+const lowAccuracyThresholdM = 200
+const isLowAccuracy = computed(() => {
+  const location = props.location
+  if (!location || location.source !== 'device') return false
+  if (location.accuracyM === null || location.accuracyM === undefined) return false
+  return location.accuracyM > lowAccuracyThresholdM
+})
+// ระยะคลาดเคลื่อน: เกิน 1 กม. แสดงเป็นกิโลเมตร
+const accuracyLabel = computed(() => {
+  const accuracy = props.location?.accuracyM ?? 0
+  if (accuracy >= 1000) return t('units.kilometers', { value: (accuracy / 1000).toFixed(1) })
+  return t('units.meters', { value: Math.round(accuracy) })
+})
+
 const setMapLocation = (location) => emit('update:location', { ...location, accuracyM: null, source: 'map' })
 // ผลค้นหา/พิกัดที่กรอก ถือเป็นจุดที่ผู้ใช้เลือกเอง (source 'map' ตามที่ฐานข้อมูลรองรับ)
-const setSearchLocation = (item) => emit('update:location', { lat: item.center[1], lng: item.center[0], accuracyM: null, source: 'map' })
+const setSearchLocation = (item) => emit('update:location', { lat: item.center[1], lng: item.center[0], accuracyM: null, placeName: item.label, source: 'map' })
 const useCurrentLocation = async () => {
   try {
     const location = await getCurrentLocation()
@@ -102,11 +126,14 @@ const useCurrentLocation = async () => {
     // useGeolocation จัดการข้อความผิดพลาดให้แสดงใน locationError แล้ว
   }
 }
+
+// ให้หน้าขอความช่วยเหลือสั่งขอตำแหน่งปัจจุบันได้ (ตอนเข้าขั้นตำแหน่ง)
+defineExpose({ useCurrentLocation })
 </script>
 <style scoped>
 .side {
   min-width: 0;
-  padding-left: 1.15rem;
+  padding-left: 18px;
   border-left: 1px solid #e0eaf6;
 }
 
@@ -114,39 +141,39 @@ const useCurrentLocation = async () => {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: .8rem;
+  gap: 13px;
 }
 
 .map h2 {
   margin: 0;
   color: #102968;
-  font-size: 1.05rem;
+  font-size: 17px;
 }
 
 .map__header p,
 .map__selection span,
 .map__status {
   color: #60718c;
-  font-size: .78rem;
+  font-size: 12px;
   line-height: 1.5;
 }
 
 .map__header p {
-  margin: .2rem 0 0;
+  margin: 3px 0 0;
 }
 
 .map__current-button {
   flex: 0 0 auto;
-  min-height: 2.45rem;
-  padding: 0 .7rem;
-  border: 0;
-  border-radius: .45rem;
-  background: #eb2631;
-  color: #fff;
+  min-height: 39px;
+  padding: 0 11px;
+  border: 1px solid var(--gs-action);
+  border-radius: 8px;
+  background: var(--gs-action-tint);
+  color: var(--gs-action);
   cursor: pointer;
   font: inherit;
-  font-size: .73rem;
-  font-weight: 800;
+  font-size: 14px;
+  font-weight: 750;
 }
 
 .map__current-button:disabled {
@@ -156,17 +183,17 @@ const useCurrentLocation = async () => {
 
 .map__selection {
   display: grid;
-  gap: .12rem;
-  margin: .75rem 0;
-  padding: .68rem .75rem;
+  gap: 1.92px;
+  margin: 12px 0;
+  padding: 11px 12px;
   border: 1px solid #dbe7f5;
-  border-radius: .55rem;
+  border-radius: 9px;
   background: #f9fbff;
 }
 
 .map__selection strong {
   color: #29457a;
-  font-size: .78rem;
+  font-size: 12px;
 }
 
 .map__selection--ready {
@@ -181,22 +208,31 @@ const useCurrentLocation = async () => {
 }
 
 .map__status {
-  margin: 0 0 .65rem;
+  margin: 0 0 10px;
+}
+
+.map__status--warning {
+  padding: 10px 12px;
+  border: 1px solid #ecd3a4;
+  border-radius: 8px;
+  background: var(--gs-pending-tint);
+  color: var(--gs-pending);
+  font-size: 13px;
 }
 
 .map__status--error {
-  padding: .6rem .7rem;
-  border-radius: .45rem;
+  padding: 10px 11px;
+  border-radius: 7px;
   background: #fff1f1;
   color: #b4232a;
 }
 
 .map__canvas {
   position: relative;
-  height: clamp(32rem, 58dvh, 42rem);
+  height: clamp(512px, 58dvh, 672px);
   overflow: hidden;
   border: 1px solid #d6e3f2;
-  border-radius: .65rem;
+  border-radius: 10px;
   background: #e4f3fb;
 }
 
@@ -274,41 +310,29 @@ const useCurrentLocation = async () => {
 }
 
 /* ข้อความเบอร์ฉุกเฉินใต้ปุ่มส่ง */
-.map__emergency {
-  margin: 12px 0 0;
-  color: #60718c;
-  font-size: 14px;
-  text-align: center;
-}
 
-.map__emergency a {
-  color: #1d63d8;
-  font-weight: 700;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
 
 .map__submission-feedback {
-  margin: .75rem 0 0;
-  padding: .75rem;
-  border-radius: .6rem;
+  margin: 12px 0 0;
+  padding: 12px;
+  border-radius: 10px;
   background: #edf6ff;
   color: #24558e;
-  font-size: .82rem;
+  font-size: 13px;
 }
 
 .map__action {
   display: flex;
-  margin-top: .75rem;
+  margin-top: 12px;
 }
 
 .map__submit-button {
   width: 100%;
-  min-height: 3rem;
-  padding: 0 1rem;
+  min-height: 48px;
+  padding: 0 16px;
   border: 0;
-  border-radius: .65rem;
-  background: #eb2631;
+  border-radius: 10px;
+  background: var(--gs-action);
   color: #fff;
   cursor: pointer;
   font: inherit;
@@ -320,15 +344,15 @@ const useCurrentLocation = async () => {
   opacity: .7;
 }
 
-@media (max-width: 58rem) {
+@media (max-width: 928px) {
   .side {
-    padding: 1rem 0 0;
+    padding: 16px 0 0;
     border-top: 1px solid #e0eaf6;
     border-left: 0;
   }
 }
 
-@media (min-width: 58.01rem) {
+@media (min-width: 928px) {
   /* ให้แผนที่ใช้ความสูงที่เหลือของคอลัมน์ขวา และเลื่อนปุ่มลงไปท้ายคอลัมน์ */
   .side {
     display: flex;
@@ -344,11 +368,11 @@ const useCurrentLocation = async () => {
   .map__canvas {
     flex: 1 1 auto;
     height: auto;
-    min-height: 32rem;
+    min-height: 512px;
   }
 }
 
-@media (max-width: 48rem) {
+@media (max-width: 768px) {
   .map__header {
     align-items: stretch;
     flex-direction: column;
@@ -363,7 +387,7 @@ const useCurrentLocation = async () => {
   }
 
   .map__canvas {
-    height: 24rem;
+    height: 384px;
   }
 }
 </style>

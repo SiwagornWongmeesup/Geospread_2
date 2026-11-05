@@ -57,14 +57,9 @@ defineExpose({ focus })
   font-weight: 650;
 }
 
-.form-steps__status:focus {
-  outline: none;
-}
-
+.form-steps__status:focus,
 .form-steps__status:focus-visible {
-  outline: 2px solid #0b5fcc;
-  outline-offset: 3px;
-  border-radius: 5px;
+  outline: none;
 }
 
 .form-steps__list {
