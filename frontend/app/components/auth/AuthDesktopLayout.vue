@@ -81,23 +81,23 @@ const { t } = useLocale()
   right: 8%;
   bottom: 8%;
   left: 8%;
-  max-width: 34rem;
+  max-width: 544px;
 }
 
 .auth-desktop__headline {
   margin: 0;
   color: #102968;
-  font-size: clamp(2.2rem, 3.6vw, 3.8rem);
+  font-size: clamp(35px, 3.6vw, 61px);
   font-weight: 800;
   line-height: 1.2;
   text-wrap: balance;
 }
 
 .auth-desktop__text {
-  max-width: 30rem;
-  margin: 0.9rem 0 0;
+  max-width: 480px;
+  margin: 14px 0 0;
   color: #2d4566;
-  font-size: 1.05rem;
+  font-size: 17px;
   font-weight: 600;
   line-height: 1.6;
 }
@@ -107,45 +107,45 @@ const { t } = useLocale()
   flex: 0 0 min(500px, 100%);
   align-items: center;
   justify-content: center;
-  padding: 2rem 1.75rem;
+  padding: 32px 28px;
   box-sizing: border-box;
 }
 
 .auth-desktop__card {
-  width: min(100%, 27rem);
-  padding: 2rem;
+  width: min(100%, 432px);
+  padding: 32px;
   box-sizing: border-box;
-  border-radius: 1rem;
+  border-radius: 16px;
   background: #fff;
   box-shadow: 0 18px 44px rgb(29 79 125 / 12%);
 }
 
 .auth-desktop__title {
-  margin: 0 0 0.35rem;
-  font-size: 2rem;
+  margin: 0 0 6px;
+  font-size: 32px;
   line-height: 1.25;
 }
 
 .auth-desktop__intro {
-  margin: 0 0 0.75rem;
+  margin: 0 0 12px;
   color: #3f5a80;
-  font-size: 0.95rem;
+  font-size: 15px;
 }
 
 .auth-desktop__privacy {
-  margin: 1.5rem 0 0;
-  padding-top: 1rem;
+  margin: 24px 0 0;
+  padding-top: 16px;
   border-top: 1px solid #e1eaf2;
   color: #52708b;
-  font-size: 0.8rem;
+  font-size: 13px;
   line-height: 1.5;
   text-align: center;
 }
 
 .auth-desktop__card :deep(.auth-switch) {
-  margin: 1.25rem 0 0;
+  margin: 20px 0 0;
   color: #3f5a80;
-  font-size: 0.9rem;
+  font-size: 14px;
   text-align: center;
 }
 
@@ -153,7 +153,7 @@ const { t } = useLocale()
   display: inline-flex;
   min-height: 44px;
   align-items: center;
-  padding: 0 0.25rem;
+  padding: 0 4px;
   color: #0b5fcc;
   font-weight: 800;
   text-decoration: underline;
@@ -163,7 +163,7 @@ const { t } = useLocale()
 .auth-desktop__card :deep(.auth-switch a:focus-visible) {
   outline: 2px solid #0b5fcc;
   outline-offset: 2px;
-  border-radius: 0.4rem;
+  border-radius: 6px;
 }
 
 /* จอคอมแคบ: ซ่อนภาพ ให้ฟอร์มเต็มความกว้าง ไม่ล้นด้านข้าง */

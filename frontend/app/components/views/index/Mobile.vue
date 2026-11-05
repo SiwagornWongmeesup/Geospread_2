@@ -20,8 +20,10 @@
         @close-popup="clearSelectedIncident"
         @open-report="openReportDetail"
       />
+      <!-- มือถือใช้ปุ่มหาตำแหน่งของ Mapbox บนแผนที่แทน จึงไม่ต้องมีปุ่มตำแหน่งปัจจุบันซ้ำในแถบค้นหา -->
       <MapLocationSearch
         class="mobile-home__location-search"
+        :show-current-location="false"
         :is-locating="isLocating"
         :location-error="locationError"
         @locate="focusCurrentLocation"
@@ -139,44 +141,41 @@ onMounted(() => {
   border-radius: 0 !important;
   box-shadow: none !important;
 }
-/* ช่องค้นหาอยู่บนสุดของจอ (เดิมอยู่ใต้แถบโลโก้ซึ่งเอาออกแล้ว) */
+/* ช่องค้นหาอยู่บนสุดของแผนที่ ใต้แถบโลโก้ (แถบโลโก้จัดการ safe area ด้านบนให้แล้ว) */
 .mobile-home__location-search:deep(.map-location-tools) {
-  top: max(12px, env(safe-area-inset-top));
-  left: 0.9rem;
-  width: calc(100% - 5.9rem);
-}
-.mobile-home__location-search:deep(.map-location-tools__current-location) {
-  min-width: 2.9rem;
+  top: 12px;
+  left: 14px;
+  width: calc(100% - 94px);
 }
 .mobile-home__location-search:deep(.map-location-tools__search) {
-  min-height: 3.1rem;
-  border-radius: 0.9rem;
+  min-height: 50px;
+  border-radius: 14px;
 }
 .mobile-home__location-search:deep(.map-location-tools__search input) {
-  font-size: 0.95rem;
+  font-size: 15px;
 }
 .mobile-home__location-search:deep(.map-location-tools__results) {
-  max-height: min(19rem, calc(100dvh - 11rem));
+  max-height: min(304px, calc(100dvh - 232px));
 }
 .mobile-home__map-error {
   position: absolute;
-  top: 4.6rem;
-  right: 1rem;
-  left: 1rem;
+  top: 74px;
+  right: 16px;
+  left: 16px;
   z-index: 6;
   margin: 0;
-  padding: 0.65rem 0.8rem;
-  border-radius: 0.7rem;
+  padding: 10px 13px;
+  border-radius: 11px;
   background: rgb(255 247 247 / 96%);
   color: #b91c1c;
-  font-size: 0.78rem;
+  font-size: 12px;
   font-weight: 750;
-  box-shadow: 0 0.5rem 1.1rem rgb(127 29 29 / 12%);
+  box-shadow: 0 8px 18px rgb(127 29 29 / 12%);
 }
-@media (min-width: 30rem) {
+@media (min-width: 480px) {
   .mobile-home__location-search:deep(.map-location-tools) {
-    left: 1.25rem;
-    width: calc(100% - 6.5rem);
+    left: 20px;
+    width: calc(100% - 104px);
   }
 }
 </style>

@@ -40,10 +40,10 @@ const noteId = useId()
 .google-auth__divider {
   display: flex;
   align-items: center;
-  gap: 0.7rem;
-  margin: 1.4rem 0 1.1rem;
+  gap: 11px;
+  margin: 22px 0 18px;
   color: #52708b;
-  font-size: 0.85rem;
+  font-size: 14px;
 }
 
 .google-auth__divider::before,
@@ -57,13 +57,13 @@ const noteId = useId()
 .google-auth__button {
   display: flex;
   width: 100%;
-  min-height: 3.15rem;
+  min-height: 50px;
   align-items: center;
   justify-content: center;
-  gap: 0.65rem;
-  padding: 0 0.9rem;
+  gap: 10px;
+  padding: 0 14px;
   border: 1px solid #7d93ad;
-  border-radius: 0.65rem;
+  border-radius: 10px;
   background: #fff;
   color: #102968;
   font: inherit;
@@ -84,16 +84,16 @@ const noteId = useId()
 
 .google-auth__logo {
   flex: 0 0 auto;
-  width: 1.15rem;
-  height: 1.15rem;
+  width: 18px;
+  height: 18px;
 }
 
 .google-auth__badge {
-  padding: 0.1rem 0.45rem;
+  padding: 1.6px 7px;
   border-radius: 999px;
   background: #e6edf7;
   color: #3f5a80;
-  font-size: 0.75rem;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -101,11 +101,11 @@ const noteId = useId()
   min-height: 0;
   margin: 0;
   color: #52708b;
-  font-size: 0.82rem;
+  font-size: 13px;
   text-align: center;
 }
 
 .google-auth__note--visible {
-  margin-top: 0.5rem;
+  margin-top: 8px;
 }
 </style>

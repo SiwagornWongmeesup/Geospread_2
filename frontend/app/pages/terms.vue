@@ -24,50 +24,50 @@ const sections = computed(() => tm('termsPage.sections') ?? [])
 <style scoped>
 .terms-page {
   min-height: 100%;
-  padding: 1rem;
+  padding: 16px;
   background: #edf6ff;
 }
 
 .terms-page__card {
-  max-width: 46rem;
+  max-width: 736px;
   margin: 0 auto;
-  padding: clamp(1.25rem, 4vw, 2.5rem);
-  border-radius: 0.85rem;
+  padding: clamp(20px, 4vw, 40px);
+  border-radius: 14px;
   background: #fff;
-  box-shadow: 0 0.65rem 1.8rem rgb(31 72 125 / 8%);
+  box-shadow: 0 10px 29px rgb(31 72 125 / 8%);
   color: #102968;
 }
 
 .terms-page__card h1 {
   margin: 0;
-  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-size: clamp(24px, 3vw, 32px);
   line-height: 1.3;
 }
 
 .terms-page__draft {
-  margin: 0.75rem 0 0;
-  padding: 0.6rem 0.8rem;
-  border-radius: 0.6rem;
+  margin: 12px 0 0;
+  padding: 10px 13px;
+  border-radius: 10px;
   background: #fff6e0;
   color: #7a4b00;
-  font-size: 0.88rem;
+  font-size: 14px;
   font-weight: 650;
 }
 
 .terms-page__section {
-  margin-top: 1.75rem;
+  margin-top: 28px;
 }
 
 .terms-page__section h2 {
-  margin: 0 0 0.4rem;
-  font-size: 1.15rem;
+  margin: 0 0 6px;
+  font-size: 18px;
 }
 
 .terms-page__section p {
   max-width: 65ch;
   margin: 0;
   color: #2d4566;
-  font-size: 1rem;
+  font-size: 16px;
   line-height: 1.75;
 }
 </style>

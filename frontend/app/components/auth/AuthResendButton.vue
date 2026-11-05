@@ -25,19 +25,19 @@ const { t } = useLocale()
 
 <style scoped>
 .auth-resend {
-  margin-top: 0.75rem;
+  margin-top: 12px;
   text-align: center;
 }
 
 .auth-resend__button {
   min-height: 44px;
-  padding: 0 0.75rem;
+  padding: 0 12px;
   border: 0;
-  border-radius: 0.5rem;
+  border-radius: 8px;
   background: transparent;
   color: #0b5fcc;
   font: inherit;
-  font-size: 0.92rem;
+  font-size: 15px;
   font-weight: 750;
   text-decoration: underline;
   text-underline-offset: 3px;

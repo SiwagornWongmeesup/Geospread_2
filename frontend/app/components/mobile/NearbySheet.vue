@@ -252,7 +252,7 @@ const activeItems = computed(() => tabs.value.find((tab) => tab.key === activeTa
   background: transparent;
   color: #4a5f86;
   font: inherit;
-  font-size: 0.9rem;
+  font-size: 14px;
   font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
@@ -272,7 +272,7 @@ const activeItems = computed(() => tabs.value.find((tab) => tab.key === activeTa
   border-radius: 999px;
   background: #d3e0f3;
   color: #102968;
-  font-size: 0.75rem;
+  font-size: 12px;
 }
 
 .nearby-sheet__tab[aria-selected='true'] .nearby-sheet__count {
@@ -298,7 +298,7 @@ const activeItems = computed(() => tabs.value.find((tab) => tab.key === activeTa
   background: #f5f8fd;
   color: #1d4ed8;
   font: inherit;
-  font-size: 0.85rem;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
 }
@@ -306,7 +306,7 @@ const activeItems = computed(() => tabs.value.find((tab) => tab.key === activeTa
 .nearby-sheet__state {
   margin: 16px 0;
   color: #6b7a99;
-  font-size: 0.9rem;
+  font-size: 14px;
   text-align: center;
 }
 
@@ -375,18 +375,18 @@ const activeItems = computed(() => tabs.value.find((tab) => tab.key === activeTa
 
 .nearby-sheet__body strong {
   color: #102968;
-  font-size: 0.95rem;
+  font-size: 15px;
 }
 
 .nearby-sheet__body span {
   color: #6b7a99;
-  font-size: 0.8rem;
+  font-size: 13px;
 }
 
 .nearby-sheet__distance {
   flex: 0 0 auto;
   color: #1d4ed8;
-  font-size: 0.85rem;
+  font-size: 14px;
   font-weight: 700;
 }
 

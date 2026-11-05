@@ -1,6 +1,6 @@
 <template>
-  <form class="help-form" @submit.prevent="submit">
-    <section>
+  <form class="help-form" :class="{ 'help-form--wizard': step }" @submit.prevent="submit">
+    <section v-show="showSection('type')">
       <h2><b>1</b> {{ t('requestHelp.step1') }}</h2>
       <div class="type-grid">
         <button v-for="item in types" :key="item.id"
@@ -16,12 +16,12 @@
       </div>
     </section>
 
-    <section>
+    <section v-show="showSection('details')">
       <h2><b>2</b> {{ t('requestHelp.step2') }}</h2><textarea v-model="details" maxlength="500"
         :placeholder="t('requestHelp.detailsPlaceholder')" />
         <small class="count">{{ details.length}}/500</small>
     </section>
-    <section>
+    <section v-show="showSection('details')">
       <h2><b>3</b> {{ t('requestHelp.step3') }}</h2>
       <!-- ช่องระบุจำนวนคนเป็นตัวเลข ค่านี้ส่งไป API เป็น people_count -->
       <label class="people-custom">
@@ -40,7 +40,7 @@
         </span>
       </label>
     </section>
-    <section class="media-upload">
+    <section v-show="showSection('media')" class="media-upload">
       <h2><b>4</b> {{ t('requestHelp.step4') }} <span>{{ t('report.optional') }}</span></h2>
       <input ref="fileInput" class="sr-only" type="file" multiple accept="image/jpeg,image/png" :disabled="isSubmitting" @change="selectFiles">
       <button type="button" class="upload" :disabled="isSubmitting" @click="fileInput?.click()">
@@ -65,7 +65,15 @@
 import { computed, onBeforeUnmount, ref } from 'vue'
 const props = defineProps({
   location: { type: Object, default: null },
+  // มือถือแบ่งเป็นขั้นตอน: ส่ง id ของขั้นที่จะแสดง ('type' | 'details' | 'media') ถ้าเป็น null แสดงทุกส่วน (คอม)
+  step: { type: String, default: null },
 })
+
+// แสดงส่วนนี้ไหม: คอมแสดงทุกส่วน มือถือแสดงเฉพาะส่วนของขั้นปัจจุบัน
+const showSection = (sectionStep) => {
+  if (!props.step) return true
+  return props.step === sectionStep
+}
 
 const config = useRuntimeConfig()
 const apiBase = config.public.apiBase || 'http://localhost:5000'
@@ -116,6 +124,27 @@ const removeSelectedFile = (index) => {
 }
 
 onBeforeUnmount(clearSelectedFiles)
+
+// ตรวจข้อมูลของแต่ละขั้นก่อนไปขั้นถัดไป คืนข้อความ error หรือ '' ถ้าผ่าน
+const validateStep = (stepId) => {
+  if (stepId === 'type') {
+    if (type.value === 'other' && !customType.value.trim()) {
+      return t('requestHelp.needOtherType')
+    }
+  }
+
+  if (stepId === 'details') {
+    if (details.value.trim().length < 5) {
+      return t('requestHelp.needDetails')
+    }
+    const people = Number(peopleCount.value)
+    if (!Number.isInteger(people) || people < 1 || people > 999) {
+      return t('requestHelp.needPeople')
+    }
+  }
+
+  return ''
+}
 
 const submit = async () => {
   const description = details.value.trim()
@@ -180,10 +209,15 @@ const submit = async () => {
   }
 }
 
-defineExpose({ submit, isSubmitting, feedback })
+defineExpose({ submit, validateStep, isSubmitting, feedback })
 </script>
 
 <style scoped>
+/* มือถือแบบทีละขั้น: ซ่อนเลขหน้าหัวข้อ (1, 2, 3...) เพราะแถบขั้นตอนด้านบนบอกลำดับอยู่แล้ว */
+.help-form--wizard h2 b {
+  display: none;
+}
+
 .help-form {
   display: grid;
   gap: 1rem;

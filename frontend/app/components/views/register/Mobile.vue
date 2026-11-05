@@ -80,6 +80,6 @@ const { t } = useLocale()
 <style scoped>
 /* การ์ดมือถือมีระยะบนน้อย กล่องข้อความแรกจึงเว้นจากขอบการ์ดเอง */
 .auth-mobile-alert:first-child {
-  margin-top: 0.8rem;
+  margin-top: 13px;
 }
 </style>

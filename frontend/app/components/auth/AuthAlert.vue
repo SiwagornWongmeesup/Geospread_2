@@ -21,20 +21,20 @@ defineProps({
 .auth-alert {
   display: flex;
   align-items: flex-start;
-  gap: 0.55rem;
-  margin: 0 0 0.5rem;
-  padding: 0.75rem 0.85rem;
-  border-radius: 0.65rem;
-  font-size: 0.88rem;
+  gap: 9px;
+  margin: 0 0 8px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 14px;
   font-weight: 650;
   line-height: 1.45;
 }
 
 .auth-alert svg {
   flex: 0 0 auto;
-  width: 1.15rem;
-  height: 1.15rem;
-  margin-top: 0.08rem;
+  width: 18px;
+  height: 18px;
+  margin-top: 1.28px;
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;

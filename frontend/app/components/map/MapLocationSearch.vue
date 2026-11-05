@@ -7,7 +7,7 @@
   >
     <div class="map-location-tools__bar">
       <button
-        v-if="variant === 'browse' && !selectedArea"
+        v-if="variant === 'browse' && !selectedArea && showCurrentLocation"
         type="button"
         class="map-location-tools__current-location"
         :disabled="isLocating"
@@ -16,7 +16,7 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s6-5.1 6-11a6 6 0 1 0-12 0c0 5.9 6 11 6 11Zm0-8.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5Z" /></svg>
         <span>{{ isLocating ? t('location.locating') : t('location.useCurrent') }}</span>
       </button>
-      <div v-else-if="variant === 'browse'" class="map-location-tools__selected-area" aria-live="polite">
+      <div v-else-if="variant === 'browse' && selectedArea" class="map-location-tools__selected-area" aria-live="polite">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s6-5.1 6-11a6 6 0 1 0-12 0c0 5.9 6 11 6 11Zm0-8.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5Z" /></svg>
         <span>{{ selectedArea }}</span>
         <button type="button" :aria-label="t('search.clearArea')" @click="clearSelectedArea">
@@ -79,6 +79,8 @@ const props = defineProps({
   locationError: { type: String, default: '' },
   // browse = หน้าแรก (เลื่อนดูพื้นที่) | pick = ฟอร์มเลือกตำแหน่ง (ปักหมุด) ไม่มีปุ่มตำแหน่งปัจจุบันซ้ำ
   variant: { type: String, default: 'browse' },
+  // ปิดปุ่ม "ตำแหน่งปัจจุบัน" ได้ เช่น หน้าหลักมือถือที่มีปุ่มหาตำแหน่งของ Mapbox บนแผนที่อยู่แล้ว
+  showCurrentLocation: { type: Boolean, default: true },
 })
 
 const emit = defineEmits(['locate', 'select', 'clear-selection'])

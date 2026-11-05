@@ -96,14 +96,14 @@ const { t } = useLocale()
 
 <style scoped>
 .forgot-form__alert {
-  margin-top: 0.75rem;
+  margin-top: 12px;
 }
 
 .forgot-form__intro,
 .forgot-form__sent {
-  margin: 0.75rem 0 0;
+  margin: 12px 0 0;
   color: #3f5a80;
-  font-size: 0.95rem;
+  font-size: 15px;
   line-height: 1.6;
   overflow-wrap: anywhere;
 }
@@ -116,7 +116,7 @@ const { t } = useLocale()
   display: inline-flex;
   min-height: 44px;
   align-items: center;
-  margin-left: 0.35rem;
+  margin-left: 6px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -131,6 +131,6 @@ const { t } = useLocale()
 .forgot-form__link:focus-visible {
   outline: 2px solid #0b5fcc;
   outline-offset: 2px;
-  border-radius: 0.4rem;
+  border-radius: 6px;
 }
 </style>

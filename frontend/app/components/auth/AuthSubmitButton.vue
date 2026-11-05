@@ -18,18 +18,18 @@ defineProps({
 .auth-submit {
   display: flex;
   width: 100%;
-  min-height: 3.3rem;
+  min-height: 53px;
   align-items: center;
   justify-content: center;
-  gap: 0.6rem;
-  margin-top: 1.5rem;
+  gap: 10px;
+  margin-top: 24px;
   border: 0;
-  border-radius: 0.65rem;
+  border-radius: 10px;
   /* #0b5fcc กับตัวอักษรขาว = 5.9:1 ผ่านเกณฑ์ WCAG AA */
   background: #0b5fcc;
   color: #fff;
   font: inherit;
-  font-size: 1rem;
+  font-size: 16px;
   font-weight: 800;
   cursor: pointer;
   transition: background-color 160ms ease;
@@ -49,8 +49,8 @@ defineProps({
 }
 
 .auth-submit__spinner {
-  width: 1.05rem;
-  height: 1.05rem;
+  width: 17px;
+  height: 17px;
   border: 2px solid rgb(255 255 255 / 40%);
   border-top-color: #fff;
   border-radius: 50%;

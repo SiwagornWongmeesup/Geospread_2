@@ -1,34 +1,56 @@
 <script setup>
-const { t } = useLocale()
+// ---------------------------------------------------------------------------
+// Profile Page
+// คอม: แสดงแค่ข้อมูลโปรไฟล์ (เมนูอื่นอยู่ใน sidebar แล้ว)
+// มือถือ: แสดงข้อมูลโปรไฟล์ + เมนูรวมจาก sidebar เพราะมือถือไม่มี sidebar
+// ---------------------------------------------------------------------------
+import ProfileSummary from '~/components/profile/ProfileSummary.vue'
+import MobileProfileMenu from '~/components/profile/MobileProfileMenu.vue'
+
 definePageMeta({
   showRightPanel: false
-});
+})
+
+const { t } = useLocale()
+const { isMobile } = useResponsiveView()
+const { isLoggedIn, getUser, logout } = useAuth()
+
+useHead({ title: () => `${t('nav.profile')} | GeoSpread` })
+
+// cookie user เก็บได้ 2 แบบ: { user: {...}, token } (แบบเก่า) หรือ {...} ตรงๆ
+const account = computed(() => {
+  if (!isLoggedIn.value) return null
+  const saved = getUser()
+  if (saved?.user) return saved.user
+  return saved
+})
+
+const confirmLogout = () => {
+  if (confirm(t('header.logoutConfirm'))) {
+    logout()
+  }
+}
 </script>
 
 <template>
-  <section class="dashboard-page">
-    <h1>{{ t('nav.profile') }}</h1>
-    <p>{{ t('pages.profile') }}</p>
+  <section class="profile-page" :class="{ 'profile-page--mobile': isMobile }">
+    <ProfileSummary :account="account" />
+    <MobileProfileMenu v-if="isMobile" :is-logged-in="isLoggedIn" @logout="confirmLogout" />
   </section>
 </template>
 
 <style scoped>
-.dashboard-page {
-  padding: 1.5rem;
-  border: 1px solid #dce5f2;
-  border-radius: 0.875rem;
-  background: #ffffff;
+.profile-page {
+  display: grid;
+  max-width: 720px;
+  gap: 20px;
 }
 
-h1 {
-  margin: 0;
-  color: #123765;
-  font-size: 1.5rem;
-}
-
-p {
-  margin: 0.5rem 0 0;
-  color: #60718c;
-  line-height: 1.6;
+.profile-page--mobile {
+  max-width: none;
+  min-height: 100%;
+  align-content: start;
+  padding: 16px;
+  background: #f4f8fc;
 }
 </style>

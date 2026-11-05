@@ -37,19 +37,19 @@ const { t } = useLocale()
 
 <style scoped>
 .auth-terms {
-  margin-top: 1rem;
+  margin-top: 16px;
 }
 
 .auth-terms__row {
   display: flex;
   min-height: 44px;
   align-items: center;
-  gap: 0.7rem;
-  padding: 0.35rem 0.5rem;
-  margin: 0 -0.5rem;
-  border-radius: 0.6rem;
+  gap: 11px;
+  padding: 6px 8px;
+  margin: 0 -8px;
+  border-radius: 10px;
   color: #3a5274;
-  font-size: 0.88rem;
+  font-size: 14px;
   line-height: 1.5;
   cursor: pointer;
 }
@@ -60,8 +60,8 @@ const { t } = useLocale()
 
 .auth-terms__checkbox {
   flex: 0 0 auto;
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 20px;
+  height: 20px;
   margin: 0;
   accent-color: #0b5fcc;
   cursor: pointer;
@@ -82,9 +82,9 @@ const { t } = useLocale()
 }
 
 .auth-terms__error {
-  margin: 0.15rem 0 0 1.95rem;
+  margin: 2px 0 0 31px;
   color: #be2631;
-  font-size: 0.8rem;
+  font-size: 13px;
   font-weight: 650;
 }
 
@@ -92,19 +92,19 @@ const { t } = useLocale()
   display: inline-flex;
   min-height: 44px;
   align-items: center;
-  gap: 0.3rem;
-  margin-left: 1.45rem;
-  padding: 0 0.5rem;
+  gap: 5px;
+  margin-left: 23px;
+  padding: 0 8px;
   color: #0b5fcc;
-  font-size: 0.85rem;
+  font-size: 14px;
   font-weight: 750;
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 
 .auth-terms__link svg {
-  width: 0.95rem;
-  height: 0.95rem;
+  width: 15px;
+  height: 15px;
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
@@ -115,7 +115,7 @@ const { t } = useLocale()
 .auth-terms__link:focus-visible {
   outline: 2px solid #0b5fcc;
   outline-offset: 2px;
-  border-radius: 0.4rem;
+  border-radius: 6px;
 }
 
 .auth-terms__sr {

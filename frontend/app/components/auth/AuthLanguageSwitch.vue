@@ -32,13 +32,13 @@ const { t, locale, locales, setLocale } = useLocale()
 .auth-language__option {
   min-width: 44px;
   min-height: 38px;
-  padding: 0 0.6rem;
+  padding: 0 10px;
   border: 0;
   border-radius: 999px;
   background: transparent;
   color: #3f5a80;
   font: inherit;
-  font-size: 0.85rem;
+  font-size: 14px;
   font-weight: 800;
   cursor: pointer;
 }

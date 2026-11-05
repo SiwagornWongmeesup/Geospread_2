@@ -46,13 +46,13 @@ const onInput = (event) => {
 <style scoped>
 .auth-code {
   display: grid;
-  gap: 0.45rem;
-  margin-top: 1rem;
+  gap: 7px;
+  margin-top: 16px;
 }
 
 .auth-code__label {
   color: #193a70;
-  font-size: 0.9rem;
+  font-size: 14px;
   font-weight: 750;
 }
 
@@ -63,14 +63,14 @@ const onInput = (event) => {
 .auth-code__input {
   box-sizing: border-box;
   width: 100%;
-  min-height: 4rem;
-  padding: 0 1rem;
+  min-height: 64px;
+  padding: 0 16px;
   border: 1px solid #7d93ad;
-  border-radius: 0.75rem;
+  border-radius: 12px;
   background: #fff;
   color: #102968;
   font: inherit;
-  font-size: 2rem;
+  font-size: 32px;
   font-variant-numeric: tabular-nums;
   font-weight: 800;
   letter-spacing: 0.5em;
@@ -101,7 +101,7 @@ const onInput = (event) => {
 .auth-code__hint,
 .auth-code__error {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 13px;
   line-height: 1.45;
 }
 

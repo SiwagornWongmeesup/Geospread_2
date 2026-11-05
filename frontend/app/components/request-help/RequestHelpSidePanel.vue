@@ -47,8 +47,9 @@
         <span>{{ t('requestHelp.privacy') }}</span>
       </p>
 
-      <p v-if="submissionFeedback" class="map__submission-feedback" role="status">{{ submissionFeedback }}</p>
-      <div class="map__action">
+      <p v-if="submissionFeedback && !hideSubmit" class="map__submission-feedback" role="status">{{ submissionFeedback }}</p>
+      <!-- มือถือแบบทีละขั้นซ่อนปุ่มส่งตรงนี้ เพราะปุ่มส่งอยู่ในขั้นสุดท้าย -->
+      <div v-if="!hideSubmit" class="map__action">
         <button type="button" class="map__submit-button" :disabled="isSubmitting" @click="emit('submit')">
           {{ isSubmitting ? t('requestHelp.submitting') : t('requestHelp.submit') }}
         </button>
@@ -75,6 +76,7 @@ const props = defineProps({
   location: { type: Object, default: null },
   isSubmitting: { type: Boolean, default: false },
   submissionFeedback: { type: String, default: '' },
+  hideSubmit: { type: Boolean, default: false },
 })
 const emit = defineEmits(['update:location', 'submit'])
 const { getCurrentLocation, isLocating, locationError } = useGeolocation()

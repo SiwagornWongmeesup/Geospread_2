@@ -1,19 +1,22 @@
 <template>
-  <form class="report-incident-form" @submit.prevent="submitReport">
+  <form class="report-incident-form" :class="{ 'report-incident-form--wizard': isWizard }" @submit.prevent="onFormSubmit">
     <header class="report-incident-form__intro">
       <h1>{{ t('report.title') }}</h1>
       <p>{{ t('report.subtitle') }}</p>
     </header>
 
+    <!-- มือถือ: แบ่งฟอร์มเป็นขั้นตอน แถบนี้บอกว่าอยู่ขั้นไหนและเหลืออีกกี่ขั้นถึงส่งรายงาน -->
+    <FormSteps v-if="isWizard" ref="stepStatus" :steps="wizardSteps" :current="currentStep" :label="t('report.stepsLabel')" />
+
     <div class="report-incident-form__body">
     <div class="report-incident-form__fields">
-    <label class="report-incident-form__section report-incident-form__details">
+    <label v-show="showStep('details')" class="report-incident-form__section report-incident-form__details">
       <span>{{ t('report.whatHappened') }} <b aria-hidden="true">*</b></span>
       <textarea v-model="details" rows="4" maxlength="500" required :placeholder="t('report.detailsPlaceholder')" />
       <em>{{ details.length }}/500</em>
     </label>
 
-    <section class="report-incident-form__section incident-suggestions" aria-labelledby="suggested-types-heading">
+    <section v-show="showStep('type')" class="report-incident-form__section incident-suggestions" aria-labelledby="suggested-types-heading">
       <header class="incident-suggestions__heading">
         <div>
           <h2 id="suggested-types-heading">{{ t('report.typeHeading') }} <span>{{ t('report.optional') }}</span></h2>
@@ -36,7 +39,7 @@
       </div>
     </section>
 
-    <section class="report-incident-form__section report-incident-form__upload" aria-labelledby="upload-heading">
+    <section v-show="showStep('media')" class="report-incident-form__section report-incident-form__upload" aria-labelledby="upload-heading">
       <h2 id="upload-heading">{{ t('report.mediaHeading') }} <span>{{ t('report.optional') }}</span></h2>
       <p>{{ t('report.mediaHint') }}</p>
       <input ref="fileInput" type="file" multiple accept="image/jpeg,image/png,video/mp4" class="sr-only" :disabled="isSubmitting" @change="selectFiles">
@@ -57,8 +60,8 @@
       <button v-if="needsLogin" type="button" class="feedback-login" @click="goToLogin">{{ t('header.login') }}</button>
     </div>
     </div>
-    <ReportIncidentRightPanel class="report-incident-form__location">
-      <template #action>
+    <ReportIncidentRightPanel v-show="showStep('location')" class="report-incident-form__location">
+      <template v-if="!isWizard" #action>
         <footer class="report-incident-form__action-row">
           <button type="button" class="button button--secondary" :disabled="isSubmitting" @click="saveMockDraft">{{ t('report.saveDraft') }}</button>
           <button v-if="isLoggedIn" type="submit" class="button button--primary" :disabled="isSubmitting">{{ isSubmitting ? t('report.submitting') : t('report.submit') }}</button>
@@ -67,6 +70,23 @@
       </template>
     </ReportIncidentRightPanel>
     </div>
+
+    <!-- ปุ่มย้อนกลับ / ถัดไป ของแต่ละขั้น ขั้นสุดท้ายเป็นปุ่มส่งรายงาน -->
+    <FormStepActions
+      v-if="isWizard"
+      :show-back="currentStep > 0"
+      :is-last="isLastStep"
+      :disabled="isSubmitting"
+      @back="goToStep(currentStep - 1)"
+      @next="nextStep"
+    >
+      <template #submit>
+        <button v-if="isLoggedIn" type="submit" class="step-actions__button step-actions__button--primary" :disabled="isSubmitting">
+          {{ isSubmitting ? t('report.submitting') : t('report.submit') }}
+        </button>
+        <button v-else type="button" class="step-actions__button step-actions__button--primary" @click="showLoginPrompt()">{{ t('report.loginToSubmit') }}</button>
+      </template>
+    </FormStepActions>
   </form>
 
   <Teleport to="body">
@@ -138,6 +158,8 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { getRecommendedIncidentTypes, toDisplayIncidentCategory, toDisplayKeywordType } from '~/composables/useReportIncident'
 import ReportIncidentRightPanel from '~/components/report/ReportIncidentRightPanel.vue'
+import FormSteps from '~/components/common/FormSteps.vue'
+import FormStepActions from '~/components/common/FormStepActions.vue'
 
 const {
   userSelectedTypeId,
@@ -157,6 +179,53 @@ const localizedLabel = (prefix, item) => {
   return translated === key ? item.label : translated
 }
 const typeLabel = (incidentType) => localizedLabel('incidentTypes', incidentType)
+
+// ---- ขั้นตอนบนมือถือ: เกิดอะไรขึ้น → ประเภท → ตำแหน่ง → รูปภาพและส่ง (หน้าคอมแสดงทุกส่วนพร้อมกันเหมือนเดิม) ----
+const { isMobile } = useResponsiveView()
+const isWizard = computed(() => isMobile.value)
+const wizardSteps = [
+  { id: 'details', label: 'report.stepDetails' },
+  { id: 'type', label: 'report.stepType' },
+  { id: 'location', label: 'report.stepLocation' },
+  { id: 'media', label: 'report.stepMedia' },
+]
+const currentStep = ref(0)
+const stepStatus = ref(null)
+const isLastStep = computed(() => currentStep.value === wizardSteps.length - 1)
+const showStep = (id) => !isWizard.value || wizardSteps[currentStep.value].id === id
+
+const goToStep = async (index) => {
+  currentStep.value = Math.min(Math.max(index, 0), wizardSteps.length - 1)
+  feedback.value = ''
+  needsLogin.value = false
+  await nextTick()
+  // เลื่อนขึ้นบนสุด และให้โปรแกรมอ่านหน้าจออ่านว่าอยู่ขั้นไหน
+  window.scrollTo({ top: 0 })
+  stepStatus.value?.focus()
+}
+
+// ตรวจเฉพาะขั้นที่บังคับกรอก ก่อนไปขั้นถัดไป
+const nextStep = () => {
+  const stepId = wizardSteps[currentStep.value].id
+  if (stepId === 'details' && details.value.trim().length < 5) {
+    feedback.value = t('report.needDetails')
+    return
+  }
+  if (stepId === 'location' && !incidentLocation.value) {
+    feedback.value = t('report.needLocation')
+    return
+  }
+  void goToStep(currentStep.value + 1)
+}
+
+// กด Enter ในช่องกรอกระหว่างขั้น = ไปขั้นถัดไป ไม่ส่งรายงานก่อนถึงขั้นสุดท้าย
+const onFormSubmit = () => {
+  if (isWizard.value && !isLastStep.value) {
+    nextStep()
+    return
+  }
+  void submitReport()
+}
 const categoryLabel = (category) => localizedLabel('incidentCategories', category)
 const details = ref('')
 const fileInput = ref(null)
@@ -353,6 +422,7 @@ const goToLogin = () =>
 { saveLoginDraft(); navigateTo({ path: '/login', query: { redirect: '/report-incident' } }) }
 const submitReport = async () => {
   if (!incidentLocation.value) {
+    if (isWizard.value) await goToStep(wizardSteps.findIndex((step) => step.id === 'location'))
     feedback.value = t('report.needLocation')
     return
   }
@@ -371,6 +441,7 @@ const submitReport = async () => {
   const description = details.value.trim()
 
   if (description.length < 5) {
+    if (isWizard.value) await goToStep(0)
     feedback.value = t('report.needDetails')
     return
   }
@@ -435,10 +506,10 @@ const submitReport = async () => {
 <style scoped>
 .report-incident-form {
   display: grid;
-  gap: 1.5rem;
+  gap: 24px;
   width: 100%;
-  padding: 1.75rem;
-  border-radius: 1rem;
+  padding: 28px;
+  border-radius: 16px;
   background: #fff;
   box-shadow: 0 8px 24px rgb(31 72 125 / 10%);
 }
@@ -451,13 +522,13 @@ const submitReport = async () => {
 
 .report-incident-form h1 {
   color: #102968;
-  font-size: 1.65rem;
+  font-size: 26px;
 }
 
 .report-incident-form__intro p {
-  margin-top: 0.5rem;
+  margin-top: 8px;
   color: #60718c;
-  font-size: 0.9rem;
+  font-size: 14px;
 }
 
 .report-incident-form__section {
@@ -476,13 +547,13 @@ const submitReport = async () => {
 .report-incident-form__upload h2,
 .incident-suggestions h2 {
   color: #142d5b;
-  font-size: 1.05rem;
+  font-size: 17px;
   font-weight: 800;
 }
 
 .incident-suggestions h2 span {
   color: #70819b;
-  font-size: 0.75rem;
+  font-size: 12px;
   font-weight: 650;
 }
 
@@ -491,15 +562,15 @@ const submitReport = async () => {
 }
 
 .report-incident-form__details textarea {
-  min-height: 7rem;
-  margin-top: 0.7rem;
-  padding: 0.85rem 0.9rem 1.8rem;
+  min-height: 112px;
+  margin-top: 11px;
+  padding: 14px 14px 29px;
   border: 1px solid #cdd9e8;
-  border-radius: 0.75rem;
+  border-radius: 12px;
   background: #fff;
   color: #17345f;
   font: inherit;
-  font-size: 0.9rem;
+  font-size: 14px;
   line-height: 1.55;
   resize: vertical;
 }
@@ -516,15 +587,15 @@ const submitReport = async () => {
 
 .report-incident-form__details em {
   position: absolute;
-  right: 0.8rem;
-  bottom: 0.6rem;
+  right: 13px;
+  bottom: 10px;
   color: #70819b;
-  font-size: 0.72rem;
+  font-size: 12px;
   font-style: normal;
 }
 
 .incident-suggestions {
-  padding-top: 1.45rem;
+  padding-top: 23px;
   border-top: 1px solid #dce6f1;
 }
 
@@ -532,14 +603,14 @@ const submitReport = async () => {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 0.95rem;
+  gap: 16px;
+  margin-bottom: 15px;
 }
 
 .incident-suggestions__heading p {
-  margin-top: 0.25rem;
+  margin-top: 4px;
   color: #60718c;
-  font-size: 0.82rem;
+  font-size: 13px;
   line-height: 1.45;
 }
 
@@ -547,52 +618,52 @@ const submitReport = async () => {
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.25rem 0;
+  gap: 6px;
+  padding: 4px 0;
   border: 0;
   background: transparent;
   color: #1479ef;
   font: inherit;
-  font-size: 0.87rem;
+  font-size: 14px;
   font-weight: 800;
   cursor: pointer;
 }
 
 .more-types-button svg {
-  width: 1.15rem;
-  height: 1.15rem;
+  width: 18px;
+  height: 18px;
   transition: transform 160ms ease;
 }
 
 .more-types-button:hover svg {
-  transform: translateX(0.2rem);
+  transform: translateX(3px);
 }
 
 .more-types-button:focus-visible {
-  border-radius: 0.3rem;
+  border-radius: 5px;
   outline: 3px solid rgb(20 121 239 / 20%);
-  outline-offset: 0.2rem;
+  outline-offset: 3px;
 }
 
 .suggested-type-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.75rem;
+  gap: 12px;
 }
 
 .suggested-type {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 0.8rem;
-  min-height: 5.25rem;
-  padding: 0.9rem 1rem;
+  gap: 13px;
+  min-height: 84px;
+  padding: 14px 16px;
   border: 1px solid #d8e3f0;
-  border-radius: 0.8rem;
+  border-radius: 13px;
   background: #fff;
   color: #1c355d;
   font: inherit;
-  font-size: 0.94rem;
+  font-size: 15px;
   font-weight: 800;
   text-align: left;
   cursor: pointer;
@@ -601,8 +672,8 @@ const submitReport = async () => {
 
 .suggested-type__icon {
   display: grid;
-  width: 2rem;
-  height: 2rem;
+  width: 32px;
+  height: 32px;
   flex: 0 0 auto;
   place-items: center;
   border-radius: 999px;
@@ -610,8 +681,8 @@ const submitReport = async () => {
 }
 
 .suggested-type__icon img {
-  width: 1.18rem;
-  height: 1.18rem;
+  width: 19px;
+  height: 19px;
   object-fit: contain;
   filter: brightness(0) invert(1);
 }
@@ -637,11 +708,11 @@ const submitReport = async () => {
 .suggested-type__check {
   position: absolute;
   top: 50%;
-  right: .7rem;
-  width: 1.7rem;
-  height: 1.7rem;
+  right: 11px;
+  width: 27px;
+  height: 27px;
   margin: 0;
-  padding: .25rem;
+  padding: 4px;
   box-sizing: border-box;
   transform: translateY(-50%);
   border-radius: 50%;
@@ -651,15 +722,15 @@ const submitReport = async () => {
 
 .report-incident-form__upload h2 span {
   color: #71809a;
-  font-size: 0.8rem;
+  font-size: 13px;
   font-weight: 600;
 }
 
 .report-incident-form__upload > p {
-  margin-top: 0.3rem;
-  margin-bottom: 0.75rem;
+  margin-top: 5px;
+  margin-bottom: 12px;
   color: #60718c;
-  font-size: 0.82rem;
+  font-size: 13px;
   line-height: 1.45;
 }
 
@@ -667,12 +738,12 @@ const submitReport = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.8rem;
+  gap: 13px;
   width: 100%;
-  min-height: 5.5rem;
-  padding: 0.75rem;
+  min-height: 88px;
+  padding: 12px;
   border: 1px dashed #89a8cf;
-  border-radius: 0.7rem;
+  border-radius: 11px;
   background: #fbfdff;
   color: #2b5b9a;
   font: inherit;
@@ -688,8 +759,8 @@ const submitReport = async () => {
 }
 
 .upload-zone svg {
-  width: 2rem;
-  height: 2rem;
+  width: 32px;
+  height: 32px;
   flex: 0 0 auto;
 }
 
@@ -700,38 +771,38 @@ const submitReport = async () => {
 
 .upload-zone strong {
   color: #1b3b70;
-  font-size: 0.82rem;
+  font-size: 13px;
 }
 
 .upload-zone small {
-  margin-top: 0.2rem;
+  margin-top: 3px;
   color: #70819b;
-  font-size: 0.72rem;
+  font-size: 12px;
 }
 
 .report-incident-form__feedback {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
-  margin: -0.4rem 0 0;
-  padding: 0.7rem 0.8rem;
-  border-radius: 0.6rem;
+  gap: 12px;
+  margin: -6px 0 0;
+  padding: 11px 13px;
+  border-radius: 10px;
   background: #edf6ff;
   color: #24558e;
-  font-size: 0.8rem;
+  font-size: 13px;
   line-height: 1.4;
 }
 
 .feedback-login {
   flex: 0 0 auto;
-  padding: 0.45rem 0.7rem;
+  padding: 7px 11px;
   border: 1px solid #71a9e6;
-  border-radius: 0.45rem;
+  border-radius: 7px;
   background: #fff;
   color: #0b61c2;
   font: inherit;
-  font-size: 0.78rem;
+  font-size: 12px;
   font-weight: 800;
   cursor: pointer;
 }
@@ -746,12 +817,12 @@ const submitReport = async () => {
 .report-incident-form__actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
+  gap: 12px;
 }
 
 .button {
-  min-height: 3rem;
-  border-radius: 0.6rem;
+  min-height: 48px;
+  border-radius: 10px;
   font: inherit;
   font-weight: 800;
   cursor: pointer;
@@ -799,17 +870,17 @@ const submitReport = async () => {
   inset: 0;
   display: grid;
   place-items: center;
-  padding: 1.25rem;
+  padding: 20px;
   background: rgb(14 34 66 / 48%);
   backdrop-filter: blur(3px);
 }
 
 .incident-type-modal {
-  width: min(100%, 45rem);
-  max-height: min(52rem, calc(100dvh - 2.5rem));
+  width: min(100%, 720px);
+  max-height: min(832px, calc(100dvh - 40px));
   overflow: auto;
-  padding: 1.55rem;
-  border-radius: 1rem;
+  padding: 25px;
+  border-radius: 16px;
   background: #fff;
   box-shadow: 0 22px 58px rgb(7 27 62 / 28%);
   animation: modal-enter 180ms cubic-bezier(.2, .8, .2, 1);
@@ -818,22 +889,22 @@ const submitReport = async () => {
 .incident-type-modal__header {
   display: flex;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 16px;
 }
 
 .incident-type-modal h2 {
   margin: 0;
   color: #102968;
-  font-size: 1.55rem;
+  font-size: 25px;
   line-height: 1.2;
 }
 
 .type-conflict-modal {
-  width: min(100%, 34rem);
+  width: min(100%, 544px);
 }
 
 .type-conflict-modal > p {
-  margin: 0.8rem 0 0;
+  margin: 13px 0 0;
   color: #60718c;
   line-height: 1.55;
 }
@@ -841,14 +912,14 @@ const submitReport = async () => {
 .type-conflict-modal__actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-  margin-top: 1.35rem;
+  gap: 12px;
+  margin-top: 22px;
 }
 
 .incident-type-modal__header p {
-  margin: 0.35rem 0 0;
+  margin: 6px 0 0;
   color: #60718c;
-  font-size: 0.85rem;
+  font-size: 14px;
   line-height: 1.4;
 }
 
@@ -858,13 +929,13 @@ const submitReport = async () => {
 
 .modal-close-button {
   display: grid;
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 36px;
+  height: 36px;
   flex: 0 0 auto;
   padding: 0;
   place-items: center;
   border: 0;
-  border-radius: 0.5rem;
+  border-radius: 8px;
   background: transparent;
   color: #527096;
   cursor: pointer;
@@ -880,18 +951,18 @@ const submitReport = async () => {
 }
 
 .modal-close-button svg {
-  width: 1.35rem;
-  height: 1.35rem;
+  width: 22px;
+  height: 22px;
 }
 
 .type-search {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-  margin-top: 1rem;
-  padding: 0 0.8rem;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 0 13px;
   border: 1px solid #c9d8ea;
-  border-radius: 0.6rem;
+  border-radius: 10px;
   color: #6d82a0;
 }
 
@@ -901,20 +972,20 @@ const submitReport = async () => {
 }
 
 .type-search svg {
-  width: 1.3rem;
-  height: 1.3rem;
+  width: 21px;
+  height: 21px;
   flex: 0 0 auto;
 }
 
 .type-search input {
   width: 100%;
-  min-height: 2.6rem;
+  min-height: 42px;
   border: 0;
   outline: 0;
   background: transparent;
   color: #17345f;
   font: inherit;
-  font-size: 0.9rem;
+  font-size: 14px;
 }
 
 .type-search input::placeholder {
@@ -922,36 +993,36 @@ const submitReport = async () => {
 }
 
 .type-search__hint {
-  margin: 0.35rem 0 0;
+  margin: 6px 0 0;
   color: #74849b;
-  font-size: 0.75rem;
+  font-size: 12px;
 }
 
 .type-picker-groups {
   display: grid;
-  gap: 1.1rem;
-  margin-top: 1.25rem;
+  gap: 18px;
+  margin-top: 20px;
 }
 
 .type-picker-group__heading {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
-  margin-bottom: 0.55rem;
+  gap: 9px;
+  margin-bottom: 9px;
 }
 
 .type-picker-group__icon {
   display: grid;
-  width: 1.9rem;
-  height: 1.9rem;
+  width: 30px;
+  height: 30px;
   flex: 0 0 auto;
   place-items: center;
   border-radius: 999px;
 }
 
 .type-picker-group__icon img {
-  width: 1.08rem;
-  height: 1.08rem;
+  width: 17px;
+  height: 17px;
   object-fit: contain;
   filter: brightness(0) invert(1);
 }
@@ -959,38 +1030,38 @@ const submitReport = async () => {
 .type-picker-group h3 {
   margin: 0;
   color: #17345f;
-  font-size: 1rem;
+  font-size: 16px;
 }
 
 .type-picker-group__count {
-  padding: 0.2rem 0.55rem;
+  padding: 3px 9px;
   border-radius: 999px;
   background: #f0f4f9;
   color: #7a899d;
-  font-size: 0.68rem;
+  font-size: 11px;
   font-weight: 700;
 }
 
 .type-picker-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.5rem;
-  padding-left: 2.45rem;
+  gap: 8px;
+  padding-left: 39px;
 }
 
 .type-picker-option {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 0.55rem;
-  min-height: 2.8rem;
-  padding: 0.55rem 0.65rem;
+  gap: 9px;
+  min-height: 45px;
+  padding: 9px 10px;
   border: 1px solid #dbe6f2;
-  border-radius: 0.6rem;
+  border-radius: 10px;
   background: #fbfdff;
   color: #314866;
   font: inherit;
-  font-size: 0.78rem;
+  font-size: 12px;
   font-weight: 750;
   text-align: left;
   cursor: pointer;
@@ -999,16 +1070,16 @@ const submitReport = async () => {
 
 .type-picker-option__icon {
   display: grid;
-  width: 1.55rem;
-  height: 1.55rem;
+  width: 25px;
+  height: 25px;
   flex: 0 0 auto;
   place-items: center;
   border-radius: 999px;
 }
 
 .type-picker-option__icon img {
-  width: 0.95rem;
-  height: 0.95rem;
+  width: 15px;
+  height: 15px;
   object-fit: contain;
   filter: brightness(0) invert(1);
 }
@@ -1031,40 +1102,40 @@ const submitReport = async () => {
 
 .type-picker-option__check {
   position: absolute;
-  top: 0.35rem;
-  right: 0.35rem;
-  width: 1rem;
-  height: 1rem;
+  top: 6px;
+  right: 6px;
+  width: 16px;
+  height: 16px;
   color: #1479ef;
 }
 
 .type-picker-empty {
-  margin: 1.5rem 0;
-  padding: 1rem;
-  border-radius: 0.65rem;
+  margin: 24px 0;
+  padding: 16px;
+  border-radius: 10px;
   background: #f5f8fc;
   color: #5e728f;
-  font-size: 0.85rem;
+  font-size: 14px;
   text-align: center;
 }
 
 .type-picker-footnote {
   display: flex;
-  gap: 0.55rem;
+  gap: 9px;
   align-items: center;
-  margin: 1.25rem 0 0;
-  padding: 0.7rem 0.85rem;
-  border-radius: 0.6rem;
+  margin: 20px 0 0;
+  padding: 11px 14px;
+  border-radius: 10px;
   background: #eaf4ff;
   color: #3670bd;
-  font-size: 0.75rem;
+  font-size: 12px;
   font-weight: 650;
   line-height: 1.4;
 }
 
 .type-picker-footnote svg {
-  width: 1.2rem;
-  height: 1.2rem;
+  width: 19px;
+  height: 19px;
   flex: 0 0 auto;
   color: #1479ef;
 }
@@ -1072,7 +1143,7 @@ const submitReport = async () => {
 @keyframes modal-enter {
   from {
     opacity: 0;
-    transform: translateY(0.75rem) scale(.985);
+    transform: translateY(12px) scale(.985);
   }
   to {
     opacity: 1;
@@ -1080,15 +1151,15 @@ const submitReport = async () => {
   }
 }
 
-@media (max-width: 60rem) {
+@media (max-width: 960px) {
   .suggested-type-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 38rem) {
+@media (max-width: 608px) {
   .report-incident-form {
-    padding: 1rem;
+    padding: 16px;
   }
   .incident-suggestions__heading {
     align-items: flex-end;
@@ -1097,28 +1168,28 @@ const submitReport = async () => {
     max-width: 29ch;
   }
   .suggested-type {
-    min-height: 4.75rem;
-    padding: 0.75rem;
-    font-size: 0.84rem;
+    min-height: 76px;
+    padding: 12px;
+    font-size: 13px;
   }
   .suggested-type__icon {
-    width: 1.65rem;
-    height: 1.65rem;
+    width: 26px;
+    height: 26px;
   }
   .suggested-type__icon img {
-    width: 1rem;
-    height: 1rem;
+    width: 16px;
+    height: 16px;
   }
   .incident-type-modal-backdrop {
-    padding: 0.7rem;
+    padding: 11px;
   }
   .incident-type-modal {
-    max-height: calc(100dvh - 1.4rem);
-    padding: 1.1rem;
-    border-radius: 0.8rem;
+    max-height: calc(100dvh - 22px);
+    padding: 18px;
+    border-radius: 13px;
   }
   .incident-type-modal h2 {
-    font-size: 1.3rem;
+    font-size: 21px;
   }
   .type-picker-group__heading {
     align-items: flex-start;
@@ -1134,90 +1205,90 @@ const submitReport = async () => {
   }
 }
 
-@media (max-width: 26rem) {
+@media (max-width: 416px) {
   .suggested-type-grid,
   .report-incident-form__actions {
     grid-template-columns: 1fr;
   }
   .more-types-button {
-    font-size: 0.8rem;
+    font-size: 13px;
   }
 }
 
 /* โครงสร้างหน้าแจ้งเหตุ: ฟอร์มและแผนที่อยู่ในการ์ดเดียวกัน */
 .report-incident-form {
-  max-width: 92rem;
+  max-width: 1472px;
   margin: 0 auto;
-  gap: 1rem;
-  padding: 1.25rem;
+  gap: 16px;
+  padding: 20px;
   border: 1px solid #dce8f5;
-  border-radius: .85rem;
-  box-shadow: 0 .65rem 1.8rem rgb(31 72 125 / 8%);
+  border-radius: 14px;
+  box-shadow: 0 10px 29px rgb(31 72 125 / 8%);
 }
 
 .report-incident-form__body {
   display: grid;
-  grid-template-columns: minmax(22rem, 2fr) minmax(31rem, 3fr);
-  gap: 1.15rem;
+  grid-template-columns: minmax(352px, 2fr) minmax(496px, 3fr);
+  gap: 18px;
   align-items: stretch;
 }
 
 .report-incident-form__fields {
   display: grid;
-  gap: 1rem;
+  gap: 16px;
   min-width: 0;
 }
 
 .report-incident-form__location {
   min-width: 0;
-  padding-left: 1.15rem;
+  padding-left: 18px;
   border-left: 1px solid #e0eaf6;
 }
 
 .report-incident-form__details textarea {
-  min-height: 6.25rem;
+  min-height: 100px;
 }
 
 .incident-suggestions {
-  padding-top: 1rem;
+  padding-top: 16px;
 }
 
 .suggested-type-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: .55rem;
+  gap: 9px;
 }
 
 .suggested-type {
-  min-height: 3.7rem;
-  padding: .65rem .7rem;
-  font-size: .8rem;
+  min-height: 59px;
+  padding: 10px 11px;
+  font-size: 13px;
 }
 
 .suggested-type__icon {
-  width: 1.7rem;
-  height: 1.7rem;
+  width: 27px;
+  height: 27px;
 }
 
 .suggested-type__icon img {
-  width: 1rem;
-  height: 1rem;
+  width: 16px;
+  height: 16px;
 }
 
 .report-incident-form__upload {
-  padding-top: 1rem;
+  padding-top: 16px;
   border-top: 1px solid #dce6f1;
 }
 
 .upload-zone {
-  min-height: 4.75rem;
-  padding: .65rem .75rem;
+  min-height: 76px;
+  padding: 10px 12px;
 }
 
 .selected-media {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: .45rem;
-  margin: .6rem 0 0;
+  gap: 7px;
+  margin: 10px 0 0;
   padding: 0;
   list-style: none;
 }
@@ -1225,12 +1296,12 @@ const submitReport = async () => {
 .selected-media li {
   position: relative;
   display: grid;
-  grid-template-rows: 3.25rem auto;
-  gap: .3rem;
+  grid-template-rows: 52px auto;
+  gap: 5px;
   min-width: 0;
-  padding: .3rem;
+  padding: 5px;
   border: 1px solid #dbe6f2;
-  border-radius: .5rem;
+  border-radius: 8px;
   background: #f9fbff;
 }
 
@@ -1238,14 +1309,14 @@ const submitReport = async () => {
 .selected-media__video {
   display: grid;
   width: 100%;
-  height: 3.25rem;
+  height: 52px;
   min-width: 0;
   place-items: center;
-  border-radius: .3rem;
+  border-radius: 5px;
   background: #e4efff;
   color: #345a9f;
   object-fit: cover;
-  font-size: .6rem;
+  font-size: 10px;
   font-weight: 800;
 }
 
@@ -1263,28 +1334,28 @@ const submitReport = async () => {
 
 .selected-media strong {
   color: #29457a;
-  font-size: .68rem;
+  font-size: 11px;
 }
 
 .selected-media small {
-  margin-top: .12rem;
+  margin-top: 1.92px;
   color: #7284a9;
-  font-size: .62rem;
+  font-size: 10px;
 }
 
 .selected-media button {
   position: absolute;
-  top: .45rem;
-  right: .45rem;
+  top: 7px;
+  right: 7px;
   border: 0;
-  border-radius: .25rem;
+  border-radius: 4px;
   background: rgb(130 35 45 / 88%);
   color: #fff;
   font: inherit;
-  font-size: .6rem;
+  font-size: 10px;
   font-weight: 800;
   line-height: 1;
-  padding: .23rem .3rem;
+  padding: 4px 5px;
   cursor: pointer;
 }
 
@@ -1301,40 +1372,40 @@ const submitReport = async () => {
 .report-incident-form__fields .report-incident-form__actions {
   width: 100%;
   grid-template-columns: .92fr 1.28fr;
-  gap: .6rem;
+  gap: 10px;
   margin: 0;
 }
 
 .report-incident-form__actions .button {
-  min-height: 3rem;
-  font-size: .9rem;
+  min-height: 48px;
+  font-size: 14px;
 }
 
 .report-incident-form__actions .button--primary {
   background: #f52c3c;
-  box-shadow: 0 .35rem .8rem rgb(232 51 60 / 18%);
+  box-shadow: 0 6px 13px rgb(232 51 60 / 18%);
 }
 
 .report-incident-form__action-row {
   display: grid;
   grid-template-columns: .92fr 1.28fr;
-  gap: .6rem;
+  gap: 10px;
   width: 100%;
   margin: 0;
 }
 
 .report-incident-form__action-row .button {
   width: 100%;
-  min-height: 3rem;
-  font-size: .9rem;
+  min-height: 48px;
+  font-size: 14px;
 }
 
 .report-incident-form__action-row .button--primary {
   background: #f52c3c;
-  box-shadow: 0 .35rem .8rem rgb(232 51 60 / 18%);
+  box-shadow: 0 6px 13px rgb(232 51 60 / 18%);
 }
 
-@media (min-width: 58.01rem) {
+@media (min-width: 928px) {
   .report-incident-form__fields {
     /* ปล่อยแต่ละส่วนสูงตามเนื้อหาจริง เพื่อให้ส่วนแนบไฟล์อยู่ต่อจาก Type และรองรับครบ 5 ไฟล์ */
     height: auto;
@@ -1342,34 +1413,34 @@ const submitReport = async () => {
   }
 
   .report-incident-form__details textarea {
-    min-height: 8rem;
-    font-size: 1rem;
+    min-height: 128px;
+    font-size: 16px;
   }
 
   .suggested-type-grid {
     /* รายการอาจเหลือเพียง Type เดียวหลังเลือก: อย่ายืดการ์ดให้เต็มพื้นที่ว่าง */
-    grid-auto-rows: minmax(3.7rem, auto);
+    grid-auto-rows: minmax(59px, auto);
     align-content: start;
   }
 
   .suggested-type {
-    min-height: 3.7rem;
-    padding: .65rem 3rem .65rem .7rem;
-    font-size: .8rem;
+    min-height: 59px;
+    padding: 10px 48px 10px 11px;
+    font-size: 13px;
   }
 
   .upload-zone {
-    min-height: 6.25rem;
+    min-height: 100px;
   }
 }
 
-@media (max-width: 58rem) {
+@media (max-width: 928px) {
   .report-incident-form__body {
     grid-template-columns: 1fr;
   }
 
   .report-incident-form__location {
-    padding: 1rem 0 0;
+    padding: 16px 0 0;
     border-top: 1px solid #e0eaf6;
     border-left: 0;
   }
@@ -1381,5 +1452,10 @@ const submitReport = async () => {
   .report-incident-form__action-row {
     grid-template-columns: 1fr;
   }
+}
+/* ในขั้นตอนมือถือ ส่วนตำแหน่งไม่ต้องมีเส้นคั่นด้านบน เพราะแสดงทีละส่วน */
+.report-incident-form--wizard .report-incident-form__location {
+  padding-top: 0;
+  border-top: 0;
 }
 </style>

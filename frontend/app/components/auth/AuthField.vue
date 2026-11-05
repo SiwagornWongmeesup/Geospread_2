@@ -86,19 +86,19 @@ const describedBy = computed(() => {
 <style scoped>
 .auth-field {
   display: grid;
-  gap: 0.45rem;
-  margin-top: 1rem;
+  gap: 7px;
+  margin-top: 16px;
 }
 
 .auth-field__label {
   color: #193a70;
-  font-size: 0.9rem;
+  font-size: 14px;
   font-weight: 750;
 }
 
 /* เหมือนฟอร์มรายงานเหตุ: * สีแดงหลังชื่อช่องที่ต้องกรอก */
 .auth-field__required {
-  margin-left: 0.15rem;
+  margin-left: 2px;
   color: #c8202a;
 }
 
@@ -109,19 +109,19 @@ const describedBy = computed(() => {
 .auth-field__input {
   box-sizing: border-box;
   width: 100%;
-  min-height: 3.15rem;
-  padding: 0 0.85rem;
+  min-height: 50px;
+  padding: 0 14px;
   /* ขอบ 3:1 กับพื้นขาว ตามเกณฑ์ WCAG ของขอบช่องกรอก */
   border: 1px solid #7d93ad;
-  border-radius: 0.65rem;
+  border-radius: 10px;
   background: #fff;
   color: #17345f;
   font: inherit;
-  font-size: 1rem;
+  font-size: 16px;
 }
 
 .auth-field__input--with-toggle {
-  padding-right: 3.2rem;
+  padding-right: 51px;
 }
 
 .auth-field__input::placeholder {
@@ -149,14 +149,14 @@ const describedBy = computed(() => {
 .auth-field__toggle {
   position: absolute;
   top: 50%;
-  right: 0.35rem;
+  right: 6px;
   display: grid;
-  width: 2.75rem;
-  height: 2.75rem;
+  width: 44px;
+  height: 44px;
   padding: 0;
   place-items: center;
   border: 0;
-  border-radius: 0.5rem;
+  border-radius: 8px;
   background: transparent;
   color: #52708b;
   cursor: pointer;
@@ -174,8 +174,8 @@ const describedBy = computed(() => {
 }
 
 .auth-field__toggle svg {
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 20px;
+  height: 20px;
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
@@ -186,7 +186,7 @@ const describedBy = computed(() => {
 .auth-field__hint,
 .auth-field__error {
   margin: 0;
-  font-size: 0.78rem;
+  font-size: 12px;
   line-height: 1.4;
 }
 
@@ -200,7 +200,7 @@ const describedBy = computed(() => {
 }
 
 .auth-field__error :deep(a) {
-  margin-left: 0.25rem;
+  margin-left: 4px;
   color: #0b5fcc;
   font-weight: 800;
   text-decoration: underline;

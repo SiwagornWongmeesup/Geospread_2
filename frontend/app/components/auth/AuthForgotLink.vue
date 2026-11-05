@@ -24,7 +24,7 @@ const rememberEmail = () => {
 .auth-forgot {
   display: flex;
   justify-content: flex-end;
-  margin-top: 0.25rem;
+  margin-top: 4px;
 }
 
 .auth-forgot__link {
@@ -32,7 +32,7 @@ const rememberEmail = () => {
   min-height: 44px;
   align-items: center;
   color: #0b5fcc;
-  font-size: 0.9rem;
+  font-size: 14px;
   font-weight: 750;
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -41,6 +41,6 @@ const rememberEmail = () => {
 .auth-forgot__link:focus-visible {
   outline: 2px solid #0b5fcc;
   outline-offset: 2px;
-  border-radius: 0.4rem;
+  border-radius: 6px;
 }
 </style>

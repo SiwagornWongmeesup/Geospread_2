@@ -1,5 +1,6 @@
 <script setup>
 import { guideCategories } from '~/utils/emergencyGuides';
+import { menuGroups, accountItems } from '~/utils/navMenu';
 
 const route = useRoute();
 const { t } = useLocale();
@@ -41,36 +42,7 @@ const openGuideCategoryForHash = () => {
 onMounted(openGuideCategoryForHash);
 watch(() => route.hash, openGuideCategoryForHash);
 
-const menuGroups = [
-  {
-    label: 'nav.groups.main',
-    items: [
-      { label: 'nav.home', to: '/', icon: '/icons/House.svg' },
-      { label: 'nav.incidents', to: '/incidents', icon: '/icons/Alert.svg' },
-      { label: 'nav.helpRequests', to: '/help-requests', icon: '/icons/Help.svg' }
-    ]
-  },
-  {
-    label: 'nav.groups.actions',
-    kind: 'actions',
-    items: [
-      { label: 'nav.reportIncident', to: '/report-incident', icon: '/icons/Report.svg', tone: 'report' },
-      { label: 'nav.requestHelp', to: '/request-help', icon: '/icons/Life-saving.svg', tone: 'help' }
-    ]
-  },
-  {
-    label: 'nav.groups.mine',
-    items: [
-      { label: 'nav.followedLocations', to: '/followed-locations', icon: '/icons/Location.svg' },
-      { label: 'nav.safetyGuide', to: '/safety-guide', icon: '/icons/Safety-and-security.svg', kind: 'guide' }
-    ]
-  }
-];
-
-const accountItems = [
-  { label: 'nav.profile', to: '/profile', icon: '/icons/User.svg' },
-  { label: 'nav.settings', to: '/settings', icon: '/icons/Settings.svg' }
-];
+// รายการเมนูอยู่ที่ utils/navMenu.js ใช้ร่วมกับหน้าโปรไฟล์บนมือถือ
 </script>
 
 <template>
@@ -223,10 +195,10 @@ const accountItems = [
   display: flex;
   align-self: stretch;
   flex-direction: column;
-  gap: 1rem;
+  gap: 16px;
   height: 100%;
   min-height: 0;
-  padding: 1rem 0.75rem;
+  padding: 16px 12px;
   box-sizing: border-box;
   overflow-x: hidden;
   overflow-y: auto;
@@ -288,13 +260,13 @@ const accountItems = [
 
 .app-sidebar__toggle {
   display: grid;
-  width: 2.1rem;
-  height: 2.1rem;
+  width: 34px;
+  height: 34px;
   padding: 0;
   cursor: pointer;
   place-items: center;
   border: 1px solid transparent;
-  border-radius: 0.625rem;
+  border-radius: 10px;
   background: transparent;
   color: var(--gs-ink-2);
 }
@@ -310,8 +282,8 @@ const accountItems = [
 }
 
 .app-sidebar__toggle svg {
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 20px;
+  height: 20px;
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
@@ -322,45 +294,45 @@ const accountItems = [
 
 .app-sidebar__navigation {
   display: grid;
-  gap: 1.25rem;
+  gap: 20px;
 }
 
 .app-sidebar__group {
   display: grid;
-  gap: 0.25rem;
+  gap: 4px;
 }
 
 .app-sidebar__group-title {
-  margin: 0 0 0.35rem;
-  padding: 0 0.75rem;
+  margin: 0 0 6px;
+  padding: 0 12px;
   color: var(--gs-muted);
-  font-size: 0.75rem;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.01em;
 }
 
 .app-sidebar__group--actions {
-  gap: 0.35rem;
-  padding: 0.75rem 0;
+  gap: 6px;
+  padding: 12px 0;
   border-top: 1px solid var(--gs-line);
   border-bottom: 1px solid var(--gs-line);
 }
 
 .app-sidebar__group--actions .app-sidebar__group-title {
-  margin-bottom: 0.2rem;
+  margin-bottom: 3px;
 }
 
 .app-sidebar__link {
   display: flex;
   position: relative;
   align-items: center;
-  gap: 0.75rem;
-  min-height: 2.65rem;
-  padding: 0.5rem 0.75rem;
+  gap: 12px;
+  min-height: 42px;
+  padding: 8px 12px;
   border: 1px solid transparent;
   border-radius: var(--gs-radius-sm);
   color: var(--gs-ink-2);
-  font-size: 0.875rem;
+  font-size: 14px;
   font-weight: 650;
   line-height: 1.2;
   text-decoration: none;
@@ -398,7 +370,7 @@ const accountItems = [
 
 .app-sidebar__guide-menu {
   display: grid;
-  gap: 0.15rem;
+  gap: 2px;
 }
 
 .app-sidebar__guide-toggle {
@@ -421,17 +393,17 @@ const accountItems = [
 .app-sidebar__guide-category-toggle {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 8px;
   width: 100%;
-  min-height: 2.1rem;
-  padding: 0.35rem 0.65rem 0.35rem 2.35rem;
+  min-height: 34px;
+  padding: 6px 10px 6px 38px;
   cursor: pointer;
   border: 0;
-  border-radius: 0.55rem;
+  border-radius: 9px;
   background: transparent;
   color: var(--gs-ink);
   font: inherit;
-  font-size: 0.82rem;
+  font-size: 13px;
   font-weight: 750;
   text-align: left;
   transition: background-color 160ms ease, color 160ms ease;
@@ -453,12 +425,12 @@ const accountItems = [
 
 /* หัวข้อย่อยในหัวข้อใหญ่ เยื้องลึกกว่าหัวข้อใหญ่อีกขั้น */
 .app-sidebar__guide-category .app-sidebar__guide-link {
-  padding-left: 3rem;
+  padding-left: 48px;
 }
 
 .app-sidebar__guide-chevron {
-  width: 1.1rem;
-  height: 1.1rem;
+  width: 18px;
+  height: 18px;
   margin-left: auto;
   flex: 0 0 auto;
   fill: none;
@@ -483,20 +455,20 @@ const accountItems = [
 .app-sidebar__guide-submenu-content {
   display: grid;
   min-height: 0;
-  gap: 0.1rem;
+  gap: 1.6px;
   overflow: hidden;
-  padding: 0.1rem 0 0.25rem;
+  padding: 1.6px 0 4px;
 }
 
 .app-sidebar__guide-link {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-  min-height: 2rem;
-  padding: 0.35rem 0.65rem 0.35rem 2.35rem;
-  border-radius: 0.55rem;
+  gap: 10px;
+  min-height: 32px;
+  padding: 6px 10px 6px 38px;
+  border-radius: 9px;
   color: var(--gs-muted);
-  font-size: 0.8rem;
+  font-size: 13px;
   font-weight: 650;
   line-height: 1.25;
   text-decoration: none;
@@ -515,8 +487,8 @@ const accountItems = [
 }
 
 .app-sidebar__guide-dot {
-  width: 0.42rem;
-  height: 0.42rem;
+  width: 7px;
+  height: 7px;
   flex: 0 0 auto;
   border-radius: 50%;
   background: currentColor;
@@ -527,7 +499,7 @@ const accountItems = [
 .guide-submenu-leave-to {
   grid-template-rows: 0fr;
   opacity: 0;
-  transform: translateY(-0.35rem);
+  transform: translateY(-6px);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -569,16 +541,16 @@ const accountItems = [
 .app-sidebar__badge {
   display: grid;
   flex: 0 0 auto;
-  min-width: 1.3rem;
-  height: 1.3rem;
+  min-width: 21px;
+  height: 21px;
   margin-left: auto;
-  padding: 0 0.24rem;
+  padding: 0 4px;
   place-items: center;
   border: 2px solid #ffffff;
   border-radius: 999px;
   background: var(--gs-danger);
   color: #ffffff;
-  font-size: 0.72rem;
+  font-size: 12px;
   font-weight: 800;
   line-height: 1;
 }
@@ -591,16 +563,16 @@ const accountItems = [
 
 .app-sidebar__account {
   display: grid;
-  gap: 0.25rem;
+  gap: 4px;
   margin-top: auto;
-  padding-top: 0.85rem;
+  padding-top: 14px;
   border-top: 1px solid var(--gs-line);
 }
 
 .app-sidebar--collapsed {
   align-items: stretch;
-  padding-right: 0.65rem;
-  padding-left: 0.65rem;
+  padding-right: 10px;
+  padding-left: 10px;
 }
 
 /* ตอนพับ: วางโลโก้กับปุ่มขยายเรียงลงมา เพราะความกว้างไม่พอวางข้างกัน */
@@ -621,7 +593,7 @@ const accountItems = [
 }
 
 .app-sidebar--collapsed .app-sidebar__navigation {
-  gap: 1rem;
+  gap: 16px;
 }
 
 .app-sidebar--collapsed .app-sidebar__group {
@@ -630,41 +602,41 @@ const accountItems = [
 
 .app-sidebar--collapsed .app-sidebar__group--actions {
   width: 100%;
-  padding: 0.7rem 0;
+  padding: 11px 0;
 }
 
 .app-sidebar--collapsed .app-sidebar__link {
   justify-content: center;
-  width: 2.65rem;
-  padding: 0.5rem;
+  width: 42px;
+  padding: 8px;
 }
 
 .app-sidebar--collapsed .app-sidebar__badge {
   position: absolute;
-  top: 0.15rem;
-  right: 0.1rem;
-  min-width: 1.15rem;
-  height: 1.15rem;
+  top: 2px;
+  right: 1.6px;
+  min-width: 18px;
+  height: 18px;
   padding: 0;
   border-width: 1.5px;
-  font-size: 0.68rem;
+  font-size: 11px;
 }
 
 .app-sidebar--collapsed .app-sidebar__account {
   justify-items: center;
 }
 
-@media (max-width: 48rem) {
+@media (max-width: 768px) {
   .app-sidebar {
-    gap: 0.75rem;
+    gap: 12px;
   }
 
   .app-sidebar__navigation {
-    gap: 0.9rem;
+    gap: 14px;
   }
 
   .app-sidebar__link {
-    min-height: 2.5rem;
+    min-height: 40px;
   }
 }
 </style>
