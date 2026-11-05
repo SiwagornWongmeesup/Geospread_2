@@ -1,4 +1,6 @@
 <template>
+  <!-- ใส่ลิงก์ manifest ของ PWA ให้มือถือรู้ว่าเว็บนี้ติดตั้งลงเครื่องได้ -->
+  <NuxtPwaManifest />
   <NuxtLayout>
     <NuxtPage />
   </NuxtLayout>
