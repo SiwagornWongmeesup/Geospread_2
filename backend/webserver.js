@@ -22,6 +22,11 @@ app.use(cors({
 }));
 
 
+// หน้าแรกไว้เช็คว่า server ทำงานอยู่ (เปิด URL ของ backend แล้วจะเห็นข้อความนี้)
+app.get('/', (req, res) => {
+    res.json({ status: 'ok', service: 'geospread-backend' });
+});
+
 app.use('/users', userRoutes);
 app.use('/incidents', incidentRoutes);
 app.use('/help-requests', helpRequestRoutes)
@@ -29,7 +34,13 @@ app.use('/help-requests', helpRequestRoutes)
 // 2. เรียกใช้ Global Error Handler ตรงบรรทัดสุดท้าย (สำคัญมาก ต้องอยู่ล่างสุด)
 app.use(errorHandler);
 
-const port = process.env.PORT || 5000;
-app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-});
+// บน Vercel ไม่ต้องเปิด port เอง: Vercel เรียกใช้ app ที่ export ออกไปให้
+// ในเครื่องเรา (npm run dev) ยังเปิด port 5000 เหมือนเดิม
+if (!process.env.VERCEL) {
+    const port = process.env.PORT || 5000;
+    app.listen(port, () => {
+        console.log(`Server running on port ${port}`);
+    });
+}
+
+module.exports = app;

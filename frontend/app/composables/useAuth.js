@@ -11,6 +11,8 @@ export const useAuth = () => {
   // 'emailTaken' | 'invalidCredentials' | 'emailNotVerified' | 'invalidCode' | 'codeExpired' | 'tooManyAttempts' | ''
   const errorCode = ref('')
   const { t } = useLocale()
+  // ที่อยู่ backend มาจาก nuxt.config.js (ในเครื่อง = localhost:5000, บนเว็บจริง = ค่า NUXT_PUBLIC_API_BASE_URL)
+  const apiBase = useRuntimeConfig().public.apiBase
 
   // ดึง user จาก cookie (ถ้ามี)
   const getUser = () => {
@@ -34,7 +36,7 @@ export const useAuth = () => {
     errorCode.value = ''
 
     try {
-      const res = await $fetch('http://localhost:5000/users/login', {
+      const res = await $fetch(`${apiBase}/users/login`, {
         method: 'POST',
         body: form,
         credentials: 'include'
@@ -74,7 +76,7 @@ export const useAuth = () => {
     errorCode.value = ''
 
     try {
-      const res = await $fetch('http://localhost:5000/users', {
+      const res = await $fetch(`${apiBase}/users`, {
         method: 'POST',
         body: form
       })
@@ -103,7 +105,7 @@ export const useAuth = () => {
     errorCode.value = ''
 
     try {
-      await $fetch('http://localhost:5000/users/verify-email', { method: 'POST', body: { email, code } })
+      await $fetch(`${apiBase}/users/verify-email`, { method: 'POST', body: { email, code } })
       return true
     } catch (err) {
       const codeMap = {
@@ -131,7 +133,7 @@ export const useAuth = () => {
   // ขอรหัสยืนยันใหม่ คืนจำนวนวินาทีที่ต้องรอก่อนขอได้อีก (null = ส่งไม่สำเร็จ)
   const resendVerification = async (email) => {
     try {
-      const res = await $fetch('http://localhost:5000/users/resend-verification', { method: 'POST', body: { email } })
+      const res = await $fetch(`${apiBase}/users/resend-verification`, { method: 'POST', body: { email } })
       return res?.data?.retryAfterSeconds ?? 60
     } catch (err) {
       error.value = err?.data?.code === 'EMAIL_SEND_FAILED' ? t('auth.emailSendFailed') : t('auth.connectionError')
