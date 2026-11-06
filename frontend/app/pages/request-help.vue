@@ -124,7 +124,7 @@ const scrollPageToTop = () => {
 // ยังไม่มีตำแหน่ง: ขอตำแหน่งจากเครื่องให้เลย ผู้ใช้ลากหมุดหรือแตะแผนที่เปลี่ยนเองได้
 const locateIfEmpty = () => {
   if (!helpLocation.value) {
-    sidePanel.value?.useCurrentLocation()
+    sidePanel.value?.locateAutomatically()
   }
 }
 

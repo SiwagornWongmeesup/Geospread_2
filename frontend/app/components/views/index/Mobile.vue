@@ -21,7 +21,17 @@
         @close-popup="clearSelectedIncident"
         @open-report="openReportDetail"
       />
-      <!-- มือถือใช้ปุ่มหาตำแหน่งของ Mapbox บนแผนที่แทน จึงไม่ต้องมีปุ่มตำแหน่งปัจจุบันซ้ำในแถบค้นหา -->
+      <!-- ปุ่มนี้แทนปุ่มของ Mapbox ที่ขอสิทธิ์เข็มทิศเพิ่ม และถูกปิดถาวรเมื่อโดนปฏิเสธครั้งเดียว -->
+      <button
+        type="button"
+        class="mobile-home__locate"
+        :disabled="isLocating"
+        :aria-busy="isLocating"
+        :aria-label="t('location.useCurrent')"
+        @click="focusCurrentLocation"
+      >
+        <img src="/icons/Location.svg" alt="">
+      </button>
       <MapLocationSearch
         class="mobile-home__location-search"
         :show-current-location="false"
@@ -86,7 +96,7 @@ const {
   setUserLocation,
   fetchPublicMapItems,
 } = useHomeDashboard();
-const { getCurrentLocation, isLocating, locationError } = useGeolocation();
+const { getCurrentLocation, shouldAutoLocate, isLocating, locationError } = useGeolocation();
 const selectedArea = ref(null);
 // เหตุในกลุ่มหมุดที่กดบนแผนที่ (ว่าง = แผ่นด้านล่างแสดงรายการรอบตัวตามปกติ)
 const selectedGroupItems = ref([]);
@@ -150,10 +160,10 @@ const focusCurrentLocation = async () => {
     /* MapLocationSearch renders the error. */
   }
 };
-onMounted(() => {
+onMounted(async () => {
   void fetchPublicMapItems();
-  // เปิดหน้าแล้วขอตำแหน่งเลย แผ่นรายการจะได้แสดงเหตุรอบตัวผู้ใช้ทันที (ถ้ารู้ตำแหน่งแล้วไม่ต้องขอซ้ำ)
-  if (!userLocation.value) {
+  // ถ้ารู้ตำแหน่งแล้วไม่ต้องขอซ้ำ และไม่เด้งถามทุกครั้งที่เปิดหน้า (ดู shouldAutoLocate)
+  if (!userLocation.value && await shouldAutoLocate()) {
     void focusCurrentLocation();
   }
 });
@@ -198,6 +208,30 @@ onMounted(() => {
 }
 .mobile-home__location-search:deep(.map-location-tools__results) {
   max-height: min(304px, calc(100dvh - 232px));
+}
+/* อยู่ใต้ปุ่มซูมและเข็มทิศของแผนที่ */
+.mobile-home__locate {
+  position: absolute;
+  top: 112px;
+  right: 10px;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 0 0 2px rgb(0 0 0 / 10%);
+  cursor: pointer;
+}
+.mobile-home__locate:disabled {
+  opacity: 0.6;
+}
+.mobile-home__locate img {
+  width: 15px;
+  height: 15px;
 }
 .mobile-home__map-error {
   position: absolute;

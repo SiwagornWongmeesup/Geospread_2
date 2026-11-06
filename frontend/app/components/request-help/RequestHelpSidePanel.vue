@@ -23,7 +23,7 @@
       </p>
 
       <div class="map__canvas">
-        <MapboxMap :center="mapCenter" :zoom="14" :show-geolocate-control="false" :editable-location="location" :allow-location-selection="true" class="map__canvas-map" @location-select="setMapLocation" />
+        <MapboxMap :center="mapCenter" :zoom="14" :editable-location="location" :allow-location-selection="true" class="map__canvas-map" @location-select="setMapLocation" />
         <!-- ค้นหาสถานที่ หรือวางพิกัด/ลิงก์ Google Maps เพื่อปักหมุด -->
         <MapLocationSearch variant="pick" @select="setSearchLocation" />
       </div>
@@ -118,17 +118,22 @@ const accuracyLabel = computed(() => {
 const setMapLocation = (location) => emit('update:location', { ...location, accuracyM: null, source: 'map' })
 // ผลค้นหา/พิกัดที่กรอก ถือเป็นจุดที่ผู้ใช้เลือกเอง (source 'map' ตามที่ฐานข้อมูลรองรับ)
 const setSearchLocation = (item) => emit('update:location', { lat: item.center[1], lng: item.center[0], accuracyM: null, placeName: item.label, source: 'map' })
-const useCurrentLocation = async () => {
+const applyCurrentLocation = async ({ keepSelectedPin }) => {
   try {
     const location = await getCurrentLocation()
+    if (keepSelectedPin && props.location?.source === 'map') return
     emit('update:location', location)
   } catch {
     // useGeolocation จัดการข้อความผิดพลาดให้แสดงใน locationError แล้ว
   }
 }
 
-// ให้หน้าขอความช่วยเหลือสั่งขอตำแหน่งปัจจุบันได้ (ตอนเข้าขั้นตำแหน่ง)
-defineExpose({ useCurrentLocation })
+// ผู้ใช้กดปุ่มเอง: ใช้ตำแหน่งจริงแทนหมุดเดิมเสมอ
+const useCurrentLocation = () => applyCurrentLocation({ keepSelectedPin: false })
+// หน้าสั่งขอให้เองตอนเข้าขั้นตำแหน่ง: ระหว่างรอผู้ใช้อาจปักหมุดไปแล้ว จึงห้ามทับหมุดนั้น
+const locateAutomatically = () => applyCurrentLocation({ keepSelectedPin: true })
+
+defineExpose({ locateAutomatically })
 </script>
 <style scoped>
 .side {

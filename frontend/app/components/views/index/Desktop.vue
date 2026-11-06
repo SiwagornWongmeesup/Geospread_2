@@ -4,7 +4,6 @@
       <MapboxMap
         :center="activeMapCenter"
         :zoom="activeMapZoom"
-        :show-geolocate-control="false"
         :map-items="publicMapItems"
         :selected-item-id="selectedIncident?.id"
         :selected-item="selectedIncidentPreview"

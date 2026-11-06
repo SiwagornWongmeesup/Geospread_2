@@ -19,7 +19,7 @@
       {{ t('report.lowAccuracy', { accuracy: accuracyLabel }) }}
     </p>
     <div class="location-picker__map" :class="{ 'location-picker__map--fullscreen': isFullscreen }">
-      <MapboxMap :center="mapCenter" :zoom="14" :show-geolocate-control="false" :editable-location="incidentLocation"
+      <MapboxMap :center="mapCenter" :zoom="14" :editable-location="incidentLocation"
         :allow-location-selection="true" class="location-picker__map-canvas" @location-select="setMapLocation" />
       <!-- ค้นหาสถานที่ หรือวางพิกัด/ลิงก์ Google Maps เพื่อปักหมุด -->
       <MapLocationSearch variant="pick" @select="setSearchLocation" />
@@ -82,22 +82,24 @@ const setMapLocation = (location) => {
   setIncidentLocation({ ...location, accuracyM: null, source: 'map' })
 }
 
-const useCurrentLocation = async () => {
+const applyCurrentLocation = async ({ keepSelectedPin }) => {
   try {
     const location = await getCurrentLocation()
     setReporterLocation(location)
 
-    // อย่าเขียนทับหมุดที่ผู้ใช้เลือกเองบนแผนที่ แต่ยัง refresh จุดที่มาจากเครื่องได้
-    if (!incidentLocation.value || incidentLocation.value.source === 'device') {
-      setIncidentLocation({ ...location, placeName: 'location.currentPlace', source: 'device' })
-    }
+    if (keepSelectedPin && incidentLocation.value?.source === 'map') return
+    setIncidentLocation({ ...location, placeName: 'location.currentPlace', source: 'device' })
   } catch {
     // useGeolocation แปลงและเก็บข้อความผิดพลาดสำหรับแสดงผลแล้ว
   }
 }
 
-// ให้แผงด้านข้าง/ฟอร์มสั่งขอตำแหน่งปัจจุบันได้
-defineExpose({ useCurrentLocation })
+// ผู้ใช้กดปุ่มเอง: ใช้ตำแหน่งจริงแทนหมุดเดิมเสมอ
+const useCurrentLocation = () => applyCurrentLocation({ keepSelectedPin: false })
+// ฟอร์มสั่งขอให้เอง: ระหว่างรอผู้ใช้อาจปักหมุดไปแล้ว จึงห้ามทับหมุดนั้น
+const locateAutomatically = () => applyCurrentLocation({ keepSelectedPin: true })
+
+defineExpose({ locateAutomatically })
 </script>
 
 <style scoped>

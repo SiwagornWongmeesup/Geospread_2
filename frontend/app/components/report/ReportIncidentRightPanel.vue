@@ -12,7 +12,7 @@ const picker = ref(null)
 
 // ให้ฟอร์มสั่งขอตำแหน่งปัจจุบันได้ (เช่น ตอนเข้าขั้นตำแหน่งแล้วยังไม่มีตำแหน่ง)
 const locate = () => {
-  picker.value?.useCurrentLocation()
+  picker.value?.locateAutomatically()
 }
 
 defineExpose({ locate })

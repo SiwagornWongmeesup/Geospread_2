@@ -41,7 +41,6 @@ const popupMarkerOffsetPx = 68
 const props = defineProps({
   center: { type: Array, default: () => [100.5018, 13.7563] },
   zoom: { type: Number, default: 10 },
-  showGeolocateControl: { type: Boolean, default: true },
   mapItems: { type: Array, default: () => [] },
   selectedItemId: { type: String, default: null },
   selectedItem: { type: Object, default: null },
@@ -483,18 +482,6 @@ onMounted(() => {
     })
 
     map.addControl(new mapboxgl.NavigationControl(), 'top-right')
-
-    if (props.showGeolocateControl) {
-      map.addControl(
-        new mapboxgl.GeolocateControl({
-          positionOptions: {
-            enableHighAccuracy: true,
-          },
-          trackUserLocation: true,
-          showUserHeading: true,
-        })
-      )
-    }
 
     map.on('load', () => {
       isMapLoaded = true
