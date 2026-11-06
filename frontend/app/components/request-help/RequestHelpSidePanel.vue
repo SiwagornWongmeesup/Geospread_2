@@ -372,6 +372,22 @@ defineExpose({ useCurrentLocation })
   }
 }
 
+/* จอกว้าง (สองคอลัมน์): ย้ายปุ่มส่งขึ้นไปบนสุดของคอลัมน์ขวา เหนือส่วนตำแหน่ง
+   เดิมอยู่ใต้แผนที่ ต้องเลื่อนลงถึงจะเห็น / จอแคบ (คอลัมน์เดียว) ปุ่มยังอยู่ท้ายฟอร์มเหมือนเดิม */
+@media (min-width: 1200px) {
+  .map__action {
+    order: -2;
+    margin: 0 0 14px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #e0eaf6;
+  }
+
+  .map__submission-feedback {
+    order: -1;
+    margin: 0 0 12px;
+  }
+}
+
 @media (max-width: 768px) {
   .map__header {
     align-items: stretch;

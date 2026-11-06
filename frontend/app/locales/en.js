@@ -296,6 +296,9 @@ export default {
     useLocation: 'Turn on location to see what is around you',
     needLocation: 'Turn on location to see incidents around you',
     radiusLabel: 'Radius around you',
+    groupTitle: '{count} items at this spot',
+    backToNearby: 'Back to nearby list',
+    closeGroup: 'Close list for this spot',
   },
   summary: {
     title: 'Today at a glance',

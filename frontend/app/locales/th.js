@@ -244,6 +244,9 @@ export default {
     useLocation: 'เปิดตำแหน่งเพื่อดูเหตุรอบตัวคุณ',
     needLocation: 'เปิดตำแหน่งก่อน เพื่อดูว่ามีเหตุอะไรเกิดขึ้นรอบตัวคุณ',
     radiusLabel: 'รัศมีรอบตัวคุณ',
+    groupTitle: '{count} รายการที่จุดนี้',
+    backToNearby: 'กลับไปรายการรอบตัว',
+    closeGroup: 'ปิดรายการที่จุดนี้',
   },
   summary: {
     title: 'สรุปเหตุการณ์วันนี้',

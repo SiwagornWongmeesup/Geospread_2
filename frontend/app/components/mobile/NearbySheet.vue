@@ -23,7 +23,15 @@
       <span aria-hidden="true"></span>
     </button>
 
-    <div class="nearby-sheet__tabs" role="tablist" :aria-label="t('nearbySheet.tabsLabel')">
+    <!-- กดกลุ่มหมุดบนแผนที่: แสดงหัวข้อรายการกลุ่มแทนแท็บ พร้อมปุ่มกลับไปรายการรอบตัว -->
+    <div v-if="isGroupMode" class="nearby-sheet__group-head">
+      <strong>{{ t('nearbySheet.groupTitle', { count: groupItems.length }) }}</strong>
+      <button type="button" class="nearby-sheet__group-back" @click="$emit('clear-group')">
+        {{ t('nearbySheet.backToNearby') }}
+      </button>
+    </div>
+
+    <div v-else class="nearby-sheet__tabs" role="tablist" :aria-label="t('nearbySheet.tabsLabel')">
       <button
         v-for="tab in tabs"
         :id="`nearby-tab-${tab.key}`"
@@ -46,15 +54,15 @@
     <div
       id="nearby-sheet-panel"
       class="nearby-sheet__panel"
-      role="tabpanel"
+      :role="isGroupMode ? undefined : 'tabpanel'"
       :hidden="state === 'collapsed' && dragHeight === null"
-      :aria-labelledby="`nearby-tab-${activeTab}`"
+      :aria-labelledby="isGroupMode ? undefined : `nearby-tab-${activeTab}`"
     >
       <!-- ชวนติดตั้งแอป อยู่ในแผ่นรายการ ไม่บังแผนที่ กดปิดได้ -->
       <InstallAppBanner class="nearby-sheet__install" />
 
       <button
-        v-if="!hasUserLocation"
+        v-if="!hasUserLocation && !isGroupMode"
         type="button"
         class="nearby-sheet__locate"
         :disabled="isLocating"
@@ -64,7 +72,7 @@
       </button>
 
       <!-- ปุ่มเลือกรัศมี "รอบตัว" กดแล้วบอกแม่ (Mobile.vue) ให้เปลี่ยนรัศมี รายการจะกรองใหม่ทันที -->
-      <div v-if="hasUserLocation" class="nearby-sheet__radius" role="group" :aria-label="t('nearbySheet.radiusLabel')">
+      <div v-if="hasUserLocation && !isGroupMode" class="nearby-sheet__radius" role="group" :aria-label="t('nearbySheet.radiusLabel')">
         <button
           v-for="option in radiusOptions"
           :key="option"
@@ -79,7 +87,7 @@
 
       <p v-if="isLoading" class="nearby-sheet__state">{{ t('nearby.loading') }}</p>
       <!-- ยังไม่รู้ตำแหน่ง: บอกว่าต้องเปิดตำแหน่งก่อนถึงจะเห็นเหตุรอบตัว (ปุ่มด้านบน) -->
-      <p v-else-if="!hasUserLocation" class="nearby-sheet__state">{{ t('nearbySheet.needLocation') }}</p>
+      <p v-else-if="!hasUserLocation && !isGroupMode" class="nearby-sheet__state">{{ t('nearbySheet.needLocation') }}</p>
       <p v-else-if="!activeItems.length" class="nearby-sheet__state">
         {{ activeTab === 'incidents' ? t('nearbySheet.emptyIncidents', { radius: radiusLabel }) : t('nearbySheet.emptyHelpRequests', { radius: radiusLabel }) }}
       </p>
@@ -95,9 +103,12 @@
                 <strong>{{ item.title }}</strong>
                 <StatusBadge v-if="item.statusLabel" :tone="item.statusTone" :label="item.statusLabel" />
               </span>
-              <span>{{ getPlaceLabel(item) }} · {{ item.time }}</span>
+              <!-- รายการกลุ่มอยู่จุดเดียวกัน เวลาจึงขึ้นก่อน ไม่โดนตัดเป็น … -->
+              <span v-if="isGroupMode">{{ item.time }} · {{ getPlaceLabel(item) }}</span>
+              <span v-else>{{ getPlaceLabel(item) }} · {{ item.time }}</span>
             </span>
-            <span v-if="item.distanceMeters !== null" class="nearby-sheet__distance">
+            <!-- รายการกลุ่มอยู่จุดเดียวกัน ไม่มีระยะทางให้แสดง -->
+            <span v-if="item.distanceFromUserLabel && item.distanceMeters !== null" class="nearby-sheet__distance">
               {{ item.distanceFromUserLabel }}
             </span>
           </button>
@@ -121,7 +132,12 @@ const props = defineProps({
   isLocating: { type: Boolean, default: false },
   // รัศมีที่ถือว่า "รอบตัว" (เมตร) ใช้บอกในข้อความตอนไม่มีรายการ
   radiusMeters: { type: Number, default: 5000 },
+  // รายการเหตุในกลุ่มที่กดบนแผนที่ (ว่าง = แสดงรายการรอบตัวตามปกติ)
+  groupItems: { type: Array, default: () => [] },
 })
+
+// กำลังแสดงรายการของกลุ่มหมุดที่กดบนแผนที่อยู่ไหม
+const isGroupMode = computed(() => props.groupItems.length > 0)
 
 // รัศมีแบบอ่านง่าย เช่น "5 กม."
 const radiusLabel = computed(() => t('units.kilometers', { value: Math.round(props.radiusMeters / 1000) }))
@@ -129,7 +145,7 @@ const radiusLabel = computed(() => t('units.kilometers', { value: Math.round(pro
 // ตัวเลือกรัศมี (เมตร) = 1 / 5 / 10 / 25 กม.
 const radiusOptions = [1000, 5000, 10000, 25000]
 
-defineEmits(['select', 'request-location', 'change-radius'])
+defineEmits(['select', 'request-location', 'change-radius', 'clear-group'])
 
 const { t } = useLocale()
 // ชื่อสถานที่จริงของแต่ละรายการ (แทนข้อความกลางๆ "พื้นที่ที่รายงาน")
@@ -221,7 +237,19 @@ const tabs = computed(() => [
   { key: 'help', label: 'nearbySheet.helpRequests', items: props.helpRequests },
 ])
 
-const activeItems = computed(() => tabs.value.find((tab) => tab.key === activeTab.value)?.items ?? [])
+const activeItems = computed(() => {
+  if (isGroupMode.value) {
+    return props.groupItems
+  }
+  return tabs.value.find((tab) => tab.key === activeTab.value)?.items ?? []
+})
+
+// กดกลุ่มตอนแผ่นหุบอยู่ ให้เปิดขึ้นมาครึ่งจอ ผู้ใช้จะได้เห็นรายการทันที
+watch(() => props.groupItems, (items) => {
+  if (items.length > 0 && state.value === 'collapsed') {
+    state.value = 'half'
+  }
+})
 
 // ถามชื่อสถานที่เฉพาะรายการที่แสดงอยู่ (ไม่เกิน 20 รายการ) กันการเรียก Mapbox มากเกินไป
 watch(activeItems, (items) => {
@@ -331,6 +359,36 @@ watch(activeItems, (items) => {
 .nearby-sheet__tab[aria-selected='true'] .nearby-sheet__count {
   background: #102968;
   color: #ffffff;
+}
+
+/* หัวข้อตอนแสดงรายการกลุ่ม: สูงเท่าแถบแท็บ แผ่นจะไม่กระตุกตอนสลับ */
+.nearby-sheet__group-head {
+  display: flex;
+  flex: 0 0 auto;
+  min-height: 52px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 16px;
+}
+
+.nearby-sheet__group-head strong {
+  color: #102968;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.nearby-sheet__group-back {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: #1d4ed8;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .nearby-sheet__panel {
@@ -490,7 +548,8 @@ watch(activeItems, (items) => {
 .nearby-sheet__handle:focus-visible,
 .nearby-sheet__tab:focus-visible,
 .nearby-sheet__item:focus-visible,
-.nearby-sheet__locate:focus-visible {
+.nearby-sheet__locate:focus-visible,
+.nearby-sheet__group-back:focus-visible {
   outline: 3px solid rgb(37 99 235 / 35%);
   outline-offset: 2px;
 }

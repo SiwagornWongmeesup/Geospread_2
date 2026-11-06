@@ -14,7 +14,8 @@
       />
 
       <!-- อันตรายต่อชีวิต: โทรก่อน แล้วค่อยขอความช่วยเหลือในแอป -->
-      <EmergencyCallStrip />
+      <!-- มือถือ: แสดงเฉพาะขั้นแรก ขั้นอื่นซ่อนไว้ให้พื้นที่กับช่องกรอก -->
+      <EmergencyCallStrip v-if="!isWizard || currentStep === 0" />
 
       <!-- มือถือ: แบ่งฟอร์มเป็นขั้นตอน แถบนี้บอกว่าอยู่ขั้นไหนและเหลืออีกกี่ขั้นถึงส่งคำขอ -->
       <FormSteps v-if="isWizard" ref="stepStatus" :steps="wizardSteps" :current="currentStep" :label="t('requestHelp.stepsLabel')" />
@@ -234,15 +235,28 @@ const submitFromWizard = () => {
 
 /* มือถือ: ฟอร์มเต็มจอ ไม่มีกรอบการ์ดและพื้นหลังสีฟ้ารอบนอก (เลิกการ์ดซ้อนการ์ด) */
 @media (max-width: 767px) {
+  /* ฟอร์มสูงเต็มจอ ส่วนเนื้อหาของขั้นยืดกินที่ว่าง ปุ่มย้อนกลับ/ถัดไปจึงอยู่ล่างจอทุกขั้น */
   .request-page {
+    display: flex;
+    flex-direction: column;
     padding: 0;
     background: var(--gs-surface);
   }
 
   .request-page__layout {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    width: 100%;
     border: 0;
     border-radius: 0;
     box-shadow: none;
+  }
+
+  .request-page__body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
   }
 }
 

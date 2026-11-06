@@ -14,13 +14,14 @@
     />
 
     <!-- อันตรายต่อชีวิต: โทรก่อน แล้วค่อยแจ้งในแอป -->
-    <EmergencyCallStrip />
+    <!-- มือถือ: แสดงเฉพาะขั้นแรก ขั้นอื่นซ่อนไว้ให้พื้นที่กับช่องกรอก (คนที่อันตรายจะเห็นตั้งแต่เปิดฟอร์มแล้ว) -->
+    <EmergencyCallStrip v-if="!isWizard || currentStep === 0" />
 
     <!-- มือถือ: แบ่งฟอร์มเป็นขั้นตอน แถบนี้บอกว่าอยู่ขั้นไหนและเหลืออีกกี่ขั้นถึงส่งรายงาน -->
     <FormSteps v-if="isWizard" ref="stepStatus" :steps="wizardSteps" :current="currentStep" :label="t('report.stepsLabel')" />
 
     <div class="report-incident-form__body">
-    <div class="report-incident-form__fields">
+    <div class="report-incident-form__fields" :class="{ 'report-incident-form__fields--fill': isWizard && currentStepId === 'details' }">
     <label v-show="showStep('details')" class="report-incident-form__section report-incident-form__details">
       <span>{{ t('report.whatHappened') }} <b aria-hidden="true">*</b></span>
       <textarea
@@ -225,6 +226,7 @@ const locationPanel = ref(null)
 // ช่องที่กรอกไม่ผ่านในขั้นนี้ ('details' | 'location' | '') ใช้ทำกรอบแดงและผูกข้อความ error กับช่อง
 const stepErrorField = ref('')
 const isLastStep = computed(() => currentStep.value === wizardSteps.length - 1)
+const currentStepId = computed(() => wizardSteps[currentStep.value].id)
 const showStep = (id) => !isWizard.value || wizardSteps[currentStep.value].id === id
 
 // เลื่อนหน้าขึ้นบนสุด: หน้านี้เลื่อนอยู่ในกล่องเนื้อหาของ layout ไม่ใช่ทั้งหน้าต่าง
@@ -329,7 +331,11 @@ const quickIncidentTypes = computed(() => incidentTypeGroups.value
   .slice(0, 4))
 const visibleIncidentTypes = computed(() => {
   const prioritized = [userSelectedType.value, ...recommendedTypes.value].filter(Boolean)
-  const typesToShow = prioritized.length ? prioritized : quickIncidentTypes.value
+  let typesToShow = prioritized.length ? prioritized : quickIncidentTypes.value
+  // มือถือแสดงทีละขั้น: ขั้นนี้มีที่ว่างเยอะ ต่อท้ายด้วยประเภทที่ใช้บ่อย ให้เลือกได้ทันทีโดยไม่ต้องกด "ดูเพิ่มเติม"
+  if (isWizard.value) {
+    typesToShow = [...prioritized, ...quickIncidentTypes.value]
+  }
   return [...new Map(typesToShow.map((type) => [type.id, type])).values()]
 })
 const hasTypeConflict = computed(() => Boolean(
@@ -1531,6 +1537,17 @@ const submitReport = async () => {
   }
 }
 
+/* จอกว้าง (สองคอลัมน์): ย้ายปุ่มส่ง/บันทึกร่างขึ้นไปบนสุดของคอลัมน์ขวา เหนือส่วนตำแหน่ง
+   เดิมอยู่ใต้แผนที่ ต้องเลื่อนลงถึงจะเห็น ผู้ใช้หาปุ่มส่งไม่เจอ
+   ใช้ order แทนการย้ายโค้ด เพราะจอแคบ (คอลัมน์เดียว) ปุ่มยังควรอยู่ท้ายฟอร์มเหมือนเดิม */
+@media (min-width: 1200px) {
+  .report-incident-form__action-row {
+    order: -1;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #e0eaf6;
+  }
+}
+
 /* จอแคบกว่า 1200px (รวม sidebar) ฟอร์มกับแผนที่อยู่คนละแถว สองคอลัมน์จะแคบเกินไป */
 @media (max-width: 1199px) {
   .report-incident-form__body {
@@ -1554,9 +1571,44 @@ const submitReport = async () => {
 }
 /* ฟอร์มทีละขั้นบนมือถือ: เต็มจอ ไม่มีกรอบการ์ดและเงา */
 .report-incident-form--wizard {
+  /* สูงเต็มจอ (หน้า report-incident.vue เป็น flex) ปุ่มย้อนกลับ/ถัดไปจะได้อยู่ล่างจอทุกขั้น
+     ไม่ลอยอยู่กลางจอตอนขั้นที่เนื้อหาสั้น */
+  display: flex;
+  flex: 1;
+  flex-direction: column;
   border: 0;
   border-radius: 0;
   box-shadow: none;
+}
+
+/* ส่วนเนื้อหาของขั้นยืดกินที่ว่างทั้งหมด ดันปุ่มลงไปล่างสุด */
+.report-incident-form--wizard .report-incident-form__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.report-incident-form--wizard .report-incident-form__location {
+  flex: 1;
+}
+
+/* ขั้น "เกิดอะไรขึ้น": ช่องพิมพ์ยืดสูงจนเต็มที่ว่าง พิมพ์ยาวๆ ได้สบาย ไม่เหลือพื้นที่โล่ง */
+.report-incident-form__fields--fill {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.report-incident-form__fields--fill .report-incident-form__details {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.report-incident-form__fields--fill .report-incident-form__details textarea {
+  flex: 1;
+  resize: none;
 }
 
 /* ในขั้นตอนมือถือ ส่วนตำแหน่งไม่ต้องมีเส้นคั่นด้านบน เพราะแสดงทีละส่วน */

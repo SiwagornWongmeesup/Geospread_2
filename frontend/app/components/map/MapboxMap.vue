@@ -32,9 +32,11 @@ const radiusLineLayerId = 'incident-radius-line'
 // ระยะ (px บนจอ) ที่หมุดจะถูกรวมเป็นกลุ่ม ต้องไม่น้อยกว่าความกว้างหมุด (~42px)
 // ไม่งั้นหมุดที่ห่างกันน้อยกว่าขนาดตัวเองจะวาดทับกัน และหมุดข้างล่างจะถูกบังจนมองไม่เห็น
 const clusterRadiusPx = 44
-// ซูมถึงระดับนี้แล้วกลุ่มที่ยังไม่แยก จะกางหมุดออกเป็นวงรอบจุดแทน
-const spiderfyZoom = 16
-const popupMarkerOffsetPx = 52
+// ซูมถึงระดับนี้แล้วกลุ่มที่ยังไม่แยก (หมุดอยู่ใกล้กันมาก) กดแล้วจะแสดงเป็นรายการแทนการซูมต่อ
+const groupListZoom = 16
+// ระยะยก popup ขึ้นจากพิกัด: หมุดสูง 2.8rem (~45px) + ป้าย "รอตรวจ" ที่ยื่นเหนือหมุด 1rem (~16px) + ช่องว่าง
+// (เดิม 52px น้อยกว่าความสูงหมุดรวมป้าย ปลาย popup จึงทับไอคอน)
+const popupMarkerOffsetPx = 68
 
 const props = defineProps({
   center: { type: Array, default: () => [100.5018, 13.7563] },
@@ -55,7 +57,7 @@ const props = defineProps({
   showPopup: { type: Boolean, default: true },
 })
 
-const emit = defineEmits(['select-item', 'location-select', 'close-popup','open-report'])
+const emit = defineEmits(['select-item', 'select-group', 'location-select', 'close-popup','open-report'])
 
 const toNumber = (value) => {
   const number = Number(value)
@@ -106,7 +108,7 @@ const renderIncidentPopup = () => {
     closeOnMove: false,
     focusAfterOpen: false,
     maxWidth: 'none',
-    // ยก popup ขึ้นพ้นตัวหมุด (หมุดสูง 2.8rem ≈ 45px ปักอยู่เหนือพิกัด) ไม่งั้น popup จะบังหมุด
+    // ยก popup ขึ้นพ้นตัวหมุดและป้ายบนหมุด ไม่งั้น popup จะบังไอคอน
     offset: popupMarkerOffsetPx,
     className: 'geospread-incident-popup',
   })
@@ -208,7 +210,7 @@ const buildRadiusFeatureCollection = () => ({
     })
     .filter(Boolean),
 })
-
+// สร้างหมุดเเดี่ยว
 const createMarkerElement = (item) => {
   const markerKind = item.kind === 'pending_report'
     ? 'pending'
@@ -320,30 +322,20 @@ const zoomToCluster = (cluster) => {
   const [[west, south], [east, north]] = bounds.toArray()
   const hasSingleLocation = west === east && south === north
   if (hasSingleLocation) {
-    // หมุดที่พิกัดเดียวกันไม่มีวันแยกด้วยการซูมปกติ จึงซูมถึงระดับที่จะแตกเป็นวงรอบจุด
-    map.easeTo({ center: cluster.center, zoom: Math.max(Math.min(map.getZoom() + 3, 18), spiderfyZoom), duration: 350 })
+    // หมุดที่พิกัดเดียวกันไม่มีวันแยกด้วยการซูมปกติ จึงซูมถึงระดับที่กดแล้วจะแสดงเป็นรายการ
+    map.easeTo({ center: cluster.center, zoom: Math.max(Math.min(map.getZoom() + 3, 18), groupListZoom), duration: 350 })
     return
   }
 
-  // ซูมได้สูงสุดแค่ระดับที่กลุ่มจะถูกกางออก ถ้ายังไม่แยก renderMapItems จะกางหมุดเป็นวงให้เอง
+  // ซูมได้สูงสุดแค่ระดับที่กดกลุ่มแล้วแสดงเป็นรายการ
   map.fitBounds(bounds, {
     padding: 72,
-    maxZoom: spiderfyZoom,
+    maxZoom: groupListZoom,
     duration: 350,
   })
 }
 
-// ตำแหน่งของหมุดแต่ละอันตอนกางเป็นวงรอบจุดกลาง
-const getSpiderOffset = (index, count) => {
-  const angle = -Math.PI / 2 + (2 * Math.PI * index / count)
-
-  // ให้วงใหญ่ขึ้นตามจำนวนหมุด ระยะห่างตามขอบวงจะได้ไม่น้อยกว่าความกว้างหมุด (~48px รวมช่องว่าง)
-  const spacingPerPin = 48
-  const radius = Math.max(36, (count * spacingPerPin) / (2 * Math.PI))
-
-  return [Math.cos(angle) * radius, Math.sin(angle) * radius]
-}
-
+// สร้างวงกลมตัวเลข
 const createClusterElement = (cluster) => {
   const marker = document.createElement('button')
   marker.type = 'button'
@@ -362,7 +354,14 @@ const createClusterElement = (cluster) => {
     marker.appendChild(pendingIndicator)
   }
 
-  marker.addEventListener('click', () => zoomToCluster(cluster))
+  marker.addEventListener('click', () => {
+    if (map.getZoom() >= groupListZoom) {
+      // ซูมลึกแล้วยังติดกัน: บอกแม่ให้แสดงเหตุในกลุ่มนี้เป็นรายการ
+      emit('select-group', cluster.items)
+    } else {
+      zoomToCluster(cluster)
+    }
+  })
   return marker
 }
 
@@ -454,25 +453,6 @@ const renderMapItems = () => {
   buildMapItemClusters().forEach((cluster) => {
     const isCluster = cluster.items.length > 1
 
-    // ซูมลึกพอแล้วแต่ยังเป็นกลุ่มอยู่ = หมุดอยู่ใกล้กันมาก (หรือพิกัดเดียวกัน) ให้กางออกเป็นวง
-    // (เดิมกางเฉพาะกลุ่มที่ทุกหมุดพิกัดตรงกันเป๊ะ กลุ่มที่ห่างกันไม่กี่เมตรจึงกดซูมเท่าไหร่ก็ไม่แยก)
-    const shouldSpiderfy = isCluster && map.getZoom() >= spiderfyZoom
-
-    if (shouldSpiderfy) {
-      cluster.items.forEach((item, index) => {
-        const marker = new mapboxgl.Marker({
-          element: createMarkerElement(item),
-          anchor: 'bottom',
-          offset: getSpiderOffset(index, cluster.items.length),
-        })
-          .setLngLat(cluster.center)
-          .addTo(map)
-
-        markers.push(marker)
-      })
-      return
-    }
-
     const element = isCluster ? createClusterElement(cluster) : createMarkerElement(cluster.items[0])
 
     const marker = new mapboxgl.Marker({
@@ -547,11 +527,18 @@ onUnmounted(() => {
 
 watch(
   [() => props.center, () => props.zoom],
-  ([newCenter, newZoom]) => {
+  ([newCenter, newZoom], [, oldZoom]) => {
     if (map && Array.isArray(newCenter)) {
+      // ถ้าเปลี่ยนแค่จุดกลาง (เช่น กดหมุดเหตุการณ์) ห้ามซูมออกจากที่ผู้ใช้ซูมไว้
+      // เดิมใช้ค่า zoom จาก prop ตรงๆ (11 หรือ 13) ผู้ใช้ซูมเข้าไป 16 แล้วกดหมุด แผนที่เลยซูมออกเอง
+      // ถ้า zoom ใน prop เปลี่ยนจริง (เช่น เลือกพื้นที่จากช่องค้นหา) ค่อยใช้ค่าใหม่นั้น
+      let targetZoom = newZoom
+      if (newZoom === oldZoom) {
+        targetZoom = Math.max(map.getZoom(), newZoom)
+      }
       map.flyTo({
         center: newCenter,
-        zoom: newZoom,
+        zoom: targetZoom,
         padding: props.selectedItem ? getPopupPadding() : { top: 0, right: 0, bottom: 0, left: 0 },
         duration: 900,
         essential: true,

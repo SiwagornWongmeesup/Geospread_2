@@ -12,9 +12,18 @@
         :popup-padding="{ top: 330, right: 32, bottom: 48, left: 32 }"
         :reporter-location="userLocation"
         class="desktop-home__map-canvas"
-        @select-item="selectIncident"
+        @select-item="selectMapItem"
+        @select-group="showGroupItems"
         @close-popup="clearSelectedIncident"
         @open-report="openReportDetail"
+      />
+      <!-- กดกลุ่มหมุดที่ติดกัน: แสดงเหตุในกลุ่มเป็นรายการ กดรายการแล้วเปิดการ์ดบนแผนที่ -->
+      <MapGroupPanel
+        v-if="selectedGroupItems.length"
+        :items="selectedGroupItems"
+        :selected-item-id="selectedIncident?.id"
+        @select="selectIncident"
+        @close="clearGroupItems"
       />
       <MapLocationSearch
         :is-locating="isLocating"
@@ -48,8 +57,9 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import MapboxMap from '~/components/map/MapboxMap.vue'
+import MapGroupPanel from '~/components/map/MapGroupPanel.vue'
 import HelpRequests from '~/components/dashboard/HelpRequests.vue'
 import NearbyIncidents from '~/components/dashboard/NearbyIncidents.vue'
 import RecentActivity from '~/components/dashboard/RecentActivity.vue'
@@ -75,22 +85,45 @@ const { t } = useLocale()
 
 const { getCurrentLocation, isLocating, locationError } = useGeolocation()
 const selectedArea = ref(null)
+// เหตุในกลุ่มหมุดที่กดบนแผนที่ (ว่าง = ไม่แสดงกล่องรายการ)
+const selectedGroupItems = ref([])
 
-const activeMapCenter = computed(() => {
-  if (selectedIncident.value) {
-    return [selectedIncident.value.lng, selectedIncident.value.lat]
+const showGroupItems = (items) => {
+  clearSelectedIncident()
+  selectedGroupItems.value = items
+}
+
+const clearGroupItems = () => {
+  selectedGroupItems.value = []
+}
+
+// กดหมุดเดี่ยวบนแผนที่: ปิดกล่องรายการกลุ่มเดิม แล้วเปิดการ์ดของหมุดนั้น
+const selectMapItem = (item) => {
+  clearGroupItems()
+  selectIncident(item)
+}
+
+// จุดของหมุดที่กดล่าสุด เก็บไว้แม้ปิดการ์ดแล้ว แผนที่จะได้อยู่ที่เดิม
+// (เดิมปิดการ์ดแล้วจุดกลางกลับไปเป็นหมุดอันแรกในรายการ แผนที่เลยบินไปหมุดอื่น)
+const focusedCenter = ref(null)
+
+watch(selectedIncident, (incident) => {
+  if (incident) {
+    focusedCenter.value = [incident.lng, incident.lat]
   }
-
-  return selectedArea.value?.center || mapCenter.value
 })
+
+const activeMapCenter = computed(() => focusedCenter.value || selectedArea.value?.center || mapCenter.value)
 const activeMapZoom = computed(() => selectedArea.value?.zoom || 11)
 
 const selectArea = (area) => {
+  focusedCenter.value = null
   selectedArea.value = area
   clearSelectedIncident()
 }
 
 const clearAreaSelection = () => {
+  focusedCenter.value = null
   selectedArea.value = null
   clearSelectedIncident()
 }
@@ -103,6 +136,7 @@ const focusCurrentLocation = async () => {
   try {
     const location = await getCurrentLocation()
     setUserLocation(location)
+    focusedCenter.value = null
     selectedArea.value = {
       center: [location.lng, location.lat],
       zoom: 13,

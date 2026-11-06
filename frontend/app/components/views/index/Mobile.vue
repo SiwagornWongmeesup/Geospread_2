@@ -16,7 +16,8 @@
         :reporter-location="userLocation"
         :show-popup="false"
         class="mobile-home__map"
-        @select-item="selectIncident"
+        @select-item="selectMapItem"
+        @select-group="showGroupItems"
         @close-popup="clearSelectedIncident"
         @open-report="openReportDetail"
       />
@@ -42,9 +43,11 @@
       :has-user-location="Boolean(userLocation)"
       :is-locating="isLocating"
       :radius-meters="nearbyRadiusMeters"
+      :group-items="selectedGroupItems"
       @select="selectIncident"
       @request-location="focusCurrentLocation"
       @change-radius="changeNearbyRadius"
+      @clear-group="clearGroupItems"
     />
 
     <!-- กดหมุดแล้วแสดงรายละเอียดเป็นแผ่นเลื่อนขึ้นจากด้านล่าง (แทน popup บนแผนที่) -->
@@ -58,7 +61,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 const { t } = useLocale();
 import MapboxMap from "~/components/map/MapboxMap.vue";
 import MapLocationSearch from "~/components/map/MapLocationSearch.vue";
@@ -85,17 +88,27 @@ const {
 } = useHomeDashboard();
 const { getCurrentLocation, isLocating, locationError } = useGeolocation();
 const selectedArea = ref(null);
-const activeMapCenter = computed(() => {
-  if (selectedIncident.value)
-    return [selectedIncident.value.lng, selectedIncident.value.lat];
-  return selectedArea.value?.center || mapCenter.value;
+// เหตุในกลุ่มหมุดที่กดบนแผนที่ (ว่าง = แผ่นด้านล่างแสดงรายการรอบตัวตามปกติ)
+const selectedGroupItems = ref([]);
+// จุดของหมุดที่กดล่าสุด เก็บไว้แม้ปิดรายละเอียดแล้ว แผนที่จะได้อยู่ที่เดิม
+// (เดิมปิดแล้วจุดกลางกลับไปเป็นหมุดอันแรกในรายการ แผนที่เลยบินไปหมุดอื่น)
+const focusedCenter = ref(null);
+
+watch(selectedIncident, (incident) => {
+  if (incident) {
+    focusedCenter.value = [incident.lng, incident.lat];
+  }
 });
+
+const activeMapCenter = computed(() => focusedCenter.value || selectedArea.value?.center || mapCenter.value);
 const activeMapZoom = computed(() => selectedArea.value?.zoom || 11);
 const selectArea = (area) => {
+  focusedCenter.value = null;
   selectedArea.value = area;
   clearSelectedIncident();
 };
 const clearAreaSelection = () => {
+  focusedCenter.value = null;
   selectedArea.value = null;
   clearSelectedIncident();
 };
@@ -110,10 +123,27 @@ const changeNearbyRadius = (meters) => {
   nearbyRadiusMeters.value = meters;
 };
 
+// ลูก (MapboxMap) บอกว่าผู้ใช้กดกลุ่มหมุดที่ติดกัน → เก็บรายการไว้ให้แผ่นด้านล่างแสดง
+const showGroupItems = (items) => {
+  clearSelectedIncident();
+  selectedGroupItems.value = items;
+};
+
+const clearGroupItems = () => {
+  selectedGroupItems.value = [];
+};
+
+// กดหมุดเดี่ยวบนแผนที่: ออกจากรายการกลุ่มเดิม แล้วเปิดรายละเอียดหมุดนั้น
+const selectMapItem = (item) => {
+  clearGroupItems();
+  selectIncident(item);
+};
+
 const focusCurrentLocation = async () => {
   try {
     const location = await getCurrentLocation();
     setUserLocation(location);
+    focusedCenter.value = null;
     selectedArea.value = { center: [location.lng, location.lat], zoom: 13 };
     clearSelectedIncident();
   } catch {
