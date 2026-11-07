@@ -1,422 +1,381 @@
 <script setup>
-import { useRoute, useState } from '#app'
+// sidebar ของแอดมิน: หน้าตาเหมือน AppSidebar ของผู้ใช้ (โลโก้ + ปุ่มพับ + กลุ่มเมนู) แต่รายการเมนูเป็นของแอดมิน
+import { adminMenuGroups, adminSystemItems } from '~/utils/adminNavMenu'
 
-const sidebarCollapsed = useState('adminSidebarCollapsed', () => false)
+const NuxtLink = resolveComponent('NuxtLink')
 const route = useRoute()
 const { t } = useLocale()
 
-const menus = [
-  // [id, key ข้อความ, ไอคอน, badge]
-  ['dashboard', 'admin.menu.dashboard', '/icons/Chart.svg'], ['incidents', 'admin.menu.incidents', '/icons/Report.svg'],
-  ['requests', 'admin.menu.requests', '/icons/Help.svg'], ['events', 'admin.menu.events', '/icons/Calendar.svg'],
-  ['users', 'admin.menu.users', '/icons/Users.svg'], ['guides', 'admin.menu.guides', '/icons/Alert.svg'],
-  ['analytics', 'admin.menu.analytics', '/icons/Analysis.svg'], ['notifications', 'admin.menu.notifications', '/icons/Notification.svg', 3],
-  ['settings', 'admin.menu.settings', '/icons/Settings.svg'],
-]
-const menuGroups = [
-  { label: 'admin.groups.overview', items: [menus[0]] },
-  { label: 'admin.groups.community', items: menus.slice(1, 5) },
-  { label: 'admin.groups.dataSafety', items: menus.slice(5, 8) },
-]
-const systemItems = [menus[8]]
+defineProps({
+  collapsed: { type: Boolean, default: false },
+})
 
-const menuRoutes = { dashboard: '/admin', incidents: '/admin/incidents', users: '/admin/users' }
-const isUnavailableMenu = (id) => !menuRoutes[id]
-const isActiveMenu = (id) => route.path === menuRoutes[id]
-const selectMenu = ([id]) => {
-  if (menuRoutes[id]) void navigateTo(menuRoutes[id])
+const emit = defineEmits(['toggle'])
+
+// รายการเมนูอยู่ที่ utils/adminNavMenu.js ใช้ร่วมกับแถบเมนูด้านล่างบนมือถือ
+const menuGroups = adminMenuGroups
+const systemItems = adminSystemItems
+
+const isActive = (item) => Boolean(item.to) && route.path === item.to
+
+// เมนูที่ยังไม่มีหน้า (ไม่มี to) แสดงเป็นปุ่ม disabled พร้อม tooltip "กำลังพัฒนา"
+const itemTitle = (item, collapsed) => {
+  if (!item.to) return collapsed ? `${t(item.label)} · ${t('common.inDevelopment')}` : t('common.inDevelopment')
+  return collapsed ? t(item.label) : undefined
 }
 </script>
 
 <template>
-  <aside class="sidebar" :class="{ 'sidebar--collapsed': sidebarCollapsed }" :aria-label="t('admin.menuLabel')">
-    <div class="sidebar-head">
-      <span v-if="!sidebarCollapsed" class="sidebar-label">{{ t('admin.menuTitle') }}</span>
-      <button class="sidebar-toggle" type="button" :aria-label="sidebarCollapsed ? t('common.expandMenu') : t('common.collapseMenu')"
-        :title="sidebarCollapsed ? t('common.expandMenu') : t('common.collapseMenu')" @click="sidebarCollapsed = !sidebarCollapsed">
+  <aside class="app-sidebar" :class="{ 'app-sidebar--collapsed': collapsed }" :aria-label="t('admin.menuLabel')">
+    <div class="app-sidebar__topbar">
+      <NuxtLink to="/admin" class="app-sidebar__brand" :aria-label="t('brand.homeLink')">
+        <img src="/logos/logo.png" alt="" class="app-sidebar__logo" />
+        <span v-if="!collapsed" class="app-sidebar__brand-text">
+          <span class="app-sidebar__brand-name">GeoSpread</span>
+          <span class="app-sidebar__brand-tag">{{ t('admin.menuTitle') }}</span>
+        </span>
+      </NuxtLink>
+
+      <button
+        type="button"
+        class="app-sidebar__toggle"
+        :aria-label="collapsed ? t('common.expandMenu') : t('common.collapseMenu')"
+        :title="collapsed ? t('common.expandMenu') : t('common.collapseMenu')"
+        @click="emit('toggle')"
+      >
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="m15 18-6-6 6-6" />
         </svg>
       </button>
     </div>
-    <nav>
-      <section v-for="group in menuGroups" :key="group.label" class="menu-group">
-        <h2 v-if="!sidebarCollapsed">{{ t(group.label) }}</h2>
-        <button v-for="menu in group.items" :key="menu[0]" type="button" :class="{ active: isActiveMenu(menu[0]) }"
-          :aria-current="isActiveMenu(menu[0]) ? 'page' : undefined" :disabled="isUnavailableMenu(menu[0])"
-          :title="sidebarCollapsed ? t(menu[1]) : (isUnavailableMenu(menu[0]) ? t('common.inDevelopment') : undefined)"
-          @click="selectMenu(menu)">
-          <img :src="menu[2]" alt=""><span v-if="!sidebarCollapsed">{{ t(menu[1]) }}</span><b v-if="menu[3]">{{ menu[3]
-            }}</b>
-        </button>
+
+    <nav class="app-sidebar__navigation">
+      <section v-for="group in menuGroups" :key="group.label" class="app-sidebar__group">
+        <h2 v-if="!collapsed" class="app-sidebar__group-title">{{ t(group.label) }}</h2>
+
+        <component
+          :is="item.to ? NuxtLink : 'button'"
+          v-for="item in group.items"
+          :key="item.id"
+          :to="item.to"
+          :type="item.to ? undefined : 'button'"
+          :disabled="item.to ? undefined : true"
+          class="app-sidebar__link"
+          :class="{ 'app-sidebar__link--active': isActive(item) }"
+          :aria-current="isActive(item) ? 'page' : undefined"
+          :aria-label="t(item.label)"
+          :title="itemTitle(item, collapsed)"
+        >
+          <span class="app-sidebar__icon" aria-hidden="true"><img :src="item.icon" alt="" /></span>
+          <span v-if="!collapsed" class="app-sidebar__link-label">{{ t(item.label) }}</span>
+          <span v-if="item.badge" class="app-sidebar__badge">{{ item.badge }}</span>
+        </component>
       </section>
     </nav>
-    <section class="sidebar-system">
-      <h2 v-if="!sidebarCollapsed">{{ t('admin.system') }}</h2>
-      <button v-for="menu in systemItems" :key="menu[0]" type="button" :class="{ active: isActiveMenu(menu[0]) }"
-        :aria-current="isActiveMenu(menu[0]) ? 'page' : undefined" :disabled="isUnavailableMenu(menu[0])"
-        :title="sidebarCollapsed ? t(menu[1]) : t('common.inDevelopment')" @click="selectMenu(menu)">
-        <img :src="menu[2]" alt=""><span v-if="!sidebarCollapsed">{{ t(menu[1]) }}</span>
-      </button>
-    </section>
+
+    <div class="app-sidebar__account">
+      <h2 v-if="!collapsed" class="app-sidebar__group-title">{{ t('admin.system') }}</h2>
+      <component
+        :is="item.to ? NuxtLink : 'button'"
+        v-for="item in systemItems"
+        :key="item.id"
+        :to="item.to"
+        :type="item.to ? undefined : 'button'"
+        :disabled="item.to ? undefined : true"
+        class="app-sidebar__link"
+        :class="{ 'app-sidebar__link--active': isActive(item) }"
+        :aria-label="t(item.label)"
+        :title="itemTitle(item, collapsed)"
+      >
+        <span class="app-sidebar__icon" aria-hidden="true"><img :src="item.icon" alt="" /></span>
+        <span v-if="!collapsed" class="app-sidebar__link-label">{{ t(item.label) }}</span>
+      </component>
+    </div>
   </aside>
 </template>
 
 <style scoped>
-.sidebar {
-  position: sticky;
-  top: 0;
+/* สไตล์เดียวกับ AppSidebar.vue (sidebar ของผู้ใช้) */
+.app-sidebar {
   display: flex;
-  height: 100vh;
+  align-self: stretch;
   flex-direction: column;
-  padding: 1rem .85rem;
-  border-right: 1px solid #dce8f5;
-  background: #fff;
-  overflow-y: auto
+  gap: 16px;
+  height: 100%;
+  min-height: 0;
+  padding: 16px 12px;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-right: 1px solid var(--gs-line);
+  background: var(--gs-surface);
 }
 
-.admin-label {
-  display: flex;
-  align-items: center;
-  gap: .6rem;
-  margin: 0 0 .65rem;
-  padding: .7rem;
-  border-radius: .5rem;
-  background: #e8f2ff;
-  color: #176bd0;
-  font-size: .78rem;
-  font-weight: 800
-}
-
-.admin-label img {
-  width: 1.15rem;
-  height: 1.15rem
-}
-
-.sidebar nav {
-  display: grid;
-  gap: .2rem
-}
-
-.sidebar nav button {
-  position: relative;
-  display: flex;
-  width: 100%;
-  align-items: center;
-  gap: .8rem;
-  min-height: 2.55rem;
-  padding: 0 .72rem;
-  border: 0;
-  border-radius: .5rem;
-  background: transparent;
-  color: #18347b;
-  font-size: .84rem;
-  font-weight: 700;
-  text-align: left;
-  cursor: pointer;
-  transition: .18s
-}
-
-.sidebar nav button img {
-  width: 18px;
-  height: 18px;
-  opacity: .78
-}
-
-.sidebar nav button:hover {
-  background: #eef6ff;
-  color: #086ce4
-}
-
-.sidebar nav button.active {
-  background: #1479ef;
-  color: #fff;
-  box-shadow: 0 8px 18px rgb(20 121 239 / 22%)
-}
-
-.sidebar nav button.active img {
-  filter: brightness(0) invert(1);
-  opacity: 1
-}
-
-.sidebar nav b {
-  display: grid;
-  min-width: 1.28rem;
-  height: 1.28rem;
-  place-items: center;
-  margin-left: auto;
-  border-radius: 999px;
-  background: #e91f28;
-  color: #fff;
-  font-size: .66rem
-}
-
-.sidebar nav button:disabled {
-  cursor: not-allowed;
-  opacity: .46
-}
-
-.sidebar nav button:disabled:hover {
-  background: transparent;
-  color: #18347b
-}
-
-.sidebar-head {
+.app-sidebar__topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 2.25rem;
-  gap: .35rem;
-  margin: 0 0 .55rem;
-  padding: 0 .25rem 0 .75rem
+  gap: 8px;
+  min-height: 56px;
+  padding: 0 4px 12px 4px;
+  border-bottom: 1px solid var(--gs-line);
 }
 
-.sidebar-label {
-  color: #334e80;
-  font-size: .78rem;
-  font-weight: 800;
-  letter-spacing: .04em
+.app-sidebar__brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  text-decoration: none;
 }
 
-.sidebar-toggle {
-  display: grid;
-  width: 2.1rem;
-  height: 2.1rem;
+/* ไฟล์ logo.png มีพื้นที่ว่างรอบรูปเยอะ จึงต้องตั้งขนาดใหญ่กว่าที่เห็นจริง */
+.app-sidebar__logo {
+  width: 76px;
+  height: 76px;
+  margin: -14px -12px -14px -14px;
   flex: 0 0 auto;
-  place-items: center;
+  object-fit: contain;
+}
+
+.app-sidebar__brand-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.1;
+}
+
+.app-sidebar__brand-name {
+  color: var(--gs-ink);
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -0.6px;
+}
+
+.app-sidebar__brand-tag {
+  margin-top: 3px;
+  overflow: hidden;
+  color: var(--gs-muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-sidebar__toggle {
+  display: grid;
+  width: 34px;
+  height: 34px;
   padding: 0;
+  cursor: pointer;
+  place-items: center;
   border: 1px solid transparent;
-  border-radius: .625rem;
+  border-radius: 10px;
   background: transparent;
-  color: #264577;
-  cursor: pointer
+  color: var(--gs-ink-2);
 }
 
-.sidebar-toggle:hover {
-  background: #edf5ff;
-  color: #0876eb
+.app-sidebar__toggle:hover {
+  background: var(--gs-action-tint);
+  color: var(--gs-action);
 }
 
-.sidebar-toggle:focus-visible {
-  outline: 3px solid rgb(8 118 235 / 28%);
-  outline-offset: 2px
+.app-sidebar__toggle:focus-visible {
+  outline: 3px solid rgb(29 53 87 / 30%);
+  outline-offset: 2px;
 }
 
-.sidebar-toggle svg {
-  width: 1.25rem;
-  height: 1.25rem;
+.app-sidebar__toggle svg {
+  width: 20px;
+  height: 20px;
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 2;
-  transition: transform 180ms ease
+  transition: transform 180ms ease;
 }
 
-.menu-group {
+.app-sidebar__navigation {
   display: grid;
-  gap: .2rem
+  gap: 20px;
 }
 
-.menu-group+h2 {
-  margin-top: .2rem
-}
-
-.menu-group+.menu-group {
-  margin-top: .8rem;
-  padding-top: .75rem;
-  border-top: 1px solid #edf2f8
-}
-
-.menu-group h2 {
-  margin: 0 0 .2rem;
-  padding: 0 .72rem;
-  color: #7288aa;
-  font-size: .62rem;
-  font-weight: 800;
-  letter-spacing: .04em
-}
-
-.sidebar--collapsed {
-  align-items: stretch;
-  padding-right: .55rem;
-  padding-left: .55rem
-}
-
-.sidebar--collapsed .sidebar-head {
-  justify-content: center;
-  padding: 0
-}
-
-.sidebar--collapsed .brand img {
-  width: 2.4rem;
-  height: 2.4rem
-}
-
-.sidebar--collapsed .sidebar-toggle svg {
-  transform: rotate(180deg)
-}
-
-.sidebar--collapsed nav {
-  gap: .85rem
-}
-
-.sidebar--collapsed .menu-group {
-  justify-items: center
-}
-
-.sidebar--collapsed .menu-group+.menu-group {
-  width: 100%;
-  margin-top: 0;
-  padding-top: .7rem
-}
-
-.sidebar--collapsed nav button {
-  justify-content: center;
-  width: 2.65rem;
-  padding: 0
-}
-
-.sidebar--collapsed nav b {
-  position: absolute;
-  top: .08rem;
-  right: .05rem;
-  margin: 0
-}
-
-.sidebar-system {
+.app-sidebar__group {
   display: grid;
-  gap: .25rem;
-  margin-top: auto;
-  padding-top: .85rem;
-  border-top: 1px solid #dfe8f3
+  gap: 4px;
 }
 
-.sidebar-system h2 {
-  margin: 0 0 .1rem;
-  padding: 0 .72rem;
-  color: #7288aa;
-  font-size: .62rem;
+.app-sidebar__group-title {
+  margin: 0 0 6px;
+  padding: 0 12px;
+  color: var(--gs-muted);
+  font-size: 12px;
   font-weight: 800;
-  letter-spacing: .04em
+  letter-spacing: 0.01em;
 }
 
-.sidebar-system button {
-  position: relative;
+.app-sidebar__link {
   display: flex;
+  position: relative;
   width: 100%;
   align-items: center;
-  gap: .8rem;
-  min-height: 2.55rem;
-  padding: 0 .72rem;
-  border: 0;
-  border-radius: .5rem;
+  gap: 12px;
+  min-height: 42px;
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--gs-radius-sm);
   background: transparent;
-  color: #18347b;
-  font-size: .84rem;
-  font-weight: 700;
+  color: var(--gs-ink-2);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.2;
   text-align: left;
+  text-decoration: none;
   cursor: pointer;
-  transition: .18s
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease,
+    box-shadow 160ms ease;
 }
 
-.sidebar-system button img {
+.app-sidebar__link:hover:not(:disabled) {
+  background: var(--gs-action-tint);
+  color: var(--gs-action);
+}
+
+.app-sidebar__link:focus-visible {
+  outline: 3px solid rgb(29 53 87 / 30%);
+  outline-offset: 2px;
+}
+
+.app-sidebar__link:disabled {
+  cursor: not-allowed;
+  opacity: 0.46;
+}
+
+.app-sidebar__link--active,
+.app-sidebar__link--active:hover:not(:disabled) {
+  border-color: var(--gs-action);
+  background: var(--gs-action);
+  color: #ffffff;
+}
+
+.app-sidebar__link--active .app-sidebar__icon img {
+  filter: brightness(0) invert(1);
+}
+
+.app-sidebar__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
   width: 18px;
   height: 18px;
-  opacity: .78
 }
 
-.sidebar-system button:hover {
-  background: #eef6ff;
-  color: #086ce4
+.app-sidebar__icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.05));
 }
 
-.sidebar-system button:disabled {
-  cursor: not-allowed;
-  opacity: .46
+.app-sidebar__link-label {
+  overflow: hidden;
+  /* บรรทัดสูง 1.45 เท่า ให้วรรณยุกต์ไทยด้านบน/ล่างไม่โดนตัด */
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.sidebar-system button:disabled:hover {
-  background: transparent;
-  color: #18347b
+.app-sidebar__badge {
+  display: grid;
+  flex: 0 0 auto;
+  min-width: 21px;
+  height: 21px;
+  margin-left: auto;
+  padding: 0 4px;
+  place-items: center;
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+  background: var(--gs-danger);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
 }
 
-.sidebar--collapsed .sidebar-system {
-  justify-items: center
+.app-sidebar__account {
+  display: grid;
+  gap: 4px;
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid var(--gs-line);
 }
 
-.sidebar--collapsed .sidebar-system button {
+.app-sidebar--collapsed {
+  align-items: stretch;
+  padding-right: 10px;
+  padding-left: 10px;
+}
+
+/* ตอนพับ: วางโลโก้กับปุ่มขยายเรียงลงมา เพราะความกว้างไม่พอวางข้างกัน */
+.app-sidebar--collapsed .app-sidebar__topbar {
+  flex-direction: column;
   justify-content: center;
-  width: 2.65rem;
-  padding: 0
+  padding: 0 0 12px;
 }
 
-@media(max-width:68rem) {
-  .sidebar {
-    padding: .85rem .55rem
-  }
-
-  .brand {
-    justify-content: center
-  }
-
-  .brand span,
-  .admin-label,
-  .sidebar-label,
-  .sidebar-system h2,
-  .sidebar-system button span {
-    display: none
-  }
-
-  .sidebar nav button {
-    justify-content: center;
-    padding: 0
-  }
-
-  .sidebar nav button span {
-    display: none
-  }
-
-  .sidebar nav b {
-    position: absolute;
-    margin: -1.35rem 0 0 1.2rem
-  }
-
-  .sidebar-system button {
-    justify-content: center;
-    padding: 0
-  }
+.app-sidebar--collapsed .app-sidebar__logo {
+  width: 56px;
+  height: 56px;
+  margin: -6px 0;
 }
 
-@media(max-width:47rem) {
-  .sidebar {
-    position: static;
-    width: auto;
-    height: auto;
-    flex-direction: row;
-    align-items: center;
-    padding: .45rem .65rem;
-    overflow-x: auto;
-    overflow-y: hidden
+.app-sidebar--collapsed .app-sidebar__toggle svg {
+  transform: rotate(180deg);
+}
+
+.app-sidebar--collapsed .app-sidebar__navigation {
+  gap: 16px;
+}
+
+.app-sidebar--collapsed .app-sidebar__group,
+.app-sidebar--collapsed .app-sidebar__account {
+  justify-items: center;
+}
+
+.app-sidebar--collapsed .app-sidebar__link {
+  justify-content: center;
+  width: 42px;
+  padding: 8px;
+}
+
+.app-sidebar--collapsed .app-sidebar__badge {
+  position: absolute;
+  top: 2px;
+  right: 1.6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0;
+  border-width: 1.5px;
+  font-size: 11px;
+}
+
+@media (max-width: 768px) {
+  .app-sidebar {
+    gap: 12px;
   }
 
-  .brand {
-    margin: 0 .55rem 0 0
+  .app-sidebar__navigation {
+    gap: 14px;
   }
 
-  .brand img {
-    width: 2.35rem;
-    height: 2.35rem
+  .app-sidebar__link {
+    min-height: 40px;
   }
 
-  .sidebar nav {
-    display: flex;
-    gap: .25rem
-  }
-
-  .sidebar nav button {
-    flex: 0 0 2.3rem;
-    min-height: 2.3rem
-  }
 }
 </style>

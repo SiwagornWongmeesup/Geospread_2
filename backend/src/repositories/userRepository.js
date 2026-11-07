@@ -1,8 +1,34 @@
 // นำเข้าการเชื่อมต่อ Database ของจริงจากโฟลเดอร์ db
 const db = require('../../db/db');
 //ดึงข้อมูลuser
+// ดึงผู้ใช้ทั้งหมดสำหรับหน้าจัดการผู้ใช้ของแอดมิน พร้อมสรุปการรายงานของแต่ละคน
+// - LEFT JOIN เพื่อให้ผู้ใช้ที่ยังไม่เคยรายงานยังอยู่ในรายการ (จำนวน = 0)
+// - ไม่ดึงรหัสผ่านออกมาเด็ดขาด
+// - เรียงผู้ใช้ที่สมัครล่าสุดขึ้นก่อน
 const getAllUsers = async () => {
-    const result = await db.query('SELECT id, email, name, lastname, profile, role, created_at, updated_at FROM tb_users');
+    const result = await db.query(
+        `SELECT
+            u.id,
+            u.email,
+            u.name,
+            u.lastname,
+            u.profile,
+            u.phone,
+            u.role,
+            u.trust_score,
+            u.email_verified,
+            u.created_at,
+            u.updated_at,
+            COUNT(r.report_id)::int AS report_count,
+            COUNT(r.report_id) FILTER (WHERE r.report_status = 'verified')::int AS verified_report_count,
+            COUNT(r.report_id) FILTER (WHERE r.report_status = 'rejected')::int AS rejected_report_count,
+            COUNT(r.report_id) FILTER (WHERE r.is_suspicious = TRUE)::int AS suspicious_report_count,
+            MAX(r.created_at) AS last_report_at
+         FROM tb_users u
+         LEFT JOIN tb_incident_reports r ON r.user_id = u.id
+         GROUP BY u.id
+         ORDER BY u.created_at DESC`
+    );
     return result.rows; // คืนค่าเฉพาะข้อมูล (rows) กลับไปให้ Service
 };
 //ดึงข้อมูลuserตามid

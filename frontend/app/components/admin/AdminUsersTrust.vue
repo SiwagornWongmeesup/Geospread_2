@@ -1,65 +1,215 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { formatRelativeTime } from '~/composables/useHomeDashboard'
+
+// ข้อมูลมาจากหน้า pages/admin/users.vue (ดึงจาก GET /users ผ่าน useAdminUsers)
+const props = defineProps({
+  users: { type: Array, default: () => [] },
+  isLoading: { type: Boolean, default: false },
+  // key ของข้อความ error ในไฟล์ภาษา ('' = ไม่มี error)
+  errorKey: { type: String, default: '' },
+})
+
+const emit = defineEmits(['retry'])
 
 const { t, locale } = useLocale()
 const activeFilter = ref('all')
 const keyword = ref('')
-const selectedUserId = ref('u001')
+const selectedUserId = ref(null)
 const profileTab = ref('overview')
 const actionNotice = ref('')
+const currentPage = ref(1)
+
+const PAGE_SIZE = 10
+const DAY_MS = 24 * 60 * 60 * 1000
 
 // ข้อความของตัวกรองอยู่ใน locales: usersTrust.filters.*
 const filters = ['all', 'trusted', 'watchlist', 'risk']
+const profileTabs = ['overview', 'reports', 'help', 'activity']
 
-// ข้อมูลตัวอย่าง: ชื่อคนเป็นข้อมูลจึงไม่แปล ส่วนระดับ/พื้นที่/กิจกรรมแยกตามภาษา
-// levelKey -> usersTrust.levels.*, lastActivityMin = กี่นาทีที่แล้ว, joined = วันที่ ISO
-const sampleUsers = [
-  { id: 'u001', name: 'พิมพ์ชนก วัฒนากุล', email: 'pimchanok@example.com', initials: 'พว', trust: 92, levelKey: 'veryTrusted', tone: 'trusted', reports: 48, verified: 45, suspicious: 1, lastActivityMin: 12, joined: '2025-01-12', location: { th: 'เชียงใหม่, ประเทศไทย', en: 'Chiang Mai, Thailand' }, breakdown: [['verifiedReports', '+30', 'positive'], ['communityConfirmations', '+18', 'positive'], ['helpedOthers', '+12', 'positive'], ['locationConsistency', '+20', 'positive'], ['inaccurateReports', '-3', 'negative'], ['unusualBehavior', '-2', 'negative']], activity: [[{ th: 'รายงานไฟป่าใกล้ดอยสุเทพ', en: 'Reported a wildfire near Doi Suthep' }, 12, '/icons/Fire.svg'], [{ th: 'ยืนยันต้นไม้ล้มกีดขวางถนน', en: 'Confirmed a fallen tree blocking a road' }, 1440, '/icons/Environment.svg'], [{ th: 'รายงานน้ำท่วมบริเวณช้างคลาน', en: 'Reported flooding around Chang Khlan' }, 2880, '/icons/Flood.svg']] },
-  { id: 'u002', name: 'ณัฐวุฒิ ศรีคำ', email: 'nattawut@example.com', initials: 'ณศ', trust: 76, levelKey: 'trusted', tone: 'trusted', reports: 27, verified: 24, suspicious: 2, lastActivityMin: 60, joined: '2025-02-08', location: { th: 'สันทราย, เชียงใหม่', en: 'San Sai, Chiang Mai' } },
-  { id: 'u003', name: 'กัญญารัตน์ อินต๊ะ', email: 'kanyarat@example.com', initials: 'กอ', trust: 68, levelKey: 'normal', tone: 'active', reports: 18, verified: 14, suspicious: 1, lastActivityMin: 120, joined: '2025-02-21', location: { th: 'แม่ริม, เชียงใหม่', en: 'Mae Rim, Chiang Mai' } },
-  { id: 'u004', name: 'ธีรภัทร แซ่ลี', email: 'teerapat@example.com', initials: 'ทล', trust: 55, levelKey: 'normal', tone: 'active', reports: 12, verified: 9, suspicious: 3, lastActivityMin: 180, joined: '2025-03-05', location: { th: 'เมืองเชียงใหม่', en: 'Mueang Chiang Mai' } },
-  { id: 'u005', name: 'ณิชาภา สายใจ', email: 'nichapa@example.com', initials: 'นส', trust: 46, levelKey: 'watchlist', tone: 'watchlist', reports: 15, verified: 7, suspicious: 5, lastActivityMin: 300, joined: '2025-03-18', location: { th: 'หางดง, เชียงใหม่', en: 'Hang Dong, Chiang Mai' } },
-  { id: 'u006', name: 'จักรพงษ์ คำแปง', email: 'jakrapong@example.com', initials: 'จค', trust: 38, levelKey: 'watchlist', tone: 'watchlist', reports: 10, verified: 4, suspicious: 6, lastActivityMin: 480, joined: '2025-04-02', location: { th: 'สารภี, เชียงใหม่', en: 'Saraphi, Chiang Mai' } },
-  { id: 'u007', name: 'อรทัย ชัยวงศ์', email: 'orathai@example.com', initials: 'อช', trust: 24, levelKey: 'risk', tone: 'risk', reports: 22, verified: 3, suspicious: 12, lastActivityMin: 600, joined: '2025-04-12', location: { th: 'ดอยสะเก็ด, เชียงใหม่', en: 'Doi Saket, Chiang Mai' } },
-  { id: 'u008', name: 'วรวิทย์ พูนผล', email: 'worawit@example.com', initials: 'วพ', trust: 81, levelKey: 'trusted', tone: 'trusted', reports: 31, verified: 28, suspicious: 2, lastActivityMin: 720, joined: '2025-04-30', location: { th: 'เชียงดาว, เชียงใหม่', en: 'Chiang Dao, Chiang Mai' } },
-  { id: 'u009', name: 'ชลธิชา เมืองแก้ว', email: 'chonthicha@example.com', initials: 'ชม', trust: 60, levelKey: 'normal', tone: 'active', reports: 14, verified: 11, suspicious: 3, lastActivityMin: 1440, joined: '2025-05-09', location: { th: 'สันกำแพง, เชียงใหม่', en: 'San Kamphaeng, Chiang Mai' } },
-  { id: 'u010', name: 'ภาคภูมิ ดีงาม', email: 'phakphum@example.com', initials: 'ภด', trust: 19, levelKey: 'risk', tone: 'risk', reports: 9, verified: 1, suspicious: 8, lastActivityMin: 1440, joined: '2025-05-19', location: { th: 'แม่แตง, เชียงใหม่', en: 'Mae Taeng, Chiang Mai' } },
-]
+// ---- จัดรูปแบบข้อความ ----
 
-const defaultBreakdown = [['verifiedReports', '+18', 'positive'], ['locationConsistency', '+12', 'positive'], ['inaccurateReports', '-1', 'negative']]
-const minutesAgo = (minutes) => formatRelativeTime(new Date(Date.now() - minutes * 60_000), t)
-const formatJoined = (isoDate) => new Intl.DateTimeFormat(locale.value === 'en' ? 'en-GB' : 'th-TH', { dateStyle: 'medium' }).format(new Date(isoDate))
-const pick = (text) => text[locale.value] ?? text.th
+const formatJoined = (isoDate) => {
+  let dateLocale = 'th-TH'
+  if (locale.value === 'en') {
+    dateLocale = 'en-GB'
+  }
+  return new Intl.DateTimeFormat(dateLocale, { dateStyle: 'medium' }).format(new Date(isoDate))
+}
 
-// แปลงข้อมูลตัวอย่างเป็นข้อความตามภาษาที่เลือก (รูปแบบเดิมที่ template ใช้)
-const users = computed(() => sampleUsers.map((user) => ({
-  ...user,
-  level: t(`usersTrust.levels.${user.levelKey}`),
-  lastActivity: minutesAgo(user.lastActivityMin),
-  joined: formatJoined(user.joined),
-  location: pick(user.location),
-  breakdown: (user.breakdown ?? defaultBreakdown).map(([key, value, tone]) => [t(`usersTrust.breakdown.${key}`), value, tone]),
-  activity: user.activity
-    ? user.activity.map(([text, minutes, icon]) => [pick(text), minutesAgo(minutes), icon])
-    : [[t('usersTrust.defaultActivity.report'), minutesAgo(user.lastActivityMin), '/icons/Report.svg'], [t('usersTrust.defaultActivity.confirm'), minutesAgo(2880), '/icons/Selected.svg']],
-})))
+// กิจกรรมล่าสุด = เวลาที่ส่งรายงานล่าสุด (ยังไม่มีข้อมูลการเข้าสู่ระบบในฐานข้อมูล)
+const formatLastActivity = (user) => {
+  if (!user.lastReportAt) {
+    return t('usersTrust.noActivity')
+  }
+  return formatRelativeTime(user.lastReportAt, t)
+}
 
-const selectedUser = computed(() => users.value.find((user) => user.id === selectedUserId.value) ?? users.value[0])
+// เพิ่มข้อความตามภาษาที่เลือกให้ผู้ใช้แต่ละคน
+const users = computed(() => {
+  return props.users.map((user) => {
+    return {
+      ...user,
+      level: t(`usersTrust.levels.${user.levelKey}`),
+      lastActivity: formatLastActivity(user),
+      joined: formatJoined(user.createdAt),
+    }
+  })
+})
+
+// ---- ตัวเลขสรุปด้านบน (คำนวณจากรายชื่อจริง) ----
+
+const sharePercent = (count) => {
+  if (users.value.length === 0) {
+    return 0
+  }
+  return Math.round((count / users.value.length) * 100)
+}
+
+const countUsers = (check) => {
+  let count = 0
+  for (const user of users.value) {
+    if (check(user)) {
+      count = count + 1
+    }
+  }
+  return count
+}
+
+const metrics = computed(() => {
+  const now = Date.now()
+  const startOfToday = new Date()
+  startOfToday.setHours(0, 0, 0, 0)
+
+  let totalReports = 0
+  for (const user of users.value) {
+    totalReports = totalReports + user.reports
+  }
+
+  return {
+    total: users.value.length,
+    newLast7Days: countUsers((user) => now - new Date(user.createdAt).getTime() < 7 * DAY_MS),
+    trusted: countUsers((user) => user.tone === 'trusted'),
+    unverified: countUsers((user) => !user.emailVerified),
+    risk: countUsers((user) => user.tone === 'risk'),
+    newToday: countUsers((user) => new Date(user.createdAt) >= startOfToday),
+    totalReports,
+  }
+})
+
+// ---- ค้นหา กรอง และแบ่งหน้า ----
+
+const matchesKeyword = (user, term) => {
+  if (!term) {
+    return true
+  }
+  const searchable = `${user.name} ${user.email} ${user.phone ?? ''}`.toLocaleLowerCase()
+  return searchable.includes(term)
+}
+
 const filteredUsers = computed(() => {
   const term = keyword.value.trim().toLocaleLowerCase()
   return users.value.filter((user) => {
     const matchesFilter = activeFilter.value === 'all' || user.tone === activeFilter.value
-    const raw = sampleUsers.find((item) => item.id === user.id)
-    const searchable = `${user.name} ${user.email} ${raw.location.th} ${raw.location.en}`.toLocaleLowerCase()
-    return matchesFilter && (!term || searchable.includes(term))
+    return matchesFilter && matchesKeyword(user, term)
   })
 })
-const trustWidth = (score) => `${Math.max(4, Math.min(score, 100))}%`
-const trustLabel = (score) => t(`usersTrust.trustLabel.${score >= 75 ? 'trusted' : score >= 50 ? 'building' : score >= 30 ? 'monitor' : 'review'}`)
-const selectUser = (id) => { selectedUserId.value = id; actionNotice.value = '' }
-const runAction = (action) => { actionNotice.value = t('usersTrust.sampleAction', { action, name: selectedUser.value.name }) }
-const profileTabs = ['overview', 'reports', 'help', 'activity']
+
+const pageCount = computed(() => {
+  const pages = Math.ceil(filteredUsers.value.length / PAGE_SIZE)
+  if (pages < 1) {
+    return 1
+  }
+  return pages
+})
+
+const pagedUsers = computed(() => {
+  const start = (currentPage.value - 1) * PAGE_SIZE
+  return filteredUsers.value.slice(start, start + PAGE_SIZE)
+})
+
+// เปลี่ยนตัวกรองหรือคำค้นหาแล้วกลับไปหน้าแรก
+watch([activeFilter, keyword], () => {
+  currentPage.value = 1
+})
+
+const goToPage = (page) => {
+  if (page < 1 || page > pageCount.value) {
+    return
+  }
+  currentPage.value = page
+}
+
+// ---- ผู้ใช้ที่เลือกดูรายละเอียด (ยังไม่เลือก = คนแรกในรายการ) ----
+
+const selectedUser = computed(() => {
+  const found = users.value.find((user) => user.id === selectedUserId.value)
+  if (found) {
+    return found
+  }
+  return users.value[0] ?? null
+})
+
+const selectUser = (id) => {
+  selectedUserId.value = id
+  actionNotice.value = ''
+}
+
+// ที่มาของคะแนน: ใช้จำนวนรายงานจริงของผู้ใช้ [ข้อความ, จำนวน, สี]
+const selectedBreakdown = computed(() => {
+  const user = selectedUser.value
+  if (!user) {
+    return []
+  }
+  return [
+    [t('usersTrust.breakdown.totalReports'), user.reports, 'neutral'],
+    [t('usersTrust.breakdown.verifiedReports'), user.verified, 'positive'],
+    [t('usersTrust.breakdown.rejectedReports'), user.rejected, 'negative'],
+    [t('usersTrust.breakdown.suspiciousReports'), user.suspicious, 'negative'],
+  ]
+})
+
+const roleLabel = (role) => {
+  if (role === 'admin') {
+    return t('usersTrust.roles.admin')
+  }
+  return t('usersTrust.roles.user')
+}
+
+// แถบคะแนน: กว้างอย่างน้อย 4% ให้ยังเห็นสีแม้คะแนนต่ำมาก
+const trustWidth = (score) => {
+  let width = score
+  if (width < 4) {
+    width = 4
+  }
+  if (width > 100) {
+    width = 100
+  }
+  return `${width}%`
+}
+
+const trustLabel = (score) => {
+  let key = 'review'
+  if (score >= 75) {
+    key = 'trusted'
+  } else if (score >= 50) {
+    key = 'building'
+  } else if (score >= 30) {
+    key = 'monitor'
+  }
+  return t(`usersTrust.trustLabel.${key}`)
+}
+
+// ปุ่มคำสั่ง (เฝ้าระวัง/จำกัด/ระงับ) ยังเป็นตัวอย่าง ยังไม่มี API
+const runAction = (action) => {
+  actionNotice.value = t('usersTrust.sampleAction', { action, name: selectedUser.value.name })
+}
+
+// ปุ่ม ⋯ ท้ายแถว: เลือกผู้ใช้คนนั้น แล้วแจ้งว่าคำสั่งยังเป็นตัวอย่าง
+const openRowActions = (user) => {
+  selectUser(user.id)
+  runAction(t('usersTrust.openActions', { name: user.name }))
+}
 </script>
 
 <template>
@@ -75,26 +225,32 @@ const profileTabs = ['overview', 'reports', 'help', 'activity']
       </button>
     </header>
 
-    <p class="users-trust__sample" role="status"><img src="/icons/Alert.svg"
-        alt="">{{ t('usersTrust.sampleBanner') }}</p>
+    <!-- รายชื่อและตัวเลขเป็นข้อมูลจริง เหลือแค่ปุ่มคำสั่งที่ยังเป็นตัวอย่าง -->
+    <p class="users-trust__sample"><img src="/icons/Alert.svg" alt="">{{ t('usersTrust.actionsSample') }}</p>
     <p v-if="actionNotice" class="users-trust__notice" role="status">{{ actionNotice }}<button type="button"
         :aria-label="t('adminDashboard.closeNotice')" @click="actionNotice = ''">×</button></p>
 
-    <section class="users-trust__metrics" :aria-label="t('usersTrust.metricsLabel')">
+    <!-- โหลดไม่สำเร็จ -->
+    <div v-if="errorKey" class="users-trust__error" role="alert">
+      <span>{{ t(errorKey) }}</span>
+      <button type="button" @click="emit('retry')">{{ t('usersTrust.retry') }}</button>
+    </div>
+
+    <section class="users-trust__metrics" :aria-label="t('usersTrust.metricsLabel')" :aria-busy="isLoading">
       <article><img src="/icons/Users.svg" alt="">
-        <div><strong>12,482</strong><span>{{ t('usersTrust.metrics.total') }}</span><small class="up">↑ 5% {{ t('usersTrust.metrics.fromLastMonth') }}</small></div>
+        <div><strong>{{ metrics.total }}</strong><span>{{ t('usersTrust.metrics.total') }}</span><small class="up">{{ t('usersTrust.metrics.newLast7Days', { count: metrics.newLast7Days }) }}</small></div>
       </article>
       <article><img src="/icons/Selected.svg" alt="">
-        <div><strong>8,320</strong><span>{{ t('usersTrust.metrics.trusted') }}</span><small class="up">{{ t('usersTrust.metrics.shareOfAll', { value: 67 }) }}</small></div>
+        <div><strong>{{ metrics.trusted }}</strong><span>{{ t('usersTrust.metrics.trusted') }}</span><small class="up">{{ t('usersTrust.metrics.shareOfAll', { value: sharePercent(metrics.trusted) }) }}</small></div>
       </article>
       <article><img src="/icons/Alert.svg" alt="">
-        <div><strong>1,942</strong><span>{{ t('status.pending') }}</span><small class="warn">{{ t('usersTrust.metrics.shareOfAll', { value: 16 }) }}</small></div>
+        <div><strong>{{ metrics.unverified }}</strong><span>{{ t('usersTrust.metrics.unverified') }}</span><small class="warn">{{ t('usersTrust.metrics.shareOfAll', { value: sharePercent(metrics.unverified) }) }}</small></div>
       </article>
       <article><img src="/icons/Warning-Error.svg" alt="">
-        <div><strong>320</strong><span>{{ t('usersTrust.metrics.risk') }}</span><small class="risk">{{ t('usersTrust.metrics.shareOfAll', { value: 3 }) }}</small></div>
+        <div><strong>{{ metrics.risk }}</strong><span>{{ t('usersTrust.metrics.risk') }}</span><small class="risk">{{ t('usersTrust.metrics.shareOfAll', { value: sharePercent(metrics.risk) }) }}</small></div>
       </article>
       <article><img src="/icons/Chart.svg" alt="">
-        <div><strong>+12</strong><span>{{ t('usersTrust.metrics.newToday') }}</span><small class="up">{{ t('usersTrust.metrics.vsYesterday') }}</small></div>
+        <div><strong>{{ metrics.newToday }}</strong><span>{{ t('usersTrust.metrics.newToday') }}</span><small class="up">{{ t('usersTrust.metrics.reportsTotal', { count: metrics.totalReports }) }}</small></div>
       </article>
     </section>
 
@@ -114,7 +270,7 @@ const profileTabs = ['overview', 'reports', 'help', 'activity']
         </header>
 
         <div class="directory__table-wrap">
-          <table>
+          <table :aria-busy="isLoading">
             <thead>
               <tr>
                 <th scope="col">{{ t('usersTrust.th.user') }}</th>
@@ -128,38 +284,47 @@ const profileTabs = ['overview', 'reports', 'help', 'activity']
               </tr>
             </thead>
             <tbody>
-              <tr v-for="user in filteredUsers" :key="user.id" :class="{ selected: selectedUser.id === user.id }"
-                tabindex="0" @click="selectUser(user.id)" @keydown.enter="selectUser(user.id)">
-                <td>
-                  <div class="user-cell"><span class="user-cell__avatar">{{ user.initials }}</span><span><b>{{ user.name
-                        }}</b><small>{{ user.email }}</small></span></div>
-                </td>
-                <td>
-                  <div class="trust-cell"><b>{{ user.trust }}</b><span><i :class="`tone-${user.tone}`"
-                        :style="{ width: trustWidth(user.trust) }"></i></span></div>
-                </td>
-                <td><span :class="`level level--${user.tone}`">{{ user.level }}</span></td>
-                <td>{{ user.reports }}</td>
-                <td class="number-positive">{{ user.verified }}</td>
-                <td :class="{ 'number-risk': user.suspicious > 2 }">{{ user.suspicious }}</td>
-                <td>{{ user.lastActivity }}</td>
-                <td><button type="button" class="row-menu" :aria-label="t('usersTrust.rowActions', { name: user.name })"
-                    @click.stop="runAction(t('usersTrust.openActions', { name: user.name }))"><i></i><i></i><i></i></button></td>
+              <tr v-if="isLoading">
+                <td colspan="8" class="directory__empty">{{ t('usersTrust.loading') }}</td>
               </tr>
-              <tr v-if="!filteredUsers.length">
-                <td colspan="8" class="directory__empty">{{ t('usersTrust.empty') }}</td>
-              </tr>
+              <template v-else>
+                <tr v-for="user in pagedUsers" :key="user.id" :class="{ selected: selectedUser?.id === user.id }"
+                  tabindex="0" @click="selectUser(user.id)" @keydown.enter="selectUser(user.id)">
+                  <td>
+                    <div class="user-cell"><span class="user-cell__avatar">{{ user.initials }}</span><span><b>{{ user.name
+                          }}</b><small>{{ user.email }}</small></span></div>
+                  </td>
+                  <td>
+                    <div class="trust-cell"><b>{{ user.trust }}</b><span><i :class="`tone-${user.tone}`"
+                          :style="{ width: trustWidth(user.trust) }"></i></span></div>
+                  </td>
+                  <td><span :class="`level level--${user.tone}`">{{ user.level }}</span></td>
+                  <td>{{ user.reports }}</td>
+                  <td class="number-positive">{{ user.verified }}</td>
+                  <td :class="{ 'number-risk': user.suspicious > 2 }">{{ user.suspicious }}</td>
+                  <td>{{ user.lastActivity }}</td>
+                  <td><button type="button" class="row-menu" :aria-label="t('usersTrust.rowActions', { name: user.name })"
+                      @click.stop="openRowActions(user)"><i></i><i></i><i></i></button></td>
+                </tr>
+                <tr v-if="!filteredUsers.length && !errorKey">
+                  <td colspan="8" class="directory__empty">{{ t('usersTrust.empty') }}</td>
+                </tr>
+              </template>
             </tbody>
           </table>
         </div>
-        <footer class="directory__footer"><span>{{ t('usersTrust.showing', { shown: filteredUsers.length, total: users.length }) }}</span>
-          <div :aria-label="t('usersTrust.pagination')"><button type="button" disabled>‹</button><button type="button"
-              class="current">1</button><button type="button">2</button><button type="button">3</button><button
-              type="button">›</button></div>
+        <footer class="directory__footer"><span>{{ t('usersTrust.showing', { shown: pagedUsers.length, total: filteredUsers.length }) }}</span>
+          <div :aria-label="t('usersTrust.pagination')">
+            <button type="button" :disabled="currentPage === 1" :aria-label="t('usersTrust.previousPage')" @click="goToPage(currentPage - 1)">‹</button>
+            <button v-for="page in pageCount" :key="page" type="button" :class="{ current: page === currentPage }"
+              :aria-label="t('usersTrust.pageLabel', { page })" :aria-current="page === currentPage ? 'page' : undefined"
+              @click="goToPage(page)">{{ page }}</button>
+            <button type="button" :disabled="currentPage === pageCount" :aria-label="t('usersTrust.nextPage')" @click="goToPage(currentPage + 1)">›</button>
+          </div>
         </footer>
       </section>
 
-      <aside class="profile" aria-labelledby="profile-title">
+      <aside v-if="selectedUser" class="profile" aria-labelledby="profile-title">
         <header class="profile__header">
           <span class="profile__avatar">{{ selectedUser.initials }}</span>
           <div>
@@ -174,8 +339,18 @@ const profileTabs = ['overview', 'reports', 'help', 'activity']
             <dd>{{ selectedUser.joined }}</dd>
           </div>
           <div>
-            <dt>{{ t('usersTrust.mainArea') }}</dt>
-            <dd>{{ selectedUser.location }}</dd>
+            <dt>{{ t('usersTrust.role') }}</dt>
+            <dd>{{ roleLabel(selectedUser.role) }}</dd>
+          </div>
+          <div>
+            <dt>{{ t('usersTrust.emailStatus') }}</dt>
+            <dd :class="{ 'number-positive': selectedUser.emailVerified }">
+              {{ selectedUser.emailVerified ? t('usersTrust.emailVerified') : t('usersTrust.emailUnverified') }}
+            </dd>
+          </div>
+          <div>
+            <dt>{{ t('usersTrust.phone') }}</dt>
+            <dd>{{ selectedUser.phone || t('usersTrust.notSet') }}</dd>
           </div>
         </dl>
         <nav class="profile__tabs" :aria-label="t('usersTrust.profileLabel')"><button
@@ -195,19 +370,18 @@ const profileTabs = ['overview', 'reports', 'help', 'activity']
             <h3>{{ t('usersTrust.scoreSources') }}</h3>
             <ul>
               <li
-                v-for="item in selectedUser.breakdown"
+                v-for="item in selectedBreakdown"
                 :key="item[0]"><span>{{ item[0] }}</span><b :class="item[2]">{{ item[1] }}</b></li>
             </ul>
           </section>
           <section class="profile__activity">
             <header>
-              <h3>{{ t('usersTrust.th.lastActivity') }}</h3><button type="button" @click="profileTab = 'activity'">{{ t('common.viewAll') }}</button>
+              <h3>{{ t('usersTrust.th.lastActivity') }}</h3>
             </header>
-            <ul>
-              <li
-                v-for="item in selectedUser.activity"
-                :key="item[0]"><img :src="item[2]" alt=""><span>{{ item[0] }}<small>{{ item[1] }}</small></span></li>
+            <ul v-if="selectedUser.lastReportAt">
+              <li><img src="/icons/Report.svg" alt=""><span>{{ t('usersTrust.lastReport') }}<small>{{ selectedUser.lastActivity }}</small></span></li>
             </ul>
+            <p v-else class="profile__placeholder">{{ t('usersTrust.noReports') }}</p>
           </section>
         </template>
         <p v-else class="profile__placeholder">{{ t('usersTrust.tabPlaceholder', { tab: t(`usersTrust.tabs.${profileTab}`) }) }}</p>
@@ -221,6 +395,32 @@ const profileTabs = ['overview', 'reports', 'help', 'activity']
 </template>
 
 <style scoped>
+.users-trust__error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid #efc2c0;
+  border-radius: 8px;
+  background: #fbeceb;
+  color: #a51f24;
+  font-weight: 700;
+}
+
+.users-trust__error button {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid #a51f24;
+  border-radius: 6px;
+  background: #fff;
+  color: #a51f24;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 .users-trust {
   color: #14235f
 }

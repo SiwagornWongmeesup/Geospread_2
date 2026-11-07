@@ -1,4 +1,14 @@
 <script setup>
+import Card from '~/components/ui/card/Card.vue'
+import CardContent from '~/components/ui/card/CardContent.vue'
+import CardHeader from '~/components/ui/card/CardHeader.vue'
+import CardTitle from '~/components/ui/card/CardTitle.vue'
+import MapboxMap from '~/components/map/MapboxMap.vue'
+import MapGroupPanel from '~/components/map/MapGroupPanel.vue'
+// กราฟใช้ Unovis ซึ่งทำงานได้เฉพาะบนเบราว์เซอร์ (import ฝั่ง server ไม่ได้) จึงโหลดแบบ async และครอบด้วย <ClientOnly>
+const IncidentTrendChart = defineAsyncComponent(() => import('~/components/admin/charts/IncidentTrendChart.vue'))
+const IncidentTypeChart = defineAsyncComponent(() => import('~/components/admin/charts/IncidentTypeChart.vue'))
+
 const notice = useState('adminNotice', () => '')
 const { t, tm } = useLocale()
 
@@ -36,19 +46,56 @@ const helpRequests = computed(() => helpRequestData.map(([count, icon], index) =
 }))
 
 const typeData = [[38, 30, '/icons/Flood.svg'], [28, 22, '/icons/Fire.svg'], [18, 14, '/icons/Roadblock.svg'], [16, 13, '/icons/Landslide-mudslide.svg'], [14, 11, '/icons/Health.svg'], [14, 11, '/icons/Alert.svg']]
-const types = computed(() => typeData.map((type, index) => [rows.value.types[index], ...type]))
+const typeColors = ['var(--gs-action)', 'var(--gs-danger)', '#d4920f', '#8a5a2b', 'var(--gs-help)', 'var(--gs-line-strong)']
+const types = computed(() => typeData.map(([count, percent, icon], index) => ({
+  label: rows.value.types[index], count, percent, icon, color: typeColors[index],
+})))
+const typesTotal = computed(() => types.value.reduce((sum, type) => sum + type.count, 0))
 
 const serviceIcons = ['/icons/Map.svg', '/icons/Data.svg', '/icons/Notification.svg', '/icons/Folder.svg']
 const services = computed(() => serviceIcons.map((icon, index) => [rows.value.services[index], icon]))
 
-const markerData = [
-  ['/icons/Fire.svg', 'red', 'one'], ['/icons/Flood.svg', 'blue', 'two'], ['/icons/Roadblock.svg', 'orange', 'three'],
-  ['/icons/Health.svg', 'red', 'four'], ['/icons/Landslide-mudslide.svg', 'orange', 'five'], ['/icons/Environment.svg', 'green', 'six'],
-]
-const mapMarkers = computed(() => markerData.map((marker, index) => [rows.value.markers[index], ...marker]))
+// แผนที่ใช้ Mapbox และข้อมูลจริงชุดเดียวกับหน้าแรกของผู้ใช้ (/incidents/map + /help-requests/map)
+const {
+  selectedIncident, selectedIncidentPreview, selectedIncidentDetail, publicMapItems, mapError, mapCenter,
+  selectIncident, clearSelectedIncident, fetchPublicMapItems,
+} = useHomeDashboard()
+// เหตุในกลุ่มหมุดที่กดบนแผนที่ (ว่าง = ไม่แสดงกล่องรายการ)
+const selectedGroupItems = ref([])
+// จุดของหมุดที่กดล่าสุด ปิดการ์ดแล้วแผนที่จะยังอยู่ที่เดิม ไม่บินกลับไปหมุดแรก
+const focusedCenter = ref(null)
+const activeMapCenter = computed(() => focusedCenter.value || mapCenter.value)
 
+watch(selectedIncident, (incident) => {
+  if (incident) focusedCenter.value = [incident.lng, incident.lat]
+})
+
+const showGroupItems = (items) => {
+  clearSelectedIncident()
+  selectedGroupItems.value = items
+}
+const selectMapItem = (item) => {
+  selectedGroupItems.value = []
+  selectIncident(item)
+}
+const openReportDetail = ({ incidentId, reportId }) => navigateTo(`/incidents/${incidentId}/reports/${reportId}`)
+
+onMounted(() => { void fetchPublicMapItems() })
+// การเลือกหมุดเก็บใน useState ที่ใช้ร่วมกับหน้าแรก ล้างทิ้งตอนออกจากหน้า ไม่ให้ค้างไปเปิดที่หน้าอื่น
+onBeforeUnmount(clearSelectedIncident)
+
+
+// [ทั้งหมด, ยืนยันแล้ว, รอตรวจ, ไม่ผ่าน] ต่อวัน ชื่อวันอยู่ใน locales (adminDashboard.rows.chartDays)
 const chartData = [[43, 29, 16, 7], [56, 31, 19, 8], [56, 39, 18, 8], [68, 37, 20, 8], [88, 53, 25, 9], [62, 29, 18, 7], [72, 35, 21, 8]]
-const chart = computed(() => chartData.map((bar, index) => [...bar, rows.value.chartDays[index]]))
+const chart = computed(() => chartData.map(([total, verified, pending, rejected], index) => ({
+  label: rows.value.chartDays[index], total, verified, pending, rejected,
+})))
+const chartConfig = computed(() => ({
+  total: { label: t('adminDashboard.keyTotal'), color: 'var(--gs-action)' },
+  verified: { label: t('status.verified'), color: 'var(--gs-verified)' },
+  pending: { label: t('adminDashboard.keyPending'), color: '#d4920f' },
+  rejected: { label: t('adminDashboard.keyRejected'), color: 'var(--gs-danger)' },
+}))
 
 const quickActions = ['reviewIncidents', 'manageHelp', 'trackUsers', 'manageEvents', 'editGuides']
 const quickAction = (id) => {
@@ -87,53 +134,60 @@ const quickAction = (id) => {
             <article class="panel map-panel">
               <header>
                 <h2><img src="/icons/Map.svg" alt="">{{ t('adminDashboard.mapTitle') }}</h2><button type="button"
-                  @click="quickAction('allIncidents')">{{ t('common.viewAll') }}</button>
+                  @click="quickAction('reviewIncidents')">{{ t('common.viewAll') }}</button>
               </header>
               <div class="map" :aria-label="t('adminDashboard.mapLabel')">
-                <i class="hill hill-a" /><i class="hill hill-b" /><i class="river" /><i class="road road-a" /><i
-                  class="road road-b" /><i class="road road-c" />
-                <span class="place place-a">{{ rows.places[0] }}</span><span class="place place-b">{{ rows.places[1] }}</span><span
-                  class="place place-c">{{ rows.places[2] }}</span><span class="place place-d">{{ rows.places[3] }}</span>
-                <button v-for="marker in mapMarkers" :key="marker[0]" type="button"
-                  :class="`marker marker--${marker[2]} marker--${marker[3]}`" :aria-label="marker[0]"
-                  @click="notice = t('adminDashboard.markerSelected', { name: marker[0] })"><img :src="marker[1]" alt=""></button>
-                <aside class="legend"><strong>{{ t('adminDashboard.legendTitle') }}</strong><span><i
-                      class="you" />{{ t('adminDashboard.legendYou') }}</span><span><img src="/icons/Fire.svg" alt="">{{ t('adminDashboard.legendFire') }}</span><span><img
-                      src="/icons/Flood.svg" alt="">{{ t('adminDashboard.legendFlood') }}</span><span><img src="/icons/Roadblock.svg" alt="">{{ t('adminDashboard.legendAccident') }}</span>
-                </aside>
-                <small class="scale"><i />0&nbsp;&nbsp;&nbsp;&nbsp; {{ t('units.kilometers', { value: 5 }) }}</small>
+                <MapboxMap
+                  :center="activeMapCenter"
+                  :zoom="11"
+                  :map-items="publicMapItems"
+                  :selected-item-id="selectedIncident?.id"
+                  :selected-item="selectedIncidentPreview"
+                  :selected-incident-detail="selectedIncidentDetail"
+                  :popup-padding="{ top: 300, right: 24, bottom: 24, left: 24 }"
+                  class="map__canvas"
+                  @select-item="selectMapItem"
+                  @select-group="showGroupItems"
+                  @close-popup="clearSelectedIncident"
+                  @open-report="openReportDetail"
+                />
+                <MapGroupPanel
+                  v-if="selectedGroupItems.length"
+                  :items="selectedGroupItems"
+                  :selected-item-id="selectedIncident?.id"
+                  @select="selectIncident"
+                  @close="selectedGroupItems = []"
+                />
+                <p v-if="mapError" class="map__status" role="status">{{ mapError }}</p>
               </div>
             </article>
 
             <div class="side-stack">
-              <article class="panel chart-panel">
-                <header>
-                  <h2><img src="/icons/Chart.svg" alt="">{{ t('adminDashboard.statsTitle') }}</h2><button class="period" type="button">{{ t('adminDashboard.last7Days') }}
-                    ⌄</button>
-                </header>
-                <div class="chart" :aria-label="t('adminDashboard.chartLabel')">
-                  <div v-for="item in chart" :key="item[4]">
-                    <section><i class="total" :style="{ height: `${item[0]}%` }" /><i class="verified"
-                        :style="{ height: `${item[1]}%` }" /><i class="pending" :style="{ height: `${item[2]}%` }" /><i
-                        class="rejected" :style="{ height: `${item[3]}%` }" /></section><small>{{ item[4] }}</small>
-                  </div>
-                </div>
-                <p class="chart-key"><span><i class="total" />{{ t('adminDashboard.keyTotal') }}</span><span><i
-                      class="verified" />{{ t('status.verified') }}</span><span><i class="pending" />{{ t('adminDashboard.keyPending') }}</span><span><i
-                      class="rejected" />{{ t('adminDashboard.keyRejected') }}</span></p>
-              </article>
-              <article class="panel types">
-                <h2>{{ t('adminDashboard.typesTitle') }}</h2>
-                <div>
-                  <section class="donut" :aria-label="t('adminDashboard.donutLabel', { count: 128 })"><strong>128<small>{{ t('adminDashboard.keyTotal') }}</small></strong>
-                  </section>
-                  <ul>
-                    <li v-for="type in types" :key="type[0]"><img :src="type[3]" alt=""><span>{{ type[0] }}</span><b>{{
-                      type[1]
-                    }}</b><small>({{ type[2] }}%)</small></li>
-                  </ul>
-                </div>
-              </article>
+              <Card>
+                <CardHeader class="flex-row items-center justify-between space-y-0 px-4 py-3">
+                  <CardTitle class="flex items-center gap-2 text-sm">
+                    <img src="/icons/Chart.svg" alt="" class="h-5 w-5">{{ t('adminDashboard.statsTitle') }}
+                  </CardTitle>
+                  <span class="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground">{{ t('adminDashboard.last7Days') }}</span>
+                </CardHeader>
+                <CardContent class="px-4 pb-4" role="group" :aria-label="t('adminDashboard.chartLabel')">
+                  <ClientOnly>
+                    <IncidentTrendChart :data="chart" :config="chartConfig" :height="170" />
+                    <template #fallback><div class="h-[200px] rounded-md bg-muted" /></template>
+                  </ClientOnly>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader class="px-4 py-3">
+                  <CardTitle class="text-sm">{{ t('adminDashboard.typesTitle') }}</CardTitle>
+                </CardHeader>
+                <CardContent class="px-4 pb-4" role="group" :aria-label="t('adminDashboard.donutLabel', { count: typesTotal })">
+                  <ClientOnly>
+                    <IncidentTypeChart :data="types" :central-label="String(typesTotal)" :central-sub-label="t('adminDashboard.keyTotal')" />
+                    <template #fallback><div class="h-[140px] rounded-md bg-muted" /></template>
+                  </ClientOnly>
+                </CardContent>
+              </Card>
             </div>
 
             <aside class="right-rail">
@@ -739,244 +793,30 @@ const quickAction = (id) => {
 
 .map {
   position: relative;
-  min-height: 23.1rem;
+  height: 23.1rem;
   overflow: hidden;
-  background: #d9eed6;
-  isolation: isolate
+  background: var(--gs-surface-sunken)
 }
 
-.map::before {
+.map__canvas {
   position: absolute;
-  inset: 0;
-  z-index: -3;
-  background: linear-gradient(18deg, transparent 22%, rgb(255 255 255 / 44%) 23% 25%, transparent 26% 61%, rgb(255 255 255 / 42%) 62% 64%, transparent 65%), linear-gradient(103deg, transparent 26%, rgb(117 155 86 / 24%) 27% 29%, transparent 30% 69%, rgb(117 155 86 / 18%) 70% 72%, transparent 73%), linear-gradient(55deg, #d4ead2 0%, #b5ddaf 46%, #d2e9c6 100%);
-  content: ''
+  inset: 0
 }
 
-.hill {
+.map__status {
   position: absolute;
-  z-index: -2;
-  border: .15rem solid rgb(91 137 73 / 18%);
-  border-radius: 48% 52% 46% 54%;
-  background: rgb(151 191 106 / 19%)
-}
-
-.hill-a {
-  top: -5rem;
-  left: -3rem;
-  width: 16rem;
-  height: 13rem;
-  transform: rotate(-22deg)
-}
-
-.hill-b {
-  right: -4rem;
-  bottom: -4rem;
-  width: 17rem;
-  height: 15rem;
-  transform: rotate(28deg)
-}
-
-.river {
-  position: absolute;
-  z-index: -1;
-  top: -2rem;
-  left: 56%;
-  width: 1rem;
-  height: 30rem;
-  border-radius: 50%;
-  background: #84c8ee;
-  opacity: .7;
-  transform: rotate(14deg)
-}
-
-.road {
-  position: absolute;
-  z-index: -1;
-  height: .28rem;
-  border-radius: 99px;
-  background: #fff7e2;
-  box-shadow: 0 0 0 1px rgb(161 130 89 / 20%)
-}
-
-.road-a {
-  top: 46%;
-  left: -4%;
-  width: 110%;
-  transform: rotate(-11deg)
-}
-
-.road-b {
-  top: 62%;
-  left: 11%;
-  width: 75%;
-  transform: rotate(38deg)
-}
-
-.road-c {
-  top: 25%;
-  left: 38%;
-  width: 56%;
-  transform: rotate(75deg)
-}
-
-.place {
-  position: absolute;
-  z-index: 1;
-  color: #314773;
-  font-size: .65rem;
-  font-weight: 800;
-  text-shadow: 0 1px #fff
-}
-
-.place-a {
-  top: 9%;
-  left: 45%
-}
-
-.place-b {
-  top: 53%;
-  left: 43%;
-  font-size: 1rem
-}
-
-.place-c {
-  top: 25%;
-  right: 10%
-}
-
-.place-d {
-  right: 16%;
-  bottom: 10%
-}
-
-.marker {
-  position: absolute;
+  top: .75rem;
+  left: 50%;
   z-index: 2;
-  display: grid;
-  width: 2rem;
-  height: 2rem;
-  place-items: center;
-  padding: .28rem;
-  border: 2px solid #fff;
-  border-radius: 50%;
-  box-shadow: 0 5px 12px rgb(17 53 95 / 23%);
-  cursor: pointer;
-  transition: transform .18s
-}
-
-.marker:hover {
-  transform: translateY(-.22rem) scale(1.08)
-}
-
-.marker img {
-  width: 1.15rem;
-  height: 1.15rem;
-  filter: brightness(0) invert(1)
-}
-
-.marker--red {
-  background: #ec2435
-}
-
-.marker--blue {
-  background: #087cf0
-}
-
-.marker--orange {
-  background: #fa6a18
-}
-
-.marker--green {
-  background: #1aa85e
-}
-
-.marker--one {
-  top: 22%;
-  left: 52%
-}
-
-.marker--two {
-  top: 36%;
-  left: 32%
-}
-
-.marker--three {
-  top: 58%;
-  left: 67%
-}
-
-.marker--four {
-  top: 67%;
-  left: 46%
-}
-
-.marker--five {
-  right: 19%;
-  bottom: 18%
-}
-
-.marker--six {
-  top: 25%;
-  right: 31%
-}
-
-.legend {
-  position: absolute;
-  z-index: 3;
-  bottom: .75rem;
-  left: .75rem;
-  display: grid;
-  gap: .35rem;
-  width: 9rem;
-  padding: .6rem;
-  border: 1px solid rgb(255 255 255 / 75%);
-  border-radius: .45rem;
-  background: rgb(255 255 255 / 92%);
-  box-shadow: 0 6px 13px rgb(30 77 123 / 13%);
-  color: #36527d;
-  font-size: .6rem
-}
-
-.legend strong {
-  color: #1d3973;
-  font-size: .68rem
-}
-
-.legend span {
-  display: flex;
-  align-items: center;
-  gap: .36rem
-}
-
-.legend img {
-  width: .92rem;
-  height: .92rem
-}
-
-.you {
-  width: .7rem;
-  height: .7rem;
-  border: 2px solid #fff;
-  border-radius: 50%;
-  background: #087cf0;
-  box-shadow: 0 0 0 1px rgb(0 72 166 / 16%)
-}
-
-.scale {
-  position: absolute;
-  right: .7rem;
-  bottom: .75rem;
-  color: #173e70;
-  font-size: .6rem;
-  font-weight: 700
-}
-
-.scale i {
-  display: block;
-  width: 5.2rem;
-  margin-bottom: .22rem;
-  border-top: 2px solid #173e70
+  margin: 0;
+  padding: .45rem .75rem;
+  border: 1px solid var(--gs-line);
+  border-radius: var(--gs-radius-sm);
+  background: var(--gs-surface);
+  color: var(--gs-danger);
+  font-size: .78rem;
+  font-weight: 700;
+  transform: translateX(-50%)
 }
 
 .side-stack {
@@ -985,177 +825,6 @@ const quickAction = (id) => {
   min-width: 0
 }
 
-.chart-panel {
-  min-height: 16.1rem
-}
-
-.period {
-  padding: .35rem .5rem !important;
-  border: 1px solid #d8e6f7 !important;
-  border-radius: .35rem !important;
-  color: #294576 !important;
-  font-size: .64rem !important
-}
-
-.chart {
-  display: flex;
-  height: 9.4rem;
-  align-items: end;
-  justify-content: space-between;
-  gap: .4rem;
-  padding: .55rem .8rem 0;
-  border-bottom: 1px solid #e4eef9;
-  background: repeating-linear-gradient(to bottom, transparent 0, transparent 1.82rem, #edf3fb 1.88rem, #edf3fb 1.94rem)
-}
-
-.chart>div {
-  display: grid;
-  flex: 1;
-  height: 100%;
-  align-items: end;
-  gap: .38rem;
-  text-align: center
-}
-
-.chart section {
-  display: flex;
-  height: 100%;
-  align-items: end;
-  justify-content: center;
-  gap: .12rem
-}
-
-.chart section i {
-  display: block;
-  width: min(.48rem, 22%);
-  border-radius: .2rem .2rem 0 0
-}
-
-.total {
-  background: #137cf1
-}
-
-.verified {
-  background: #15ab5b
-}
-
-.pending {
-  background: #f6af11
-}
-
-.rejected {
-  background: #eb2635
-}
-
-.chart>div small {
-  color: #6980a9;
-  font-size: .52rem;
-  white-space: nowrap
-}
-
-.chart-key {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .7rem;
-  margin: 0;
-  padding: .65rem .8rem;
-  color: #405a88;
-  font-size: .59rem
-}
-
-.chart-key span {
-  display: flex;
-  align-items: center;
-  gap: .28rem
-}
-
-.chart-key i {
-  width: .55rem;
-  height: .55rem;
-  border-radius: 50%
-}
-
-.types {
-  min-height: 11.7rem;
-  padding: .72rem .8rem
-}
-
-.types>h2 {
-  margin-bottom: .55rem
-}
-
-.types>div {
-  display: flex;
-  align-items: center;
-  gap: .8rem
-}
-
-.donut {
-  display: grid;
-  flex: 0 0 auto;
-  width: 8.4rem;
-  height: 8.4rem;
-  place-items: center;
-  border-radius: 50%;
-  background: conic-gradient(#1479ef 0 30%, #ef3340 30% 52%, #ff9d16 52% 66%, #f4c517 66% 79%, #0aae60 79% 90%, #71829f 90%)
-}
-
-.donut::before {
-  position: absolute;
-  width: 5rem;
-  height: 5rem;
-  border-radius: 50%;
-  background: #fff;
-  content: ''
-}
-
-.donut strong {
-  position: relative;
-  z-index: 1;
-  color: #13276d;
-  font-size: 1.15rem;
-  text-align: center
-}
-
-.donut small {
-  display: block;
-  color: #61749d;
-  font-size: .55rem
-}
-
-.types ul {
-  display: grid;
-  flex: 1;
-  gap: .33rem;
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-  list-style: none
-}
-
-.types li {
-  display: grid;
-  grid-template-columns: 1rem minmax(0, 1fr) 1.5rem 2.2rem;
-  align-items: center;
-  gap: .28rem;
-  color: #3b5582;
-  font-size: .6rem
-}
-
-.types li img {
-  width: .9rem;
-  height: .9rem
-}
-
-.types li b {
-  color: #18336e;
-  font-size: .62rem
-}
-
-.types li small {
-  color: #6880a9;
-  font-size: .57rem
-}
 
 .right-rail {
   display: grid;
@@ -1450,7 +1119,7 @@ input:focus-visible {
   }
 
   .map {
-    min-height: 22rem
+    height: 22rem
   }
 
   .tables {
@@ -1563,19 +1232,8 @@ input:focus-visible {
     grid-template-columns: 1fr
   }
 
-  .types>div {
-    align-items: start
-  }
 
-  .donut {
-    width: 6.5rem;
-    height: 6.5rem
-  }
 
-  .donut::before {
-    width: 3.8rem;
-    height: 3.8rem
-  }
 
   .search {
     min-width: 0
@@ -1585,9 +1243,6 @@ input:focus-visible {
     font-size: .72rem
   }
 
-  .legend {
-    display: none
-  }
 }
 
 .sidebar nav button:disabled {
@@ -1730,9 +1385,6 @@ input:focus-visible {
   margin: 0
 }
 
-.donut {
-  position: relative
-}
 
 .sidebar-label {
   color: #334e80;

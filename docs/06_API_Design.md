@@ -242,9 +242,43 @@ Database (PostgreSQL + PostGIS)
 
 | Method | Path | คำอธิบาย | จำเป็นต้องยืนยันตัวตน |
 |--------|------|-------------|---------------|
+| GET | `/users` | ดึงรายชื่อผู้ใช้ทั้งหมดพร้อมสรุปการรายงาน สำหรับหน้าจัดการผู้ใช้ (`/admin/users`) | ใช่ (Admin) |
 | GET | `/admin/reports` | ดึงรายการรายงานของชุมชนที่รอการตรวจสอบ (Verify) | ใช่ (Admin) |
 | PATCH | `/admin/incidents/:id/verify`| อัปเดตสถานะการตรวจสอบความถูกต้องของ Incident | ใช่ (Admin) |
 | PATCH | `/admin/incidents/:id/reject`| ปฏิเสธรายงานที่เป็นสแปมหรือเท็จ | ใช่ (Admin) |
+
+#### `GET /users` — รายชื่อผู้ใช้ทั้งหมด (เฉพาะ Admin)
+
+- ต้องส่ง `Authorization: Bearer <token>` ของผู้ใช้ role `admin` (ไม่ใช่ admin ได้ 403)
+- เรียงผู้ใช้ที่สมัครล่าสุดขึ้นก่อน ไม่ส่งรหัสผ่านกลับมา
+- ตัวเลขการรายงานนับจาก `tb_incident_reports` ของผู้ใช้คนนั้น (ผู้ที่ยังไม่เคยรายงานได้ 0)
+
+```json
+{
+  "success": true,
+  "message": "Users retrieved successfully",
+  "data": [
+    {
+      "id": 19,
+      "email": "user@example.com",
+      "name": "สมชาย",
+      "lastname": "ใจดี",
+      "profile": null,
+      "phone": "0812345678",
+      "role": "user",
+      "trust_score": 100,
+      "email_verified": true,
+      "created_at": "2026-11-04T12:45:58.636Z",
+      "updated_at": "2026-11-04T12:45:58.636Z",
+      "report_count": 1,
+      "verified_report_count": 0,
+      "rejected_report_count": 0,
+      "suspicious_report_count": 0,
+      "last_report_at": "2026-11-05T06:10:11.659Z"
+    }
+  ]
+}
+```
 
 ---
 

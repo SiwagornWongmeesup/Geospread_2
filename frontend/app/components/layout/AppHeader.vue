@@ -117,7 +117,7 @@
               </span>
             </div>
             <div class="profile-menu">
-              <NuxtLink to="/profile" class="profile-menu__item" @click="closeMenu">
+              <NuxtLink :to="profilePath" class="profile-menu__item" @click="closeMenu">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <circle cx="12" cy="12" r="9" />
                   <circle cx="12" cy="10" r="3" />
@@ -184,6 +184,10 @@ const pageTitles = {
   '/profile': 'nav.profile',
   '/settings': 'nav.settings',
   '/terms': 'termsPage.title',
+  '/admin': 'admin.menu.dashboard',
+  '/admin/incidents': 'admin.menu.incidents',
+  '/admin/users': 'admin.menu.users',
+  '/admin/profile': 'nav.profile',
 }
 
 const pageTitle = computed(() => {
@@ -207,6 +211,9 @@ useHead({
     return `${pageTitle.value} | GeoSpread`
   },
 })
+
+// อยู่ในหน้าแอดมิน: ลิงก์โปรไฟล์ไปหน้าโปรไฟล์ของแอดมิน จะได้ไม่หลุดไป layout ของผู้ใช้
+const profilePath = computed(() => (route.path.startsWith('/admin') ? '/admin/profile' : '/profile'))
 
 // หน้า login/register ที่เปิดอยู่ ใช้ไฮไลต์ปุ่มให้รู้ว่ากำลังอยู่เมนูไหน
 const currentAuthPage = computed(() => {

@@ -1,10 +1,11 @@
 <script setup>
 // ---------------------------------------------------------------------------
-// Profile Page
-// คอม: แสดงแค่ข้อมูลโปรไฟล์ (เมนูอื่นอยู่ใน sidebar แล้ว)
-// มือถือ: แสดงข้อมูลโปรไฟล์ + เมนูรวมจาก sidebar เพราะมือถือไม่มี sidebar
+// Profile Page (ผู้ใช้)
+// คอม: ข้อมูลโปรไฟล์ + ข้อมูลส่วนตัว (เมนูอื่นอยู่ใน sidebar แล้ว)
+// มือถือ: เหมือนคอม + เมนูรวมจาก sidebar เพราะมือถือไม่มี sidebar
+// แอดมินมีหน้าของตัวเองที่ /admin/profile (เนื้อหาเดียวกัน แต่อยู่ใน layout แอดมิน)
 // ---------------------------------------------------------------------------
-import ProfileSummary from '~/components/profile/ProfileSummary.vue'
+import ProfileContent from '~/components/profile/ProfileContent.vue'
 import MobileProfileMenu from '~/components/profile/MobileProfileMenu.vue'
 import InstallAppBanner from '~/components/common/InstallAppBanner.vue'
 
@@ -14,17 +15,9 @@ definePageMeta({
 
 const { t } = useLocale()
 const { isMobile } = useResponsiveView()
-const { isLoggedIn, getUser, logout } = useAuth()
+const { isLoggedIn, logout } = useAuth()
 
 useHead({ title: () => `${t('nav.profile')} | GeoSpread` })
-
-// cookie user เก็บได้ 2 แบบ: { user: {...}, token } (แบบเก่า) หรือ {...} ตรงๆ
-const account = computed(() => {
-  if (!isLoggedIn.value) return null
-  const saved = getUser()
-  if (saved?.user) return saved.user
-  return saved
-})
 
 const confirmLogout = () => {
   if (confirm(t('header.logoutConfirm'))) {
@@ -35,7 +28,7 @@ const confirmLogout = () => {
 
 <template>
   <section class="profile-page" :class="{ 'profile-page--mobile': isMobile }">
-    <ProfileSummary :account="account" />
+    <ProfileContent />
     <!-- ติดตั้งแอปลงเครื่อง (แสดงเฉพาะเครื่องที่ติดตั้งได้และยังไม่ได้ติดตั้ง) -->
     <InstallAppBanner variant="row" />
     <MobileProfileMenu v-if="isMobile" :is-logged-in="isLoggedIn" @logout="confirmLogout" />
@@ -45,15 +38,18 @@ const confirmLogout = () => {
 <style scoped>
 .profile-page {
   display: grid;
-  max-width: 720px;
-  gap: 20px;
+  /* ใช้เต็มความกว้างของพื้นที่เนื้อหา ไม่ให้เหลือที่ว่างบนจอคอม */
+  gap: 16px;
+  padding: 0 16px 24px;
 }
 
 .profile-page--mobile {
   max-width: none;
-  min-height: 100%;
+  /* layout มือถือไม่เลื่อนให้ (overflow: hidden) หน้านี้ยาวขึ้นแล้วจึงเลื่อนเอง */
+  height: 100%;
+  overflow-y: auto;
   align-content: start;
   padding: 16px;
-  background: #f4f8fc;
+  background: var(--gs-paper);
 }
 </style>
