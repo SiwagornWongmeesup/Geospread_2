@@ -20,7 +20,7 @@ export default {
     justNow: 'Just now',
     minutesAgo: '{count} min ago',
     hoursAgo: '{count} hr ago',
-    daysAgo: '{count} days ago',
+    dateLocale: 'en-GB',
   },
   units: {
     meters: '{value} m',
@@ -671,6 +671,8 @@ export default {
     retry: 'Try again',
     anonymousReporter: 'Anonymous reporter',
     reportedAt: 'Reported {time}',
+    incidentEnded: 'This incident has ended and is no longer shown on the map',
+    incidentEndedAt: 'This incident ended {time} and is no longer shown on the map',
     descriptionTitle: 'What happened',
     noDescription: 'The reporter did not add more details',
     mediaTitle: 'Attachments',

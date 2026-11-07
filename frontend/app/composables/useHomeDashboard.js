@@ -25,11 +25,15 @@ export const formatRelativeTime = (value, t) => {
   if (diffMinutes < 1) return t('time.justNow')
   if (diffMinutes < 60) return t('time.minutesAgo', { count: diffMinutes })
 
-  const diffHours = Math.round(diffMinutes / 60)
+  const diffHours = Math.floor(diffMinutes / 60)
   if (diffHours < 24) return t('time.hoursAgo', { count: diffHours })
 
-  const diffDays = Math.round(diffHours / 24)
-  return t('time.daysAgo', { count: diffDays })
+  // เกิน 1 วันแสดงวันที่และเวลาจริง ล็อกเขตเวลาไว้เพื่อให้ฝั่ง server กับ browser แสดงตรงกัน
+  return new Intl.DateTimeFormat(t('time.dateLocale'), {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: 'Asia/Bangkok',
+  }).format(date)
 }
 
 const formatImpactRadius = (radiusMeters, t) => {
@@ -88,18 +92,6 @@ const toneFromColor = (color, fallback = 'blue') => {
   return fallback
 } 
 
-const getImageCount  = (item) => {
-  if(!Array.isArray(item.media)) {
-    return 0
-  }
-
-  const images = item.media.filter((media) => {
-    return media.media_type === 'image' && media.media_url
-  })
-
-  return images.length
-}
-
 const withoutStatusSuffix = (title, fallback) => {
   const cleanedTitle = String(title || '')
     .replace(/\s*[—–-]\s*(รอตรวจสอบ|ยืนยันแล้ว|ระบุประเภทแล้ว|กำลังดำเนินการ|pending|verified)\s*$/iu, '')
@@ -156,6 +148,7 @@ const normalizeIncident = (incident, t) => {
 
 const normalizePendingReport = (report, t) => ({
   id: `report-${report.report_id}`,
+  reportId: report.report_id,
   kind: 'pending_report',
   title: report.description || t('incident.pendingReport'),
   description: report.description,
@@ -172,7 +165,8 @@ const normalizePendingReport = (report, t) => ({
   radiusM: null,
   radiusLabel: t('units.notSpecified'),
   reportCount: 1,
-  imageCount: getImageCount(report),
+  imageCount: Number(report.image_count) || 0,
+  reporterName: report.reporter_name || null,
   reporterLabel: report.reporter_name || t('common.community'),
   location: formatCoordinate(report.lat, report.lng, t),
   areaLabel: report.location_name || report.area_name || report.province_name || t('place.reportedArea'),

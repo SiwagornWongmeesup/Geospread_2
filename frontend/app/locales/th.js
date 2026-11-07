@@ -19,7 +19,7 @@ export default {
     justNow: 'เมื่อสักครู่',
     minutesAgo: '{count} นาทีที่แล้ว',
     hoursAgo: '{count} ชั่วโมงที่แล้ว',
-    daysAgo: '{count} วันที่แล้ว',
+    dateLocale: 'th-TH',
   },
   units: {
     meters: '{value} ม.',
@@ -619,6 +619,8 @@ export default {
     retry: 'ลองอีกครั้ง',
     anonymousReporter: 'ไม่ระบุชื่อผู้รายงาน',
     reportedAt: 'รายงานเมื่อ {time}',
+    incidentEnded: 'เหตุการณ์นี้สิ้นสุดแล้ว และไม่แสดงบนแผนที่',
+    incidentEndedAt: 'เหตุการณ์นี้สิ้นสุดแล้วเมื่อ {time} และไม่แสดงบนแผนที่',
     descriptionTitle: 'รายละเอียดเหตุการณ์',
     noDescription: 'ผู้รายงานไม่ได้ระบุรายละเอียดเพิ่มเติม',
     mediaTitle: 'สื่อที่แนบ',

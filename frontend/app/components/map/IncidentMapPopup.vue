@@ -38,7 +38,21 @@ const openReport = (report) => {
   })
 }
 
+const isPendingReport = computed(() => props.incident.kind === "pending_report");
+
 const reports = computed(() => {
+  // รายงานที่ยังไม่ระบุประเภทไม่มีเหตุการณ์แม่ จึงใช้ข้อมูลจากหมุดแสดงเป็นการ์ดเดียวกัน
+  if (isPendingReport.value) {
+    return [{
+      report_id: props.incident.reportId,
+      description: props.incident.description,
+      report_status: "pending",
+      created_at: props.incident.occurredAt,
+      reporter_name: props.incident.reporterName,
+      image_count: props.incident.imageCount,
+    }];
+  }
+
   const reportList = props.incidentDetail?.reports;
   if (!Array.isArray(reportList)) return [];
 
@@ -116,11 +130,11 @@ const incidentSummary = (incident) => {
     </section>
 
     <section
-      v-if="props.incident.kind === 'incident'"
+      v-if="props.incident.kind === 'incident' || isPendingReport"
       class="incident-map-popup__reports"
       :aria-label="t('popup.reportsInGroup')"
     >
-      <span class="incident-map-popup__reports-heading">{{ t("popup.latestFirst") }}</span>
+      <span v-if="!isPendingReport" class="incident-map-popup__reports-heading">{{ t("popup.latestFirst") }}</span>
 
       <p v-if="!reports.length" class="incident-map-popup__loading">
         {{ t("popup.loadingReports") }}
@@ -164,7 +178,8 @@ const incidentSummary = (incident) => {
               <img src="/icons/Photo.svg" alt="" aria-hidden="true" />
               {{ getImageLabel(report.image_count) }}
             </div>
-            <button 
+            <button
+              v-if="!isPendingReport"
               class="incident-map-popup__report-link"
               type="button"
               @click="openReport(report)"

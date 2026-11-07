@@ -17,6 +17,15 @@ const matchingConfig = {
   ),
 };
 
+// อายุของเหตุบนแผนที่: นับจากรายงานล่าสุด ตามชั่วโมงที่ตั้งไว้ในแต่ละประเภท (ไม่มีประเภท = 24 ชม.)
+// ต้องใช้กับ query ที่ LEFT JOIN tb_incident_types ด้วยชื่อ incident_type
+// เหตุจึงต่ออายุเองทุกครั้งที่ last_reported_at ถูกอัปเดต
+const defaultExpiryHours = 24;
+const incidentExpiresAtSql = `(incident.last_reported_at
+  + make_interval(hours => COALESCE(incident_type.default_expiry_hours, ${defaultExpiryHours})))`;
+// รายงานที่ยังไม่ระบุประเภทยังไม่มีเหตุแม่ ใช้อายุค่าเริ่มต้นนับจากเวลาที่แจ้ง
+const pendingReportExpiresAtSql = `(report.created_at + INTERVAL '${defaultExpiryHours} hours')`;
+
 // บันทึกข้อมูลดิบที่ผู้ใช้รายงาน โดยไม่บังคับ Type หรือ Severity
 const createIncidentReport = async (reportData, queryable = db) => {
   const {
@@ -432,6 +441,8 @@ const findPublicIncidentDetailById = async (incidentId) => {
                 incident.verification_status,
                 incident.incident_status,
                 incident.last_reported_at,
+                ${incidentExpiresAtSql} AS expires_at,
+                ${incidentExpiresAtSql} <= CURRENT_TIMESTAMP AS is_expired,
                 ST_Y(incident.incident_location) AS lat,
                 ST_X(incident.incident_location) AS lng,
                 incident_type.type_code,
@@ -546,6 +557,7 @@ const findPublicMapItems = async () => {
                   AND media.media_type = 'image'
              ) image_stats ON TRUE
              WHERE incident.incident_status = 'active'
+               AND ${incidentExpiresAtSql} > CURRENT_TIMESTAMP
              ORDER BY incident.last_reported_at DESC, incident.incident_id DESC`,
     ),
     db.query(
@@ -558,7 +570,13 @@ const findPublicMapItems = async () => {
                 ST_Y(report.incident_location) AS lat,
                 ST_X(report.incident_location) AS lng,
                 NULLIF(TRIM(CONCAT_WS(' ', reporter.name, reporter.lastname)), '') AS reporter_name,
-                first_image.image_url
+                first_image.image_url,
+                (
+                  SELECT COUNT(*)::int
+                  FROM tb_incident_media media
+                  WHERE media.report_id = report.report_id
+                    AND media.media_type = 'image'
+                ) AS image_count
              FROM tb_incident_reports report
              LEFT JOIN tb_users reporter ON reporter.id = report.user_id
              LEFT JOIN LATERAL (
@@ -571,6 +589,7 @@ const findPublicMapItems = async () => {
              ) first_image ON TRUE
              WHERE report.incident_id IS NULL
                AND report.report_status = 'pending'
+               AND ${pendingReportExpiresAtSql} > CURRENT_TIMESTAMP
              ORDER BY report.created_at DESC, report.report_id DESC`,
     ),
   ]);

@@ -101,6 +101,20 @@ const formattedCreatedAt = computed(() => {
   }).format(date)
 })
 
+// เหตุที่หมดอายุแล้วไม่แสดงบนแผนที่ แต่ลิงก์เดิมยังเปิดได้ จึงบอกผู้อ่านว่าเหตุนี้สิ้นสุดแล้ว
+const incidentEndedLabel = computed(() => {
+  if (!incident.value?.is_expired) return ''
+
+  const date = new Date(incident.value.expires_at)
+  if (Number.isNaN(date.getTime())) return t('reportDetail.incidentEnded')
+
+  const time = new Intl.DateTimeFormat(locale.value === 'en' ? 'en-GB' : 'th-TH', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date)
+  return t('reportDetail.incidentEndedAt', { time })
+})
+
 const getMediaLabel = (media) => {
   if (media?.media_type === 'video') return t('reportDetail.mediaVideo')
   if (media?.media_type === 'image') return t('reportDetail.mediaImage')
@@ -199,6 +213,10 @@ watch([incidentId, reportId], () => {
             <h1 id="report-detail-title">{{ incidentTitle }}</h1>
             <span>{{ t(`status.${getReportStatusTone(report?.report_status)}`) }}</span>
           </div>
+
+          <p v-if="incidentEndedLabel" class="report-detail__ended" role="status">
+            {{ incidentEndedLabel }}
+          </p>
 
 
           <div class="report-detail__byline">
@@ -426,6 +444,18 @@ watch([incidentId, reportId], () => {
   color: #1a5ea8;
   font-size: 19px;
   font-weight: 850;
+}
+
+.report-detail__ended {
+  margin: 14px 0 0;
+  padding: 10px 14px;
+  border: 1px solid #d5dfeb;
+  border-radius: 12px;
+  background: #f2f5f9;
+  color: #4a5f7c;
+  font-size: 14px;
+  font-weight: 750;
+  line-height: 1.45;
 }
 
 .report-detail__type-row span {
