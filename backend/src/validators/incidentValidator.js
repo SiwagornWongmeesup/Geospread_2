@@ -19,6 +19,8 @@ const incidentCatalogValidator = [validateRequest];
 const reportTypeSuggestionCacheValidator = [validateRequest];
 const publicMapValidator = [validateRequest];
 const adminReviewQueueValidator = [validateRequest];
+// แดชบอร์ดผู้ดูแลระบบไม่มี input จาก query/body จึงตรวจแค่ผลของ validateRequest
+const adminOverviewValidator = [validateRequest];
 const incidentIdValidator  = [
     param('incidentId')
         .isInt({ min: 1 }).withMessage('รหัสเหตุการณ์ไม่ถูกต้อง')
@@ -162,6 +164,7 @@ module.exports = {
     reportTypeSuggestionCacheValidator,
     publicMapValidator,
     adminReviewQueueValidator,
+    adminOverviewValidator,
     incidentIdValidator,
     incidentReportIdValidator,
     reportValidator,

@@ -1,12 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const incidentController = require('../controllers/incidentController');
+const adminOverviewController = require('../controllers/adminOverviewController');
 const authMiddleware = require('../middlewares/authMiddleware');
 const checkRole = require('../middlewares/checkRole');
 const reportRateLimit = require('../middlewares/reportRateLimit');
 const uploadIncidentMedia = require('../middlewares/uploadIncidentMedia');
 const {
     adminReviewQueueValidator,
+    adminOverviewValidator,
     candidateDecisionValidator,
     candidateGroupDecisionValidator,
     createIncidentFromPendingReportValidator,
@@ -32,6 +34,8 @@ router.get('/:incidentId', incidentIdValidator, incidentController.getIncidentDe
 router.post('/:incidentId/false-reports', authMiddleware, reportRateLimit, incidentIdValidator, incidentController.reportFalseIncident);
 
 // Candidate และ Candidate Group เป็นข้อมูลตรวจสอบภายใน ไม่เปิดให้ Community User เห็น
+// GET /incidents/admin/overview — ข้อมูลสรุปสำหรับแดชบอร์ดผู้ดูแลระบบ (เฉพาะ admin)
+router.get('/admin/overview', authMiddleware, checkRole('admin'), adminOverviewValidator, adminOverviewController.getAdminOverview);
 router.get('/admin/review-queue', authMiddleware, checkRole('admin'), adminReviewQueueValidator, incidentController.getAdminReviewQueue);
 router.patch('/admin/report-candidates/:candidateId', authMiddleware, checkRole('admin'), candidateDecisionValidator, incidentController.reviewReportCandidate);
 router.patch('/admin/candidate-groups/:candidateGroupId', authMiddleware, checkRole('admin'), candidateGroupDecisionValidator, incidentController.reviewCandidateGroup);

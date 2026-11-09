@@ -21,7 +21,7 @@ useHead({ title: () => `${t('nav.settings')} | GeoSpread` })
 
 onMounted(loadSettings)
 
-const sections = ['account', 'notifications', 'display', 'privacy']
+const sections = ['account', 'notifications', 'display']
 const activeSection = ref('account')
 
 const goToSection = (id) => {
@@ -50,7 +50,8 @@ const confirmLogout = () => {
 <template>
   <section class="settings-page" :class="{ 'settings-page--mobile': isMobile }">
     <header class="settings-page__head">
-      <h1>{{ t('nav.settings') }}</h1>
+      <!-- จอคอมมีชื่อหน้าใน header แล้ว จึงแสดงหัวข้อเฉพาะบนมือถือ -->
+      <h1 v-if="isMobile">{{ t('nav.settings') }}</h1>
       <p>{{ t('settingsPage.intro') }}</p>
     </header>
 
@@ -78,8 +79,6 @@ const confirmLogout = () => {
       </nav>
 
       <div class="settings-content">
-        <p class="settings-page__notice">{{ t('settingsPage.mockNotice') }}</p>
-
         <!-- บัญชี -->
         <section :id="'settings-account'" class="settings-card" aria-labelledby="settings-account-title">
           <h2 id="settings-account-title">{{ t('settingsPage.sections.account') }}</h2>
@@ -93,11 +92,8 @@ const confirmLogout = () => {
               <svg class="settings-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
             </SettingRow>
           </NuxtLink>
-          <SettingRow :label="t('settingsPage.account.logout')" :hint="t('settingsPage.account.logoutHint')">
+          <SettingRow :label="t('settingsPage.account.logout')">
             <button type="button" class="settings-button" @click="confirmLogout">{{ t('settingsPage.account.logout') }}</button>
-          </SettingRow>
-          <SettingRow :label="t('settingsPage.account.delete')" :hint="t('settingsPage.account.deleteHint')" disabled>
-            <button type="button" class="settings-button settings-button--danger" disabled>{{ t('settingsPage.account.delete') }}</button>
           </SettingRow>
         </section>
 
@@ -151,10 +147,10 @@ const confirmLogout = () => {
           />
         </section>
 
-        <!-- การแสดงผล -->
+        <!-- การแสดงผลและความเป็นส่วนตัว -->
         <section id="settings-display" class="settings-card" aria-labelledby="settings-display-title">
           <h2 id="settings-display-title">{{ t('settingsPage.sections.display') }}</h2>
-          <SettingRow v-slot="{ labelId }" :label="t('settingsPage.display.language')" :hint="t('settingsPage.display.languageHint')">
+          <SettingRow v-slot="{ labelId }" :label="t('settingsPage.display.language')">
             <div class="segmented" role="radiogroup" :aria-labelledby="labelId">
               <button
                 v-for="option in locales"
@@ -170,22 +166,11 @@ const confirmLogout = () => {
               </button>
             </div>
           </SettingRow>
-        </section>
-
-        <!-- ความเป็นส่วนตัว -->
-        <section id="settings-privacy" class="settings-card" aria-labelledby="settings-privacy-title">
-          <h2 id="settings-privacy-title">{{ t('settingsPage.sections.privacy') }}</h2>
           <SettingRow
             :label="t('settingsPage.privacy.showName')"
             :hint="t('settingsPage.privacy.showNameHint')"
             :toggle="settings.showNameOnReports"
             @update:toggle="change('showNameOnReports', $event)"
-          />
-          <SettingRow
-            :label="t('settingsPage.privacy.location')"
-            :hint="t('settingsPage.privacy.locationHint')"
-            :toggle="settings.shareLocation"
-            @update:toggle="change('shareLocation', $event)"
           />
         </section>
       </div>
@@ -225,18 +210,6 @@ const confirmLogout = () => {
   margin: 4px 0 0;
   color: var(--gs-muted);
   font-size: 14px;
-}
-
-.settings-page__notice {
-  margin: 0;
-  padding: 10px 12px;
-  border: 1px solid #ecd9b0;
-  border-radius: var(--gs-radius-sm);
-  background: var(--gs-pending-tint);
-  color: var(--gs-pending);
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.5;
 }
 
 /* คอม: เมนูหมวดซ้าย + เนื้อหาขวา */
@@ -292,12 +265,23 @@ const confirmLogout = () => {
 
 /* จอกว้างมาก: การ์ดวาง 2 คอลัมน์ ไม่ให้เหลือพื้นที่ว่างด้านขวา (แถบแจ้งข้อมูลจำลองกินเต็มแถว) */
 @media (min-width: 1440px) {
+  /* การ์ดวาง 2 คอลัมน์เห็นครบทุกหมวดในจอเดียวแล้ว เมนูหมวดด้านซ้ายจึงไม่จำเป็น */
+  .settings-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .settings-nav {
+    display: none;
+  }
+
   .settings-content {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .settings-page__notice {
-    grid-column: 1 / -1;
+  /* การแจ้งเตือนยาวที่สุด วางคอลัมน์ขวาสูงสองแถว ส่วนบัญชีกับการแสดงผลซ้อนกันทางซ้าย ไม่เหลือช่องว่าง */
+  #settings-notifications {
+    grid-column: 2;
+    grid-row: 1 / span 2;
   }
 }
 

@@ -49,7 +49,13 @@ const getInitials = (user) => {
 // แปลงผู้ใช้ 1 คนจาก API เป็นรูปแบบที่หน้าจอใช้ (ยังไม่แปลภาษา ทำในหน้าจอ)
 const toUserRow = (user) => {
   const trust = Number(user.trust_score ?? 0)
-  const level = getTrustLevel(trust)
+
+  // ผู้ใช้ที่ยังไม่เคยส่งรายงาน = ยังไม่มีข้อมูลให้คะแนน (คะแนน 100 เป็นแค่ค่าเริ่มต้นของระบบ)
+  let level = getTrustLevel(trust)
+  const isScored = user.report_count > 0
+  if (!isScored) {
+    level = { levelKey: 'unscored', tone: 'unscored' }
+  }
 
   return {
     id: user.id,
@@ -60,6 +66,7 @@ const toUserRow = (user) => {
     role: user.role,
     emailVerified: user.email_verified === true,
     trust,
+    isScored,
     levelKey: level.levelKey,
     tone: level.tone,
     reports: user.report_count,

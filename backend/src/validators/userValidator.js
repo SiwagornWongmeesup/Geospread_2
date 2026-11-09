@@ -103,6 +103,9 @@ const resetPasswordValidator = [
  * -----------------------------------------------------------------------
  * ใช้กับ GET /users/:id
  */
+// GET /users/me ไม่มี input (ใช้ id จาก token) จึงตรวจแค่ผลของ validateRequest
+const getMyProfileValidator = [validateRequest];
+
 const getUserByIdValidator = [
     param('id')
         .notEmpty().withMessage('กรุณาระบุ User ID')
@@ -113,6 +116,7 @@ const getUserByIdValidator = [
 ];
 
 module.exports = {
+    getMyProfileValidator,
     registerValidator,
     loginValidator,
     verifyEmailValidator,

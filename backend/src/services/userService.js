@@ -14,6 +14,15 @@ const getAllUsers = async () => {
     return users;
 };
 
+// โปรไฟล์ของผู้ใช้ที่ล็อกอินอยู่ (id มาจาก token ไม่ได้มาจาก URL)
+const getMyProfile = async (userId) => {
+    const profile = await userRepository.getProfileById(userId);
+    if (!profile) {
+        throw new AppError('ไม่เจอผู้ใช้งาน', 404);
+    }
+    return profile;
+};
+
 const getUserById = async (id) => {
     const user = await userRepository.getUserById(id);
     if (!user) {
@@ -114,6 +123,7 @@ const resetPassword = ({ email, code, password }) => passwordResetService.resetP
 module.exports = {
     getAllUsers,
     getUserById,
+    getMyProfile,
     createUser,
     loginUser,
     verifyEmail,

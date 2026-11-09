@@ -16,7 +16,7 @@ const colorVars = computed(() => Object.fromEntries(
 </script>
 
 <template>
-  <div :class="cn('gs-chart w-full text-xs', props.class)" :style="colorVars">
+  <div :class="cn('gs-chart w-full text-sm', props.class)" :style="colorVars">
     <slot />
   </div>
 </template>
@@ -26,7 +26,7 @@ const colorVars = computed(() => Object.fromEntries(
   --vis-font-family: var(--gs-font);
   --vis-color-main: var(--gs-action);
   --vis-axis-tick-label-color: var(--gs-muted);
-  --vis-axis-tick-label-font-size: 11px;
+  --vis-axis-tick-label-font-size: 12px;
   --vis-axis-grid-color: var(--gs-line);
   --vis-axis-tick-color: transparent;
   --vis-axis-domain-color: var(--gs-line);
@@ -42,6 +42,6 @@ const colorVars = computed(() => Object.fromEntries(
   --vis-donut-central-label-font-weight: 800;
   --vis-donut-central-label-text-color: var(--gs-ink);
   --vis-donut-central-sub-label-text-color: var(--gs-muted);
-  --vis-donut-central-sub-label-font-size: 11px;
+  --vis-donut-central-sub-label-font-size: 13px;
 }
 </style>

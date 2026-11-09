@@ -291,13 +291,13 @@ const submit = async () => {
 .info-card__head h2 {
   margin: 0;
   color: var(--gs-ink);
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 800;
 }
 
 .info-card__edit {
   display: inline-flex;
-  min-height: 38px;
+  min-height: 44px;
   align-items: center;
   gap: 6px;
   padding: 0 14px;
@@ -335,8 +335,11 @@ const submit = async () => {
 }
 
 /* โหมดดู */
+/* การ์ดกว้าง (เช่น โปรไฟล์แอดมินบนจอคอม) แบ่งเป็น 2 คอลัมน์อัตโนมัติ ไม่เหลือที่ว่างด้านขวา */
 .info-list {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  column-gap: 32px;
   margin: 0;
 }
 

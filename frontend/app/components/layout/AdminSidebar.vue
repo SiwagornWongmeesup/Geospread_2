@@ -73,7 +73,8 @@ const itemTitle = (item, collapsed) => {
       </section>
     </nav>
 
-    <div class="app-sidebar__account">
+    <!-- กลุ่ม "ระบบ" แสดงเมื่อมีเมนูจริงเท่านั้น -->
+    <div v-if="systemItems.length" class="app-sidebar__account">
       <h2 v-if="!collapsed" class="app-sidebar__group-title">{{ t('admin.system') }}</h2>
       <component
         :is="item.to ? NuxtLink : 'button'"

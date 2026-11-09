@@ -28,19 +28,19 @@ defineProps({
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.15rem 0.45rem;
+  gap: 4px;
+  padding: 2px 8px;
   border: 1px solid transparent;
   border-radius: var(--gs-radius-sm);
-  font-size: 0.75rem;
+  font-size: 13px;
   font-weight: 600;
   line-height: 1.3;
   white-space: nowrap;
 }
 
 .status-badge svg {
-  width: 0.8rem;
-  height: 0.8rem;
+  width: 13px;
+  height: 13px;
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;

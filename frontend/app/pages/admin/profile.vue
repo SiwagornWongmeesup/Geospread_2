@@ -7,8 +7,8 @@ definePageMeta({ layout: 'admin', middleware: ['admin'] })
 
 <template>
   <section class="admin-profile">
-    <!-- แอดมินมีช่องติดต่อเพิ่ม: LINE ID และ Instagram -->
-    <ProfileContent show-social />
+    <!-- โปรไฟล์แอดมิน: ข้อมูลบัญชี + ช่องติดต่อ LINE ID และ Instagram -->
+    <ProfileContent variant="admin" />
   </section>
 </template>
 

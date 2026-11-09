@@ -8,7 +8,8 @@ const {
     resendVerificationValidator,
     forgotPasswordValidator,
     resetPasswordValidator,
-    getUserByIdValidator
+    getUserByIdValidator,
+    getMyProfileValidator
 } = require('../validators/userValidator');
 const authMiddleware = require('../middlewares/authMiddleware');
 const checkRole = require('../middlewares/checkRole');
@@ -41,6 +42,9 @@ router.post('/reset-password', resetPasswordValidator, userController.resetPassw
 
 // GET /users — ดูรายชื่อผู้ใช้ทั้งหมด (เฉพาะ admin)
 router.get('/', authMiddleware, checkRole('admin'), userController.getAllUsers);
+
+// GET /users/me — โปรไฟล์ของผู้ใช้ที่ล็อกอินอยู่ (ต้องอยู่ก่อน /:id ไม่งั้น "me" จะถูกมองเป็น id)
+router.get('/me', authMiddleware, getMyProfileValidator, userController.getMyProfile);
 
 // GET /users/:id — ดูข้อมูลผู้ใช้ตาม ID (ต้อง login)
 router.get('/:id', authMiddleware, getUserByIdValidator, userController.getUserById);

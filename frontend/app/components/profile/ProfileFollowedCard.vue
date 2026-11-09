@@ -1,181 +1,109 @@
 <template>
-  <!-- พื้นที่ที่ติดตาม: สรุปแต่ละพื้นที่ (รัศมี เหตุการณ์ตอนนี้ การแจ้งเตือน) + ลิงก์ไปจัดการ (ข้อมูลจำลอง) -->
+  <!-- พื้นที่ที่ติดตาม: ระบบยังไม่มีข้อมูลพื้นที่ที่ติดตามจริง จึงแสดงสถานะว่างพร้อมทางไปเพิ่มพื้นที่
+       (ไม่แสดงรายการตัวอย่าง เพราะจะทำให้ผู้ใช้เข้าใจผิดว่าเป็นพื้นที่ของตัวเอง) -->
   <section class="followed-card" :aria-labelledby="titleId">
-    <div class="followed-card__head">
+    <span class="followed-card__icon" aria-hidden="true"><img src="/icons/Location.svg" alt="" /></span>
+    <div class="followed-card__text">
       <h2 :id="titleId">{{ t('profilePage.followedTitle') }}</h2>
-      <NuxtLink to="/followed-locations">{{ t('profilePage.manageFollowed') }}</NuxtLink>
+      <strong>{{ t('profilePage.followedEmpty') }}</strong>
+      <p>{{ t('profilePage.followedEmptyHint') }}</p>
     </div>
-
-    <ul class="followed-list">
-      <li v-for="location in locations" :key="location.id" class="followed-item">
-        <span class="followed-item__icon" aria-hidden="true"><img src="/icons/Location.svg" alt="" /></span>
-        <span class="followed-item__text">
-          <strong>{{ location.name }}</strong>
-          <span>{{ location.area }} · {{ t('profilePage.followedRadius', { value: location.radiusKm }) }}</span>
-        </span>
-        <span class="followed-item__meta">
-          <span :class="{ 'followed-item__incidents--active': location.incidentCount > 0 }">
-            {{ incidentLabel(location) }}
-          </span>
-          <span class="followed-item__notify" :class="{ 'followed-item__notify--off': !location.notify }">
-            {{ notifyLabel(location) }}
-          </span>
-        </span>
-      </li>
-    </ul>
+    <NuxtLink to="/followed-locations" class="followed-card__action">{{ t('profilePage.addFollowed') }}</NuxtLink>
   </section>
 </template>
 
 <script setup>
-import { mockFollowedLocations } from '~/composables/useProfile'
-
-const { t, tm } = useLocale()
+const { t } = useLocale()
 const titleId = useId()
-
-// รวมข้อมูลพื้นที่กับชื่อพื้นที่ตามภาษาที่เลือก
-const locations = computed(() => {
-  const texts = tm('profilePage.mockFollowed')
-  return mockFollowedLocations.map((location) => {
-    const text = texts[location.index]
-    return { ...location, name: text.name, area: text.area }
-  })
-})
-
-// ข้อความจำนวนเหตุการณ์ในพื้นที่ตอนนี้
-const incidentLabel = (location) => {
-  if (location.incidentCount > 0) {
-    return t('profilePage.followedIncidents', { count: location.incidentCount })
-  }
-  return t('profilePage.followedNoIncidents')
-}
-
-// ข้อความสถานะการแจ้งเตือนของพื้นที่
-const notifyLabel = (location) => {
-  if (location.notify) {
-    return t('profilePage.notifyOn')
-  }
-  return t('profilePage.notifyOff')
-}
 </script>
 
 <style scoped>
 .followed-card {
   display: grid;
-  gap: 8px;
+  grid-template-columns: 48px minmax(0, 1fr);
+  align-content: start;
+  align-items: start;
+  gap: 16px;
   padding: 20px;
   border: 1px solid var(--gs-line);
   border-radius: var(--gs-radius);
   background: var(--gs-surface);
 }
 
-.followed-card__head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.followed-card__head h2 {
-  margin: 0;
-  color: var(--gs-ink);
-  font-size: 17px;
-  font-weight: 800;
-}
-
-.followed-card__head a {
-  color: var(--gs-action);
-  font-size: 14px;
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.followed-card__head a:hover {
-  text-decoration: underline;
-}
-
-/* จอกว้าง: พื้นที่เรียงเป็นช่องข้างกัน / จอแคบ: เรียงลงมา */
-.followed-list {
+.followed-card__icon {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 10px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.followed-item {
-  display: grid;
-  grid-template-columns: 36px minmax(0, 1fr);
-  gap: 10px 12px;
-  padding: 14px;
-  border: 1px solid var(--gs-line);
-  border-radius: var(--gs-radius-sm);
-  background: var(--gs-surface-sunken);
-}
-
-.followed-item__icon {
-  display: grid;
-  width: 36px;
-  height: 36px;
+  width: 48px;
+  height: 48px;
   place-items: center;
   border-radius: 50%;
   background: var(--gs-action-tint);
 }
 
-.followed-item__icon img {
-  width: 18px;
-  height: 18px;
+.followed-card__icon img {
+  width: 22px;
+  height: 22px;
   object-fit: contain;
 }
 
-.followed-item__text {
+.followed-card__text {
   display: grid;
   gap: 2px;
   min-width: 0;
 }
 
-.followed-item__text strong {
+.followed-card h2 {
+  margin: 0 0 4px;
+  color: var(--gs-ink);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.followed-card strong {
   color: var(--gs-ink);
   font-size: 15px;
-  font-weight: 750;
-  line-height: 1.45;
-}
-
-.followed-item__text span {
-  overflow: hidden;
-  color: var(--gs-muted);
-  font-size: 13px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.followed-item__meta {
-  display: flex;
-  flex-wrap: wrap;
-  grid-column: 1 / -1;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px 12px;
-  color: var(--gs-muted);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.followed-item__meta .followed-item__incidents--active {
-  color: var(--gs-danger);
   font-weight: 700;
 }
 
-.followed-item__notify {
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--gs-help-tint);
-  color: var(--gs-help);
+.followed-card p {
+  margin: 0;
+  color: var(--gs-ink-2);
+  font-size: 14px;
+  line-height: 1.5;
 }
 
-.followed-item__notify--off {
-  background: var(--gs-surface);
-  color: var(--gs-muted);
-  box-shadow: inset 0 0 0 1px var(--gs-line);
+.followed-card__action {
+  grid-column: 2;
+  justify-self: start;
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  padding: 0 16px;
+  border: 1px solid var(--gs-action);
+  border-radius: var(--gs-radius-sm);
+  color: var(--gs-action);
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.followed-card__action:hover {
+  background: var(--gs-action-tint);
+}
+
+.followed-card__action:focus-visible {
+  outline: none;
+  box-shadow: var(--gs-focus);
+}
+
+@media (max-width: 720px) {
+  .followed-card {
+    grid-template-columns: 48px minmax(0, 1fr);
+  }
+
+  .followed-card__action {
+    grid-column: 1 / -1;
+    justify-content: center;
+  }
 }
 </style>

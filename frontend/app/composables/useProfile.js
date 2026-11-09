@@ -1,67 +1,68 @@
 // composables/useProfile.js
 // -------------------------------------------------------------------------
 // ข้อมูลส่วนตัวของผู้ใช้ที่ล็อกอินอยู่ (หน้าโปรไฟล์)
-// ตอนนี้ยังไม่มี API: ใช้ข้อมูลจำลอง (mock) ตั้งต้นจาก cookie user แล้วเก็บที่แก้ไว้ใน localStorage
-// TODO: เมื่อ backend พร้อม เปลี่ยน loadProfile เป็น GET /users/me และ saveProfile เป็น PATCH /users/me
-//       (รูปโปรไฟล์ส่งเป็น multipart แยก) ฝั่ง UI ไม่ต้องแก้ เพราะรูปแบบข้อมูลเหมือนเดิม
+// - ข้อมูลจริงมาจาก GET /users/me (ชื่อ อีเมล เบอร์ คะแนน สถานะอีเมล วันที่สมัคร จำนวนรายงาน)
+// - การแก้ไขยังไม่มี API (PATCH /users/me) จึงเก็บเฉพาะช่องที่แก้ไว้ใน localStorage ของเครื่องนี้
+//   แล้วเอามาทับข้อมูลจริง (ช่องที่ไม่ได้แก้ยังเป็นค่าจริงจากฐานข้อมูลเสมอ)
+// TODO: เมื่อมี PATCH /users/me ให้ saveProfile ส่งไปที่ API แทน localStorage
 // -------------------------------------------------------------------------
 
-const STORAGE_KEY = 'geospread-profile-mock'
+const STORAGE_KEY = 'geospread-profile-edits'
 
-// ค่าจำลองสำหรับช่องที่ cookie ไม่มี (เบอร์โทร คะแนนความน่าเชื่อถือ วันที่สมัคร)
-const mockDefaults = {
-  lastname: '',
-  phone: '081-234-5678',
-  lineId: '',
-  instagram: '',
-  avatarUrl: null,
-  trustScore: 82,
-  createdAt: '2026-03-14T09:00:00.000Z',
-}
+// ช่องที่ผู้ใช้แก้ได้ในหน้าโปรไฟล์
+const EDITABLE_FIELDS = ['name', 'lastname', 'phone', 'email', 'lineId', 'instagram', 'avatarUrl']
 
-// กิจกรรมจำลองของผู้ใช้ (ตัวเลขสรุป + รายงานล่าสุด)
-// ข้อความของรายงานอยู่ใน locales (profilePage.mockReports) เรียงตาม index เดียวกัน
-// TODO: เปลี่ยนเป็น GET /users/me/activity เมื่อ backend พร้อม
-export const mockActivity = {
-  stats: { reports: 12, verified: 9, pending: 2, helped: 4 },
-  recentReports: [
-    { id: 1, index: 0, status: 'verified', icon: '/icons/Flood.svg' },
-    { id: 2, index: 1, status: 'pending', icon: '/icons/Roadblock.svg' },
-    { id: 3, index: 2, status: 'rejected', icon: '/icons/Alert.svg' },
-  ],
-}
-
-// พื้นที่ที่ติดตามจำลอง ชื่อพื้นที่อยู่ใน locales (profilePage.mockFollowed) เรียงตาม index เดียวกัน
-// TODO: เปลี่ยนเป็นข้อมูลจริงจากหน้า "พื้นที่ติดตาม" เมื่อ backend พร้อม
-export const mockFollowedLocations = [
-  { id: 1, index: 0, radiusKm: 2, notify: true, incidentCount: 1 },
-  { id: 2, index: 1, radiusKm: 5, notify: true, incidentCount: 0 },
-  { id: 3, index: 2, radiusKm: 1, notify: false, incidentCount: 3 },
-]
-
-const readStoredProfile = () => {
+const readStoredEdits = () => {
   try {
     const saved = localStorage.getItem(STORAGE_KEY)
-    return saved ? JSON.parse(saved) : null
+    if (!saved) {
+      return null
+    }
+    return JSON.parse(saved)
   } catch {
     return null
   }
 }
 
-const writeStoredProfile = (profile) => {
+const writeStoredEdits = (edits) => {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(profile))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(edits))
   } catch {
     // เก็บไม่ได้ (เช่น โหมดไม่ระบุตัวตน หรือรูปใหญ่เกินพื้นที่) ข้อมูลยังอยู่จนกว่าจะรีเฟรช
   }
 }
 
-// จำลองเวลาที่เรียก API ให้เห็นสถานะ "กำลังบันทึก"
-const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+// แปลงข้อมูลเป็นรูปแบบที่หน้าจอใช้
+// isLoaded = false คือยังมีแค่ข้อมูลจาก cookie (ยังไม่รู้คะแนน สถานะอีเมล จำนวนรายงาน) หน้าจอต้องไม่แสดงค่าพวกนั้น
+const toProfile = (user, isLoaded) => {
+  return {
+    isLoaded,
+    id: user.id,
+    name: user.name ?? '',
+    lastname: user.lastname ?? '',
+    email: user.email ?? '',
+    phone: user.phone ?? '',
+    lineId: '',
+    instagram: '',
+    avatarUrl: user.profile ?? null,
+    role: user.role ?? 'user',
+    trustScore: user.trust_score ?? null,
+    emailVerified: user.email_verified === true,
+    createdAt: user.created_at ?? null,
+    reports: {
+      total: user.report_count ?? 0,
+      verified: user.verified_report_count ?? 0,
+      pending: user.pending_report_count ?? 0,
+      rejected: user.rejected_report_count ?? 0,
+    },
+  }
+}
 
 export const useProfile = () => {
-  const { getUser } = useAuth()
+  const config = useRuntimeConfig()
+  const { getUser, getToken } = useAuth()
   const profile = useState('profile-data', () => null)
+  const isLoadingProfile = useState('profile-loading', () => false)
   const isSaving = ref(false)
 
   // cookie user เก็บได้ 2 แบบ: { user: {...} } หรือ {...} ตรงๆ
@@ -70,39 +71,67 @@ export const useProfile = () => {
     return saved?.user ?? saved ?? null
   }
 
-  const loadProfile = () => {
+  // เอาช่องที่เคยแก้ไว้ในเครื่องนี้ (ของบัญชีเดียวกัน) มาทับข้อมูลจริง
+  const applyStoredEdits = (baseProfile) => {
+    const stored = readStoredEdits()
+    if (!stored || stored.owner !== baseProfile.id) {
+      return baseProfile
+    }
+    return { ...baseProfile, ...stored.edits }
+  }
+
+  const loadProfile = async () => {
     const user = cookieUser()
     if (!user) {
       profile.value = null
       return
     }
 
-    const base = {
-      ...mockDefaults,
-      id: user.id ?? null,
-      name: user.name ?? '',
-      lastname: user.lastname ?? mockDefaults.lastname,
-      email: user.email ?? '',
-      role: user.role ?? 'user',
+    // ระหว่างรอ API แสดงเท่าที่รู้จาก cookie ก่อน (อีเมลและสิทธิ์)
+    if (!profile.value) {
+      profile.value = toProfile({ id: user.id, email: user.email, role: user.role, name: user.name }, false)
     }
 
-    // ข้อมูลที่เคยแก้ไว้ทับค่าตั้งต้น เฉพาะของบัญชีเดียวกัน (เทียบกับอีเมลที่ใช้ล็อกอิน เพราะอีเมลในโปรไฟล์อาจถูกแก้แล้ว)
-    const stored = import.meta.client ? readStoredProfile() : null
-    profile.value = stored?.owner === base.email ? { ...base, ...stored.data, role: base.role } : base
+    // ดึงข้อมูลจริงได้เฉพาะในเบราว์เซอร์ (ต้องใช้ token)
+    if (!import.meta.client) {
+      return
+    }
+
+    isLoadingProfile.value = true
+    try {
+      const response = await $fetch(`${config.public.apiBase}/users/me`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      })
+      profile.value = applyStoredEdits(toProfile(response.data, true))
+    } catch (error) {
+      // โหลดไม่สำเร็จ: ยังแสดงข้อมูลจาก cookie ต่อ ไม่แต่งข้อมูลอื่นขึ้นมาเอง
+      console.error('Unable to load profile', error)
+    } finally {
+      isLoadingProfile.value = false
+    }
   }
 
-  // changes: { name, lastname, phone, email, avatarUrl }
+  // changes: ช่องจากฟอร์มแก้ไข เก็บเฉพาะช่องที่แก้ได้
   const saveProfile = async (changes) => {
     isSaving.value = true
     try {
-      await wait(600)
-      profile.value = { ...profile.value, ...changes }
-      writeStoredProfile({ owner: cookieUser()?.email, data: profile.value })
+      const stored = readStoredEdits()
+      let edits = {}
+      if (stored && stored.owner === profile.value.id) {
+        edits = { ...stored.edits }
+      }
+      for (const field of EDITABLE_FIELDS) {
+        if (field in changes) {
+          edits[field] = changes[field]
+        }
+      }
+      writeStoredEdits({ owner: profile.value.id, edits })
+      profile.value = { ...profile.value, ...edits }
       return true
     } finally {
       isSaving.value = false
     }
   }
 
-  return { profile, isSaving, loadProfile, saveProfile }
+  return { profile, isLoadingProfile, isSaving, loadProfile, saveProfile }
 }

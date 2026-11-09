@@ -36,6 +36,33 @@ const getUserById = async (id) => {
     const result = await db.query('SELECT id, email, name, lastname, profile, role, created_at, updated_at FROM tb_users WHERE id = $1', [id]);
     return result.rows[0];
 }
+// ข้อมูลโปรไฟล์ของผู้ใช้ที่ล็อกอินอยู่ (GET /users/me) พร้อมจำนวนรายงานของตัวเอง
+// ไม่ดึงรหัสผ่าน และใช้เฉพาะ id ของเจ้าของ token เท่านั้น
+const getProfileById = async (id) => {
+    const result = await db.query(
+        `SELECT
+            u.id,
+            u.email,
+            u.name,
+            u.lastname,
+            u.profile,
+            u.phone,
+            u.role,
+            u.trust_score,
+            u.email_verified,
+            u.created_at,
+            COUNT(r.report_id)::int AS report_count,
+            COUNT(r.report_id) FILTER (WHERE r.report_status = 'verified')::int AS verified_report_count,
+            COUNT(r.report_id) FILTER (WHERE r.report_status = 'pending')::int AS pending_report_count,
+            COUNT(r.report_id) FILTER (WHERE r.report_status = 'rejected')::int AS rejected_report_count
+         FROM tb_users u
+         LEFT JOIN tb_incident_reports r ON r.user_id = u.id
+         WHERE u.id = $1
+         GROUP BY u.id`,
+        [id]
+    );
+    return result.rows[0];
+};
 //เช็คemail
 const getUserByEmail = async (email) => {
     // ใช้แค่ email ในการค้นหา ($1)
@@ -140,6 +167,7 @@ const deleteUser = async (id) => {
 module.exports = {
     getAllUsers,
     getUserById,
+    getProfileById,
     getUserByEmail,
     createUser,
     updateUnverifiedUser,

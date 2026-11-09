@@ -1,8 +1,12 @@
 <script setup>
+// ---------------------------------------------------------------------------
+// หน้าจัดการผู้ใช้ของแอดมิน: รายชื่อจริงจาก GET /users (ส่งมาจาก pages/admin/users.vue)
+// - ค้นหา กรอง เรียงคอลัมน์ และแบ่งหน้า เก็บไว้ใน URL (?q=&filter=&sort=&dir=&page=) รีเฟรชแล้วไม่หาย
+// - ผู้ใช้ที่ยังไม่เคยรายงานแสดงว่า "ยังไม่มีคะแนน" แทนคะแนนเริ่มต้น 100
+// ---------------------------------------------------------------------------
 import { computed, ref, watch } from 'vue'
 import { formatRelativeTime } from '~/composables/useHomeDashboard'
 
-// ข้อมูลมาจากหน้า pages/admin/users.vue (ดึงจาก GET /users ผ่าน useAdminUsers)
 const props = defineProps({
   users: { type: Array, default: () => [] },
   isLoading: { type: Boolean, default: false },
@@ -13,19 +17,67 @@ const props = defineProps({
 const emit = defineEmits(['retry'])
 
 const { t, locale } = useLocale()
-const activeFilter = ref('all')
-const keyword = ref('')
-const selectedUserId = ref(null)
-const profileTab = ref('overview')
-const actionNotice = ref('')
-const currentPage = ref(1)
+const route = useRoute()
+const router = useRouter()
 
 const PAGE_SIZE = 10
 const DAY_MS = 24 * 60 * 60 * 1000
 
-// ข้อความของตัวกรองอยู่ใน locales: usersTrust.filters.*
-const filters = ['all', 'trusted', 'watchlist', 'risk']
-const profileTabs = ['overview', 'reports', 'help', 'activity']
+// ตัวกรอง: ทั้งหมด / ต้องติดตาม (เฝ้าระวัง + เสี่ยงสูง) / ยังไม่ยืนยันอีเมล
+const filters = ['all', 'attention', 'unverified']
+
+// คอลัมน์ที่เรียงได้ [key, ข้อความหัวตาราง]
+const columns = [
+  ['name', 'usersTrust.th.user'],
+  ['trust', 'usersTrust.th.trust'],
+  ['reports', 'usersTrust.th.reports'],
+  ['verified', 'usersTrust.th.verified'],
+  ['suspicious', 'usersTrust.th.suspicious'],
+  ['lastActivity', 'usersTrust.th.lastActivity'],
+]
+// วันที่สมัครอยู่ในแผงรายละเอียดแล้ว ตารางจึงไม่มีคอลัมน์นี้ (ให้ชื่อและอีเมลมีที่พอ)
+
+// ---- อ่านค่าเริ่มต้นจาก URL ----
+
+const readQuery = (name, fallback) => {
+  const value = route.query[name]
+  if (typeof value === 'string' && value !== '') {
+    return value
+  }
+  return fallback
+}
+
+const activeFilter = ref(readQuery('filter', 'all'))
+const keyword = ref(readQuery('q', ''))
+// ค่าเริ่มต้น: คนที่มีรายงานน่าสงสัยมากที่สุดขึ้นก่อน
+const sortKey = ref(readQuery('sort', 'suspicious'))
+const sortDirection = ref(readQuery('dir', 'desc'))
+const currentPage = ref(Number(readQuery('page', '1')) || 1)
+const selectedUserId = ref(null)
+
+// เขียนสถานะลง URL (แทนที่ประวัติ ไม่เพิ่มหน้าใหม่ทุกครั้งที่พิมพ์)
+watch([activeFilter, keyword, sortKey, sortDirection, currentPage], () => {
+  const query = {}
+  if (activeFilter.value !== 'all') {
+    query.filter = activeFilter.value
+  }
+  if (keyword.value) {
+    query.q = keyword.value
+  }
+  if (sortKey.value !== 'suspicious' || sortDirection.value !== 'desc') {
+    query.sort = sortKey.value
+    query.dir = sortDirection.value
+  }
+  if (currentPage.value > 1) {
+    query.page = String(currentPage.value)
+  }
+  router.replace({ query })
+})
+
+// เปลี่ยนตัวกรองหรือคำค้นหาแล้วกลับไปหน้าแรก
+watch([activeFilter, keyword], () => {
+  currentPage.value = 1
+})
 
 // ---- จัดรูปแบบข้อความ ----
 
@@ -37,7 +89,7 @@ const formatJoined = (isoDate) => {
   return new Intl.DateTimeFormat(dateLocale, { dateStyle: 'medium' }).format(new Date(isoDate))
 }
 
-// กิจกรรมล่าสุด = เวลาที่ส่งรายงานล่าสุด (ยังไม่มีข้อมูลการเข้าสู่ระบบในฐานข้อมูล)
+// กิจกรรมล่าสุด = เวลาที่ส่งรายงานล่าสุด (ฐานข้อมูลยังไม่มีเวลาเข้าสู่ระบบ)
 const formatLastActivity = (user) => {
   if (!user.lastReportAt) {
     return t('usersTrust.noActivity')
@@ -45,7 +97,6 @@ const formatLastActivity = (user) => {
   return formatRelativeTime(user.lastReportAt, t)
 }
 
-// เพิ่มข้อความตามภาษาที่เลือกให้ผู้ใช้แต่ละคน
 const users = computed(() => {
   return props.users.map((user) => {
     return {
@@ -57,14 +108,7 @@ const users = computed(() => {
   })
 })
 
-// ---- ตัวเลขสรุปด้านบน (คำนวณจากรายชื่อจริง) ----
-
-const sharePercent = (count) => {
-  if (users.value.length === 0) {
-    return 0
-  }
-  return Math.round((count / users.value.length) * 100)
-}
+// ---- ตัวเลขสรุป (นับจากรายชื่อจริง) ----
 
 const countUsers = (check) => {
   let count = 0
@@ -76,28 +120,30 @@ const countUsers = (check) => {
   return count
 }
 
+const needsAttention = (user) => user.tone === 'watchlist' || user.tone === 'risk'
+
 const metrics = computed(() => {
   const now = Date.now()
-  const startOfToday = new Date()
-  startOfToday.setHours(0, 0, 0, 0)
-
-  let totalReports = 0
-  for (const user of users.value) {
-    totalReports = totalReports + user.reports
-  }
-
   return {
     total: users.value.length,
     newLast7Days: countUsers((user) => now - new Date(user.createdAt).getTime() < 7 * DAY_MS),
-    trusted: countUsers((user) => user.tone === 'trusted'),
+    scored: countUsers((user) => user.isScored),
+    attention: countUsers(needsAttention),
     unverified: countUsers((user) => !user.emailVerified),
-    risk: countUsers((user) => user.tone === 'risk'),
-    newToday: countUsers((user) => new Date(user.createdAt) >= startOfToday),
-    totalReports,
   }
 })
 
-// ---- ค้นหา กรอง และแบ่งหน้า ----
+// ---- กรอง ค้นหา เรียง แบ่งหน้า ----
+
+const matchesFilter = (user) => {
+  if (activeFilter.value === 'attention') {
+    return needsAttention(user)
+  }
+  if (activeFilter.value === 'unverified') {
+    return !user.emailVerified
+  }
+  return true
+}
 
 const matchesKeyword = (user, term) => {
   if (!term) {
@@ -107,12 +153,48 @@ const matchesKeyword = (user, term) => {
   return searchable.includes(term)
 }
 
+// ค่าที่ใช้เรียงของแต่ละคอลัมน์ (ผู้ใช้ที่ยังไม่มีคะแนนถือว่าคะแนน -1 จะได้ไปอยู่ท้าย/หน้าแยกจากคนมีคะแนน)
+const sortValue = (user, key) => {
+  if (key === 'name') {
+    return user.name.toLocaleLowerCase()
+  }
+  if (key === 'trust') {
+    if (!user.isScored) {
+      return -1
+    }
+    return user.trust
+  }
+  if (key === 'lastActivity') {
+    if (!user.lastReportAt) {
+      return 0
+    }
+    return new Date(user.lastReportAt).getTime()
+  }
+  if (key === 'joined') {
+    return new Date(user.createdAt).getTime()
+  }
+  return user[key]
+}
+
+const compareUsers = (first, second) => {
+  const firstValue = sortValue(first, sortKey.value)
+  const secondValue = sortValue(second, sortKey.value)
+  let result = 0
+  if (firstValue < secondValue) {
+    result = -1
+  } else if (firstValue > secondValue) {
+    result = 1
+  }
+  if (sortDirection.value === 'desc') {
+    result = -result
+  }
+  return result
+}
+
 const filteredUsers = computed(() => {
   const term = keyword.value.trim().toLocaleLowerCase()
-  return users.value.filter((user) => {
-    const matchesFilter = activeFilter.value === 'all' || user.tone === activeFilter.value
-    return matchesFilter && matchesKeyword(user, term)
-  })
+  const matched = users.value.filter((user) => matchesFilter(user) && matchesKeyword(user, term))
+  return [...matched].sort(compareUsers)
 })
 
 const pageCount = computed(() => {
@@ -128,11 +210,6 @@ const pagedUsers = computed(() => {
   return filteredUsers.value.slice(start, start + PAGE_SIZE)
 })
 
-// เปลี่ยนตัวกรองหรือคำค้นหาแล้วกลับไปหน้าแรก
-watch([activeFilter, keyword], () => {
-  currentPage.value = 1
-})
-
 const goToPage = (page) => {
   if (page < 1 || page > pageCount.value) {
     return
@@ -140,22 +217,57 @@ const goToPage = (page) => {
   currentPage.value = page
 }
 
-// ---- ผู้ใช้ที่เลือกดูรายละเอียด (ยังไม่เลือก = คนแรกในรายการ) ----
+// กดหัวคอลัมน์: คอลัมน์เดิมสลับทิศทาง คอลัมน์ใหม่เริ่มจากมากไปน้อย (ชื่อเริ่มจาก ก-ฮ)
+const sortBy = (key) => {
+  if (sortKey.value === key) {
+    if (sortDirection.value === 'asc') {
+      sortDirection.value = 'desc'
+    } else {
+      sortDirection.value = 'asc'
+    }
+    return
+  }
+  sortKey.value = key
+  if (key === 'name') {
+    sortDirection.value = 'asc'
+  } else {
+    sortDirection.value = 'desc'
+  }
+}
+
+const ariaSort = (key) => {
+  if (sortKey.value !== key) {
+    return 'none'
+  }
+  if (sortDirection.value === 'asc') {
+    return 'ascending'
+  }
+  return 'descending'
+}
+
+// ---- ผู้ใช้ที่เลือกดูรายละเอียด (ยังไม่เลือก = คนแรกของรายการที่แสดง) ----
 
 const selectedUser = computed(() => {
   const found = users.value.find((user) => user.id === selectedUserId.value)
   if (found) {
     return found
   }
-  return users.value[0] ?? null
+  return pagedUsers.value[0] ?? null
 })
 
 const selectUser = (id) => {
   selectedUserId.value = id
-  actionNotice.value = ''
 }
 
-// ที่มาของคะแนน: ใช้จำนวนรายงานจริงของผู้ใช้ [ข้อความ, จำนวน, สี]
+// ข้อความประกาศให้ screen reader รู้ว่ากำลังดูใคร
+const viewingAnnouncement = computed(() => {
+  if (!selectedUserId.value || !selectedUser.value) {
+    return ''
+  }
+  return t('usersTrust.viewing', { name: selectedUser.value.name })
+})
+
+// จำนวนรายงานจริงของผู้ใช้ [ข้อความ, จำนวน, สี]
 const selectedBreakdown = computed(() => {
   const user = selectedUser.value
   if (!user) {
@@ -176,6 +288,20 @@ const roleLabel = (role) => {
   return t('usersTrust.roles.user')
 }
 
+const emailLabel = (user) => {
+  if (user.emailVerified) {
+    return t('usersTrust.emailVerified')
+  }
+  return t('usersTrust.emailUnverified')
+}
+
+const trustText = (user) => {
+  if (!user.isScored) {
+    return '–'
+  }
+  return String(user.trust)
+}
+
 // แถบคะแนน: กว้างอย่างน้อย 4% ให้ยังเห็นสีแม้คะแนนต่ำมาก
 const trustWidth = (score) => {
   let width = score
@@ -187,1003 +313,809 @@ const trustWidth = (score) => {
   }
   return `${width}%`
 }
-
-const trustLabel = (score) => {
-  let key = 'review'
-  if (score >= 75) {
-    key = 'trusted'
-  } else if (score >= 50) {
-    key = 'building'
-  } else if (score >= 30) {
-    key = 'monitor'
-  }
-  return t(`usersTrust.trustLabel.${key}`)
-}
-
-// ปุ่มคำสั่ง (เฝ้าระวัง/จำกัด/ระงับ) ยังเป็นตัวอย่าง ยังไม่มี API
-const runAction = (action) => {
-  actionNotice.value = t('usersTrust.sampleAction', { action, name: selectedUser.value.name })
-}
-
-// ปุ่ม ⋯ ท้ายแถว: เลือกผู้ใช้คนนั้น แล้วแจ้งว่าคำสั่งยังเป็นตัวอย่าง
-const openRowActions = (user) => {
-  selectUser(user.id)
-  runAction(t('usersTrust.openActions', { name: user.name }))
-}
 </script>
 
 <template>
-  <section class="users-trust" aria-labelledby="users-trust-title">
-    <header class="users-trust__heading">
-      <div>
-        <h1 id="users-trust-title">{{ t('admin.menu.users') }}</h1>
-        <p>{{ t('usersTrust.subtitle') }}</p>
-      </div>
-      <button type="button" class="users-trust__export"
-        @click="actionNotice = t('usersTrust.exportNotice')">
-        <img src="/icons/Download.svg" alt="">{{ t('usersTrust.export') }}
-      </button>
-    </header>
+  <section class="users" aria-labelledby="users-directory-title">
+    <p class="users__intro">{{ t('usersTrust.subtitle') }}</p>
 
-    <!-- รายชื่อและตัวเลขเป็นข้อมูลจริง เหลือแค่ปุ่มคำสั่งที่ยังเป็นตัวอย่าง -->
-    <p class="users-trust__sample"><img src="/icons/Alert.svg" alt="">{{ t('usersTrust.actionsSample') }}</p>
-    <p v-if="actionNotice" class="users-trust__notice" role="status">{{ actionNotice }}<button type="button"
-        :aria-label="t('adminDashboard.closeNotice')" @click="actionNotice = ''">×</button></p>
-
-    <!-- โหลดไม่สำเร็จ -->
-    <div v-if="errorKey" class="users-trust__error" role="alert">
+    <!-- โหลดไม่สำเร็จ / ไม่มีสิทธิ์ -->
+    <div v-if="errorKey" class="users__error" role="alert">
       <span>{{ t(errorKey) }}</span>
-      <button type="button" @click="emit('retry')">{{ t('usersTrust.retry') }}</button>
+      <button type="button" class="button" @click="emit('retry')">{{ t('usersTrust.retry') }}</button>
     </div>
 
-    <section class="users-trust__metrics" :aria-label="t('usersTrust.metricsLabel')" :aria-busy="isLoading">
-      <article><img src="/icons/Users.svg" alt="">
-        <div><strong>{{ metrics.total }}</strong><span>{{ t('usersTrust.metrics.total') }}</span><small class="up">{{ t('usersTrust.metrics.newLast7Days', { count: metrics.newLast7Days }) }}</small></div>
-      </article>
-      <article><img src="/icons/Selected.svg" alt="">
-        <div><strong>{{ metrics.trusted }}</strong><span>{{ t('usersTrust.metrics.trusted') }}</span><small class="up">{{ t('usersTrust.metrics.shareOfAll', { value: sharePercent(metrics.trusted) }) }}</small></div>
-      </article>
-      <article><img src="/icons/Alert.svg" alt="">
-        <div><strong>{{ metrics.unverified }}</strong><span>{{ t('usersTrust.metrics.unverified') }}</span><small class="warn">{{ t('usersTrust.metrics.shareOfAll', { value: sharePercent(metrics.unverified) }) }}</small></div>
-      </article>
-      <article><img src="/icons/Warning-Error.svg" alt="">
-        <div><strong>{{ metrics.risk }}</strong><span>{{ t('usersTrust.metrics.risk') }}</span><small class="risk">{{ t('usersTrust.metrics.shareOfAll', { value: sharePercent(metrics.risk) }) }}</small></div>
-      </article>
-      <article><img src="/icons/Chart.svg" alt="">
-        <div><strong>{{ metrics.newToday }}</strong><span>{{ t('usersTrust.metrics.newToday') }}</span><small class="up">{{ t('usersTrust.metrics.reportsTotal', { count: metrics.totalReports }) }}</small></div>
-      </article>
-    </section>
+    <!-- ตัวเลขสรุป: แถวเดียวคั่นด้วยเส้น -->
+    <dl class="ledger" :aria-label="t('usersTrust.metricsLabel')" :aria-busy="isLoading">
+      <div>
+        <dt>{{ t('usersTrust.metrics.total') }}</dt>
+        <dd>{{ metrics.total }} <small>{{ t('usersTrust.metrics.newLast7Days', { count: metrics.newLast7Days }) }}</small></dd>
+      </div>
+      <div>
+        <dt>{{ t('usersTrust.metrics.scored') }}</dt>
+        <dd>{{ metrics.scored }}</dd>
+      </div>
+      <div>
+        <dt>{{ t('usersTrust.metrics.attention') }}</dt>
+        <dd :class="{ 'ledger__alert': metrics.attention > 0 }">{{ metrics.attention }}</dd>
+      </div>
+      <div>
+        <dt>{{ t('usersTrust.metrics.unverified') }}</dt>
+        <dd>{{ metrics.unverified }}</dd>
+      </div>
+    </dl>
 
-    <div class="users-trust__workspace">
-      <section class="directory" aria-labelledby="directory-title">
+    <div class="users__workspace">
+      <section class="directory" aria-labelledby="users-directory-title">
+        <h2 id="users-directory-title" class="sr-only">{{ t('usersTrust.directory') }}</h2>
+
         <header class="directory__tools">
-          <h2 id="directory-title" class="sr-only">{{ t('usersTrust.directory') }}</h2>
-          <div class="directory__filters" role="tablist" :aria-label="t('usersTrust.filterLabel')">
-            <button v-for="filter in filters" :key="filter" type="button"
-              :class="{ active: activeFilter === filter }" :aria-selected="activeFilter === filter" role="tab"
-              @click="activeFilter = filter">
-              {{ t(`usersTrust.filters.${filter}`) }}<span v-if="filter === 'all'"> ({{ users.length }})</span>
+          <div class="directory__filters" role="group" :aria-label="t('usersTrust.filterLabel')">
+            <button
+              v-for="filter in filters"
+              :key="filter"
+              type="button"
+              class="chip"
+              :aria-pressed="activeFilter === filter"
+              @click="activeFilter = filter"
+            >
+              {{ t(`usersTrust.filters.${filter}`) }}
             </button>
           </div>
-          <label class="directory__search"><img src="/icons/Search.svg" alt=""><span class="sr-only">{{ t('usersTrust.searchLabel') }}</span><input
-              v-model="keyword" type="search" :placeholder="t('usersTrust.searchPlaceholder')"></label>
+          <label class="directory__search">
+            <span class="sr-only">{{ t('usersTrust.searchLabel') }}</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="m20 20-4-4" /></svg>
+            <input v-model.trim="keyword" type="search" :placeholder="t('usersTrust.searchPlaceholder')">
+          </label>
         </header>
 
-        <div class="directory__table-wrap">
-          <table :aria-busy="isLoading">
+        <div class="table-wrap">
+          <table class="table" :aria-busy="isLoading">
             <thead>
               <tr>
-                <th scope="col">{{ t('usersTrust.th.user') }}</th>
-                <th scope="col">{{ t('usersTrust.th.trust') }}</th>
-                <th scope="col">{{ t('usersTrust.th.level') }}</th>
-                <th scope="col">{{ t('usersTrust.th.reports') }}</th>
-                <th scope="col">{{ t('usersTrust.th.verified') }}</th>
-                <th scope="col">{{ t('usersTrust.th.suspicious') }}</th>
-                <th scope="col">{{ t('usersTrust.th.lastActivity') }}</th>
-                <th scope="col"><span class="sr-only">{{ t('usersTrust.th.actions') }}</span></th>
+                <th v-for="[key, label] in columns" :key="key" scope="col" :aria-sort="ariaSort(key)">
+                  <button type="button" class="sort" @click="sortBy(key)">
+                    {{ t(label) }}
+                    <svg viewBox="0 0 12 12" aria-hidden="true" :class="{ 'sort__icon--active': sortKey === key, 'sort__icon--asc': sortKey === key && sortDirection === 'asc' }">
+                      <path d="m3 4.5 3-3 3 3M3 7.5l3 3 3-3" />
+                    </svg>
+                  </button>
+                </th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="isLoading">
-                <td colspan="8" class="directory__empty">{{ t('usersTrust.loading') }}</td>
+                <td :colspan="columns.length" class="empty">{{ t('usersTrust.loading') }}</td>
               </tr>
               <template v-else>
-                <tr v-for="user in pagedUsers" :key="user.id" :class="{ selected: selectedUser?.id === user.id }"
-                  tabindex="0" @click="selectUser(user.id)" @keydown.enter="selectUser(user.id)">
+                <tr v-for="user in pagedUsers" :key="user.id" :class="{ 'is-selected': selectedUser?.id === user.id }">
                   <td>
-                    <div class="user-cell"><span class="user-cell__avatar">{{ user.initials }}</span><span><b>{{ user.name
-                          }}</b><small>{{ user.email }}</small></span></div>
+                    <button
+                      type="button"
+                      class="user-cell"
+                      :aria-label="t('usersTrust.viewDetails', { name: user.name })"
+                      :aria-pressed="selectedUser?.id === user.id"
+                      @click="selectUser(user.id)"
+                    >
+                      <span class="avatar" aria-hidden="true">{{ user.initials }}</span>
+                      <span class="user-cell__text">
+                        <strong>{{ user.name }}</strong>
+                        <span>{{ user.email }}</span>
+                      </span>
+                    </button>
                   </td>
                   <td>
-                    <div class="trust-cell"><b>{{ user.trust }}</b><span><i :class="`tone-${user.tone}`"
-                          :style="{ width: trustWidth(user.trust) }"></i></span></div>
+                    <div class="trust">
+                      <span class="trust__value">{{ trustText(user) }}</span>
+                      <span class="level" :class="`level--${user.tone}`">{{ user.level }}</span>
+                    </div>
                   </td>
-                  <td><span :class="`level level--${user.tone}`">{{ user.level }}</span></td>
-                  <td>{{ user.reports }}</td>
-                  <td class="number-positive">{{ user.verified }}</td>
-                  <td :class="{ 'number-risk': user.suspicious > 2 }">{{ user.suspicious }}</td>
-                  <td>{{ user.lastActivity }}</td>
-                  <td><button type="button" class="row-menu" :aria-label="t('usersTrust.rowActions', { name: user.name })"
-                      @click.stop="openRowActions(user)"><i></i><i></i><i></i></button></td>
+                  <td class="number">{{ user.reports }}</td>
+                  <td class="number">{{ user.verified }}</td>
+                  <td class="number" :class="{ 'number--alert': user.suspicious > 0 }">{{ user.suspicious }}</td>
+                  <td class="muted">{{ user.lastActivity }}</td>
                 </tr>
                 <tr v-if="!filteredUsers.length && !errorKey">
-                  <td colspan="8" class="directory__empty">{{ t('usersTrust.empty') }}</td>
+                  <td :colspan="columns.length" class="empty">{{ t('usersTrust.empty') }}</td>
                 </tr>
               </template>
             </tbody>
           </table>
         </div>
-        <footer class="directory__footer"><span>{{ t('usersTrust.showing', { shown: pagedUsers.length, total: filteredUsers.length }) }}</span>
-          <div :aria-label="t('usersTrust.pagination')">
-            <button type="button" :disabled="currentPage === 1" :aria-label="t('usersTrust.previousPage')" @click="goToPage(currentPage - 1)">‹</button>
-            <button v-for="page in pageCount" :key="page" type="button" :class="{ current: page === currentPage }"
-              :aria-label="t('usersTrust.pageLabel', { page })" :aria-current="page === currentPage ? 'page' : undefined"
-              @click="goToPage(page)">{{ page }}</button>
-            <button type="button" :disabled="currentPage === pageCount" :aria-label="t('usersTrust.nextPage')" @click="goToPage(currentPage + 1)">›</button>
-          </div>
+
+        <footer class="directory__footer">
+          <span>{{ t('usersTrust.showing', { shown: pagedUsers.length, total: filteredUsers.length }) }}</span>
+          <nav class="pager" :aria-label="t('usersTrust.pagination')">
+            <button type="button" class="button" :disabled="currentPage === 1" @click="goToPage(currentPage - 1)">
+              {{ t('usersTrust.previousPage') }}
+            </button>
+            <span aria-live="polite">{{ t('usersTrust.pageOf', { page: currentPage, total: pageCount }) }}</span>
+            <button type="button" class="button" :disabled="currentPage === pageCount" @click="goToPage(currentPage + 1)">
+              {{ t('usersTrust.nextPage') }}
+            </button>
+          </nav>
         </footer>
       </section>
 
-      <aside v-if="selectedUser" class="profile" aria-labelledby="profile-title">
-        <header class="profile__header">
-          <span class="profile__avatar">{{ selectedUser.initials }}</span>
+      <!-- รายละเอียดผู้ใช้ที่เลือก -->
+      <aside v-if="selectedUser" class="detail" aria-labelledby="user-detail-title">
+        <p class="sr-only" aria-live="polite">{{ viewingAnnouncement }}</p>
+        <header class="detail__head">
+          <span class="avatar avatar--large" aria-hidden="true">{{ selectedUser.initials }}</span>
           <div>
-            <h2 id="profile-title">{{ selectedUser.name }}</h2>
-            <p>{{ selectedUser.email }}</p><span :class="`level level--${selectedUser.tone}`">{{ selectedUser.level
-              }}</span>
+            <h2 id="user-detail-title">{{ selectedUser.name }}</h2>
+            <p>{{ selectedUser.email }}</p>
           </div>
         </header>
-        <dl class="profile__facts">
-          <div>
-            <dt>{{ t('usersTrust.joined') }}</dt>
-            <dd>{{ selectedUser.joined }}</dd>
-          </div>
+
+        <dl class="facts">
           <div>
             <dt>{{ t('usersTrust.role') }}</dt>
             <dd>{{ roleLabel(selectedUser.role) }}</dd>
           </div>
           <div>
             <dt>{{ t('usersTrust.emailStatus') }}</dt>
-            <dd :class="{ 'number-positive': selectedUser.emailVerified }">
-              {{ selectedUser.emailVerified ? t('usersTrust.emailVerified') : t('usersTrust.emailUnverified') }}
-            </dd>
+            <dd :class="{ 'facts__ok': selectedUser.emailVerified }">{{ emailLabel(selectedUser) }}</dd>
           </div>
           <div>
             <dt>{{ t('usersTrust.phone') }}</dt>
             <dd>{{ selectedUser.phone || t('usersTrust.notSet') }}</dd>
           </div>
+          <div>
+            <dt>{{ t('usersTrust.joined') }}</dt>
+            <dd>{{ selectedUser.joined }}</dd>
+          </div>
         </dl>
-        <nav class="profile__tabs" :aria-label="t('usersTrust.profileLabel')"><button
-            v-for="tab in profileTabs"
-            :key="tab" type="button" :class="{ active: profileTab === tab }" @click="profileTab = tab">{{
-            t(`usersTrust.tabs.${tab}`) }}</button></nav>
 
-        <template v-if="profileTab === 'overview'">
-          <section class="profile__score">
-            <h3>{{ t('usersTrust.th.trust') }}</h3>
-            <p><strong>{{ selectedUser.trust }}</strong><span>/ 100</span></p>
-            <div><i :class="`tone-${selectedUser.tone}`" :style="{ width: trustWidth(selectedUser.trust) }"></i></div>
-            <b>{{ trustLabel(selectedUser.trust)
-              }}</b><small>{{ t('usersTrust.scoreHint') }}</small>
-          </section>
-          <section class="profile__breakdown">
-            <h3>{{ t('usersTrust.scoreSources') }}</h3>
-            <ul>
-              <li
-                v-for="item in selectedBreakdown"
-                :key="item[0]"><span>{{ item[0] }}</span><b :class="item[2]">{{ item[1] }}</b></li>
-            </ul>
-          </section>
-          <section class="profile__activity">
-            <header>
-              <h3>{{ t('usersTrust.th.lastActivity') }}</h3>
-            </header>
-            <ul v-if="selectedUser.lastReportAt">
-              <li><img src="/icons/Report.svg" alt=""><span>{{ t('usersTrust.lastReport') }}<small>{{ selectedUser.lastActivity }}</small></span></li>
-            </ul>
-            <p v-else class="profile__placeholder">{{ t('usersTrust.noReports') }}</p>
-          </section>
-        </template>
-        <p v-else class="profile__placeholder">{{ t('usersTrust.tabPlaceholder', { tab: t(`usersTrust.tabs.${profileTab}`) }) }}</p>
-        <footer class="profile__actions"><button type="button"
-            @click="runAction(t('usersTrust.actions.watchlistAdd'))">{{ t('usersTrust.actions.watchlist') }}</button><button type="button"
-            @click="runAction(t('usersTrust.actions.restrict'))">{{ t('usersTrust.actions.restrict') }}</button><button type="button"
-            @click="runAction(t('usersTrust.actions.suspend'))">{{ t('usersTrust.actions.suspend') }}</button></footer>
+        <section class="detail__section" aria-labelledby="user-score-title">
+          <h3 id="user-score-title">{{ t('usersTrust.th.trust') }}</h3>
+          <template v-if="selectedUser.isScored">
+            <p class="score"><strong>{{ selectedUser.trust }}</strong> / 100 <span class="level" :class="`level--${selectedUser.tone}`">{{ selectedUser.level }}</span></p>
+            <div class="meter" aria-hidden="true"><span :class="`meter--${selectedUser.tone}`" :style="{ width: trustWidth(selectedUser.trust) }"></span></div>
+          </template>
+          <p v-else class="muted">{{ t('usersTrust.noScoreHint') }}</p>
+        </section>
+
+        <section class="detail__section" aria-labelledby="user-reports-title">
+          <h3 id="user-reports-title">{{ t('usersTrust.scoreSources') }}</h3>
+          <ul class="breakdown">
+            <li v-for="item in selectedBreakdown" :key="item[0]">
+              <span>{{ item[0] }}</span>
+              <b :class="`breakdown--${item[2]}`">{{ item[1] }}</b>
+            </li>
+          </ul>
+          <p class="muted">
+            {{ t('usersTrust.lastReport') }}: {{ selectedUser.lastActivity }}
+          </p>
+        </section>
       </aside>
     </div>
   </section>
 </template>
 
 <style scoped>
-.users-trust__error {
+.users {
+  display: grid;
+  gap: 16px;
+  color: var(--gs-ink);
+}
+
+.users__intro {
+  margin: 0;
+  color: var(--gs-ink-2);
+  font-size: 15px;
+}
+
+.users__error {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin: 0 0 16px;
-  padding: 12px 14px;
+  padding: 12px 16px;
   border: 1px solid #efc2c0;
-  border-radius: 8px;
-  background: #fbeceb;
-  color: #a51f24;
+  border-radius: var(--gs-radius);
+  background: var(--gs-danger-tint);
+  color: var(--gs-danger-hover);
+  font-size: 15px;
   font-weight: 700;
 }
 
-.users-trust__error button {
-  min-height: 36px;
-  padding: 0 14px;
-  border: 1px solid #a51f24;
-  border-radius: 6px;
-  background: #fff;
-  color: #a51f24;
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.users-trust {
-  color: #14235f
-}
-
-.users-trust__heading {
+/* ---- ตัวเลขสรุป ---- */
+.ledger {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1.5rem;
-  margin-bottom: 1rem
-}
-
-.users-trust__heading h1 {
+  flex-wrap: wrap;
+  gap: 12px 0;
   margin: 0;
-  font-size: clamp(1.65rem, 2.4vw, 2.35rem);
-  letter-spacing: -.035em;
-  line-height: 1.1
+  padding: 16px 24px;
+  border: 1px solid var(--gs-line);
+  border-radius: var(--gs-radius);
+  background: var(--gs-surface);
 }
 
-.users-trust__heading p {
-  margin: .4rem 0 0;
-  color: #52659a
-}
-
-.users-trust__export {
-  display: inline-flex;
-  align-items: center;
-  gap: .55rem;
-  min-height: 2.8rem;
-  padding: 0 1rem;
-  border: 0;
-  border-radius: .55rem;
-  background: #4267ed;
-  color: #fff;
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 .5rem 1.25rem rgba(50, 92, 210, .2)
-}
-
-.users-trust__export img {
-  width: 1.1rem;
-  filter: brightness(0) invert(1)
-}
-
-.users-trust__sample,
-.users-trust__notice {
-  display: flex;
-  align-items: center;
-  gap: .45rem;
-  margin: 0 0 1rem;
-  padding: .7rem .85rem;
-  border: 1px solid #f3dfaa;
-  border-radius: .5rem;
-  background: #fff9e8;
-  color: #7d5a04;
-  font-size: .86rem
-}
-
-.users-trust__sample img {
-  width: 1rem
-}
-
-.users-trust__notice {
-  border-color: #cbd8fd;
-  background: #f3f6ff;
-  color: #254ea7
-}
-
-.users-trust__notice button {
-  margin-left: auto;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font-size: 1.2rem;
-  cursor: pointer
-}
-
-.users-trust__metrics {
+.ledger > div {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: .65rem;
-  margin-bottom: 1rem
+  gap: 2px;
+  min-width: 150px;
+  padding: 0 24px;
+  border-left: 1px solid var(--gs-line);
 }
 
-.users-trust__metrics article {
+.ledger > div:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.ledger dt {
+  color: var(--gs-ink-2);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.ledger dd {
   display: flex;
-  gap: .7rem;
-  align-items: flex-start;
-  padding: 1rem .85rem;
-  border: 1px solid #e1e8f6;
-  border-radius: .65rem;
-  background: #fff;
-  box-shadow: 0 .45rem 1.25rem rgba(37, 68, 130, .06)
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
 }
 
-.users-trust__metrics img {
-  width: 2rem;
-  height: 2rem;
-  padding: .4rem;
-  border-radius: .55rem;
-  background: #f1f5ff
+.ledger small {
+  color: var(--gs-ink-2);
+  font-size: 14px;
+  font-weight: 600;
 }
 
-.users-trust__metrics strong,
-.users-trust__metrics span,
-.users-trust__metrics small {
-  display: block
+.ledger .ledger__alert {
+  color: var(--gs-danger);
 }
 
-.users-trust__metrics strong {
-  font-size: 1.1rem;
-  line-height: 1
-}
-
-.users-trust__metrics span {
-  margin-top: .2rem;
-  color: #53679f;
-  font-size: .76rem
-}
-
-.users-trust__metrics small {
-  margin-top: .45rem;
-  font-size: .72rem
-}
-
-.up,
-.positive {
-  color: #24975c
-}
-
-.warn {
-  color: #cf8010
-}
-
-.risk,
-.negative {
-  color: #dc3d40
-}
-
-.users-trust__workspace {
+/* ---- พื้นที่ทำงาน: ตาราง + รายละเอียด ---- */
+.users__workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1.8fr) minmax(19rem, .8fr);
-  gap: 1rem;
-  align-items: start
+  grid-template-columns: minmax(0, 1fr) 300px;
+  align-items: start;
+  gap: 16px;
 }
 
 .directory,
-.profile {
-  border: 1px solid #e1e8f6;
-  border-radius: .7rem;
-  background: #fff;
-  box-shadow: 0 .5rem 1.4rem rgba(37, 68, 130, .06)
-}
-
-.directory {
-  overflow: hidden
+.detail {
+  min-width: 0;
+  border: 1px solid var(--gs-line);
+  border-radius: var(--gs-radius);
+  background: var(--gs-surface);
 }
 
 .directory__tools {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: .75rem;
-  padding: .75rem;
-  border-bottom: 1px solid #e7edf8
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--gs-line);
 }
 
 .directory__filters {
   display: flex;
-  gap: .35rem;
-  flex: 1
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-.directory__filters button,
-.profile__tabs button {
-  border: 0;
-  border-radius: .45rem;
-  background: #f2f5fb;
-  color: #29427f;
+.chip {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--gs-line-strong);
+  border-radius: 999px;
+  background: var(--gs-surface);
+  color: var(--gs-ink-2);
   font: inherit;
-  font-size: .77rem;
-  cursor: pointer
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
 }
 
-.directory__filters button {
-  padding: .58rem .66rem
+.chip:hover {
+  background: var(--gs-surface-sunken);
 }
 
-.directory__filters button.active {
-  background: #4267ed;
+.chip[aria-pressed='true'] {
+  border-color: var(--gs-action);
+  background: var(--gs-action);
   color: #fff;
-  box-shadow: 0 .25rem .75rem rgba(66, 103, 237, .22)
 }
 
 .directory__search {
   display: flex;
+  flex: 0 1 300px;
+  min-width: 200px;
+  min-height: 40px;
   align-items: center;
-  gap: .4rem;
-  min-width: 12.5rem;
-  padding: 0 .6rem;
-  border: 1px solid #dce6f7;
-  border-radius: .45rem;
-  background: #fff
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid var(--gs-line-strong);
+  border-radius: var(--gs-radius-sm);
+  background: var(--gs-surface);
 }
 
-.directory__search img {
-  width: .95rem
+.directory__search:focus-within {
+  border-color: var(--gs-action);
+  box-shadow: var(--gs-focus);
+}
+
+.directory__search svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: var(--gs-ink-2);
+  stroke-linecap: round;
+  stroke-width: 2;
 }
 
 .directory__search input {
   width: 100%;
-  min-height: 2.1rem;
   border: 0;
   outline: 0;
-  color: #14235f;
+  background: transparent;
+  color: var(--gs-ink);
   font: inherit;
-  font-size: .75rem
+  font-size: 15px;
 }
 
-.directory__table-wrap {
-  overflow-x: auto
+.directory__search input::placeholder {
+  color: var(--gs-muted);
 }
 
-table {
+/* ---- ตาราง ---- */
+.table-wrap {
+  overflow-x: auto;
+}
+
+.table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 49rem;
-  font-size: .76rem
+  font-size: 14px;
 }
 
-th {
+.table th {
+  padding: 0 4px;
+  border-bottom: 1px solid var(--gs-line);
   text-align: left;
-  padding: .75rem .8rem;
-  color: #3e5188;
-  font-size: .68rem;
-  font-weight: 700;
   white-space: nowrap;
-  background: #f9fbff
 }
 
-td {
-  padding: .58rem .8rem;
-  border-top: 1px solid #edf1f8;
-  color: #455a91;
-  white-space: nowrap
-}
-
-tbody tr {
+.sort {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--gs-radius-sm);
+  background: transparent;
+  color: var(--gs-ink-2);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
-  transition: background .18s ease
 }
 
-tbody tr:hover,
-tbody tr.selected {
-  background: #f5f8ff
+.sort:hover {
+  color: var(--gs-ink);
 }
 
-tbody tr:focus-visible {
-  outline: 2px solid #4267ed;
-  outline-offset: -2px
+.sort svg {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: var(--gs-line-strong);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.6;
+}
+
+.sort .sort__icon--active {
+  stroke: var(--gs-action);
+}
+
+.sort .sort__icon--asc {
+  transform: scaleY(-1);
+}
+
+.table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--gs-line);
+  vertical-align: middle;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.table tr.is-selected td {
+  background: var(--gs-action-tint);
 }
 
 .user-cell {
   display: flex;
+  width: 100%;
+  min-width: 240px;
+  min-height: 44px;
   align-items: center;
-  gap: .5rem
+  gap: 10px;
+  padding: 4px;
+  border: 0;
+  border-radius: var(--gs-radius-sm);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
-.user-cell__avatar,
-.profile__avatar {
+.user-cell:hover strong {
+  color: var(--gs-action);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.user-cell__text {
   display: grid;
-  place-items: center;
-  flex: 0 0 auto;
-  border-radius: 50%;
-  background: #e8eefc;
-  color: #3658b4;
-  font-weight: 800
+  min-width: 0;
 }
 
-.user-cell__avatar {
-  width: 2rem;
-  height: 2rem;
-  font-size: .62rem
+.user-cell__text strong {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.45;
 }
 
-.user-cell b,
-.user-cell small {
-  display: block
-}
-
-.user-cell b {
-  color: #172966
-}
-
-.user-cell small {
-  margin-top: .16rem;
-  color: #7182af;
-  font-size: .65rem
-}
-
-.trust-cell {
-  display: grid;
-  grid-template-columns: 1.5rem 1fr;
-  align-items: center;
-  gap: .35rem
-}
-
-.trust-cell b {
-  color: #1c3070
-}
-
-.trust-cell span,
-.profile__score>div {
-  display: block;
-  height: .5rem;
+.user-cell__text span {
   overflow: hidden;
-  border-radius: 10rem;
-  background: #e9eef9
+  color: var(--gs-ink-2);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.trust-cell i,
-.profile__score i {
-  display: block;
-  height: 100%;
-  border-radius: inherit
+.avatar {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--gs-action-tint);
+  color: var(--gs-action);
+  font-size: 14px;
+  font-weight: 800;
 }
 
-.tone-trusted {
-  background: #51bf69
+.avatar--large {
+  width: 52px;
+  height: 52px;
+  font-size: 18px;
 }
 
-.tone-active {
-  background: #4d76ed
+.trust {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
 }
 
-.tone-watchlist {
-  background: #eba538
+.trust__value {
+  min-width: 28px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
 }
 
-.tone-risk {
-  background: #e65252
-}
-
+/* ระดับ: ใช้ข้อความ + สี ไม่ใช้สีอย่างเดียว */
 .level {
   display: inline-block;
-  padding: .32rem .48rem;
-  border-radius: .35rem;
-  font-size: .68rem;
-  font-weight: 700
+  padding: 2px 8px;
+  border-radius: var(--gs-radius-sm);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .level--trusted {
-  background: #e9f9ec;
-  color: #2a9653
+  background: #e3f1e8;
+  color: var(--gs-verified);
 }
 
 .level--active {
-  background: #edf3ff;
-  color: #4169d5
+  background: var(--gs-action-tint);
+  color: var(--gs-action);
 }
 
 .level--watchlist {
-  background: #fff6dc;
-  color: #ad6d08
+  background: var(--gs-pending-tint);
+  color: var(--gs-pending);
 }
 
 .level--risk {
-  background: #fff0f0;
-  color: #db4141
+  background: var(--gs-danger-tint);
+  color: var(--gs-danger-hover);
 }
 
-.number-positive {
-  color: #219759
+.level--unscored {
+  background: var(--gs-surface-sunken);
+  color: var(--gs-ink-2);
+  box-shadow: inset 0 0 0 1px var(--gs-line);
 }
 
-.number-risk {
-  color: #dd3b40
+.number {
+  font-variant-numeric: tabular-nums;
 }
 
-.row-menu {
-  display: inline-flex;
-  gap: .16rem;
-  align-items: center;
-  justify-content: center;
-  width: 1.9rem;
-  height: 1.9rem;
-  border: 1px solid #dfe7f5;
-  border-radius: .4rem;
-  background: #fff;
-  cursor: pointer
+.number--alert {
+  color: var(--gs-danger-hover);
+  font-weight: 800;
 }
 
-.row-menu i {
-  width: .16rem;
-  height: .16rem;
-  border-radius: 50%;
-  background: #223875
+.muted {
+  color: var(--gs-ink-2);
 }
 
-.directory__empty {
+.table .muted {
+  white-space: nowrap;
+}
+
+.empty {
+  padding: 24px 16px;
+  color: var(--gs-ink-2);
   text-align: center;
-  padding: 2rem
 }
 
 .directory__footer {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
   align-items: center;
-  padding: .75rem .9rem;
-  color: #52669b;
-  font-size: .75rem
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--gs-line);
+  color: var(--gs-ink-2);
+  font-size: 14px;
 }
 
-.directory__footer div {
-  display: flex;
-  gap: .25rem
-}
-
-.directory__footer button {
-  width: 1.85rem;
-  height: 1.85rem;
-  border: 1px solid #dce5f5;
-  border-radius: .35rem;
-  background: #fff;
-  color: #213a7d;
-  cursor: pointer
-}
-
-.directory__footer button.current {
-  border-color: #4267ed;
-  background: #4267ed;
-  color: #fff
-}
-
-.directory__footer button:disabled {
-  opacity: .45;
-  cursor: not-allowed
-}
-
-.profile {
-  overflow: hidden
-}
-
-.profile__header {
+.pager {
   display: flex;
   align-items: center;
-  gap: .75rem;
-  padding: 1rem
+  gap: 12px;
 }
 
-.profile__avatar {
-  width: 4rem;
-  height: 4rem;
-  background: #e3e9f6;
-  font-size: 1rem
-}
-
-.profile__header h2 {
-  margin: 0;
-  color: #132562;
-  font-size: 1rem
-}
-
-.profile__header p {
-  margin: .18rem 0 .45rem;
-  color: #6679aa;
-  font-size: .72rem
-}
-
-.profile__facts {
-  display: grid;
-  gap: .5rem;
-  margin: 0;
-  padding: 0 1rem 1rem;
-  color: #52669b;
-  font-size: .72rem
-}
-
-.profile__facts div {
-  display: flex;
-  justify-content: space-between;
-  gap: .75rem
-}
-
-.profile__facts dt {
-  color: #7182ae
-}
-
-.profile__facts dd {
-  margin: 0;
-  text-align: right;
-  color: #3c5189
-}
-
-.profile__tabs {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  border-top: 1px solid #e9eef8;
-  border-bottom: 1px solid #e9eef8
-}
-
-.profile__tabs button {
-  padding: .72rem .2rem;
-  border-radius: 0;
-  background: #fff;
-  font-size: .67rem
-}
-
-.profile__tabs button.active {
-  color: #4267ed;
-  box-shadow: inset 0 -2px #4267ed
-}
-
-.profile__score,
-.profile__breakdown,
-.profile__activity {
-  padding: .9rem 1rem;
-  border-bottom: 1px solid #e9eef8
-}
-
-.profile h3 {
-  margin: 0;
-  color: #1c3070;
-  font-size: .86rem
-}
-
-.profile__score p {
-  display: flex;
-  align-items: baseline;
-  gap: .25rem;
-  margin: .45rem 0
-}
-
-.profile__score strong {
-  color: #329658;
-  font-size: 2rem;
-  line-height: 1
-}
-
-.profile__score p span {
-  color: #52669b
-}
-
-.profile__score>b {
-  display: block;
-  margin-top: .5rem;
-  color: #2f9657;
-  font-size: .8rem
-}
-
-.profile__score small {
-  display: block;
-  margin-top: .28rem;
-  color: #576a9d;
-  font-size: .7rem;
-  line-height: 1.35
-}
-
-.profile__breakdown ul,
-.profile__activity ul {
-  margin: .6rem 0 0;
-  padding: 0;
-  list-style: none
-}
-
-.profile__breakdown li {
-  display: flex;
-  justify-content: space-between;
-  gap: .5rem;
-  padding: .36rem 0;
-  border-bottom: 1px solid #f0f3fa;
-  color: #53679a;
-  font-size: .72rem
-}
-
-.profile__breakdown li:last-child {
-  border-bottom: 0
-}
-
-.profile__activity header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between
-}
-
-.profile__activity header button {
-  border: 0;
-  background: transparent;
-  color: #4267ed;
+/* ---- ปุ่ม ---- */
+.button {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--gs-line-strong);
+  border-radius: var(--gs-radius-sm);
+  background: var(--gs-surface);
+  color: var(--gs-action);
   font: inherit;
-  font-size: .72rem;
-  cursor: pointer
-}
-
-.profile__activity li {
-  display: flex;
-  gap: .45rem;
-  align-items: flex-start;
-  padding: .42rem 0;
-  color: #2a407d;
-  font-size: .72rem
-}
-
-.profile__activity li img {
-  width: 1.25rem;
-  height: 1.25rem;
-  padding: .18rem;
-  border-radius: 50%;
-  background: #edf2ff
-}
-
-.profile__activity li span,
-.profile__activity li small {
-  display: block
-}
-
-.profile__activity li small {
-  margin-top: .12rem;
-  color: #7182ad;
-  font-size: .65rem
-}
-
-.profile__placeholder {
-  min-height: 11rem;
-  margin: 0;
-  padding: 1rem;
-  color: #6578a9;
-  font-size: .78rem;
-  line-height: 1.5
-}
-
-.profile__actions {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: .4rem;
-  padding: 1rem
-}
-
-.profile__actions button {
-  min-height: 2.2rem;
-  border: 1px solid #efbe4d;
-  border-radius: .4rem;
-  background: #fffdf5;
-  color: #9c650a;
-  font: inherit;
-  font-size: .68rem;
+  font-size: 14px;
   font-weight: 700;
-  cursor: pointer
+  cursor: pointer;
 }
 
-.profile__actions button:nth-child(2) {
-  border-color: #eb873b;
-  background: #ee7a34;
-  color: #fff
+.button:hover:not(:disabled) {
+  background: var(--gs-action-tint);
 }
 
-.profile__actions button:nth-child(3) {
-  border-color: #dc4040;
-  background: #dc4040;
-  color: #fff
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
-.users-trust button:focus-visible,
-.users-trust input:focus-visible {
-  outline: 2px solid #4267ed;
-  outline-offset: 2px
+.button:focus-visible,
+.chip:focus-visible,
+.sort:focus-visible,
+.user-cell:focus-visible {
+  outline: none;
+  box-shadow: var(--gs-focus);
+}
+
+/* ---- รายละเอียด ---- */
+.detail {
+  position: sticky;
+  top: 0;
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+}
+
+.detail__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.detail__head > div {
+  min-width: 0;
+}
+
+.detail__head h2 {
+  margin: 0;
+  overflow: hidden;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail__head p {
+  margin: 0;
+  overflow: hidden;
+  color: var(--gs-ink-2);
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.facts {
+  display: grid;
+  margin: 0;
+}
+
+.facts > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid var(--gs-line);
+  font-size: 14px;
+}
+
+.facts dt {
+  color: var(--gs-ink-2);
+}
+
+.facts dd {
+  margin: 0;
+  font-weight: 700;
+  text-align: right;
+}
+
+.facts .facts__ok {
+  color: var(--gs-verified);
+}
+
+.detail__section {
+  display: grid;
+  gap: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--gs-line);
+}
+
+.detail__section h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.detail__section .muted {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.score {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  margin: 0;
+  color: var(--gs-ink-2);
+  font-size: 14px;
+}
+
+.score strong {
+  color: var(--gs-ink);
+  font-size: 28px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.meter {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--gs-surface-sunken);
+}
+
+.meter span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--gs-action);
+}
+
+.meter .meter--trusted {
+  background: var(--gs-verified);
+}
+
+.meter .meter--watchlist {
+  background: var(--gs-pending);
+}
+
+.meter .meter--risk {
+  background: var(--gs-danger);
+}
+
+.breakdown {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.breakdown li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  font-size: 14px;
+}
+
+.breakdown b {
+  font-variant-numeric: tabular-nums;
+}
+
+.breakdown .breakdown--positive {
+  color: var(--gs-verified);
+}
+
+.breakdown .breakdown--negative {
+  color: var(--gs-danger-hover);
 }
 
 .sr-only {
   position: absolute;
   width: 1px;
   height: 1px;
-  padding: 0;
-  margin: -1px;
   overflow: hidden;
-  clip: rect(0, 0, 0, 0);
+  clip: rect(0 0 0 0);
   white-space: nowrap;
-  border: 0
 }
 
-@media (max-width:78rem) {
-  .users-trust__metrics {
-    grid-template-columns: repeat(3, minmax(0, 1fr))
+/* ---- จอแคบ ---- */
+@media (max-width: 1180px) {
+  .users__workspace {
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .users-trust__workspace {
-    grid-template-columns: 1fr
-  }
-
-  .profile {
-    display: grid;
-    grid-template-columns: 1fr 1fr
-  }
-
-  .profile__header,
-  .profile__facts,
-  .profile__tabs,
-  .profile__actions {
-    grid-column: 1/-1
-  }
-
-  .profile__score,
-  .profile__breakdown,
-  .profile__activity {
-    border-bottom: 0
-  }
-
-  .profile__activity {
-    border-left: 1px solid #e9eef8
+  .detail {
+    position: static;
   }
 }
 
-@media (max-width:46rem) {
-  .users-trust__heading {
-    align-items: stretch;
-    flex-direction: column
+@media (max-width: 640px) {
+  .ledger {
+    padding: 16px;
   }
 
-  .users-trust__export {
-    justify-content: center
-  }
-
-  .users-trust__metrics {
-    grid-template-columns: repeat(2, minmax(0, 1fr))
-  }
-
-  .directory__tools {
-    align-items: stretch;
-    flex-direction: column
-  }
-
-  .directory__filters {
-    overflow-x: auto;
-    padding-bottom: .15rem
-  }
-
-  .directory__filters button {
-    white-space: nowrap
+  .ledger > div {
+    flex: 1 1 45%;
+    min-width: 0;
+    padding: 0;
+    border-left: 0;
   }
 
   .directory__search {
-    min-width: 0
-  }
-
-  .profile {
-    display: block
-  }
-
-  .profile__activity {
-    border-top: 1px solid #e9eef8;
-    border-left: 0
-  }
-}
-
-@media (max-width:30rem) {
-  .users-trust__metrics {
-    grid-template-columns: 1fr
+    flex: 1 1 100%;
   }
 
   .directory__footer {
-    align-items: flex-start;
-    gap: .5rem;
-    flex-direction: column
+    justify-content: center;
   }
 }
 </style>

@@ -50,14 +50,14 @@ const triggers = {
       <li
         v-for="item in data"
         :key="item.label"
-        class="grid grid-cols-[10px_16px_minmax(0,1fr)_auto] items-center gap-2 text-xs text-muted-foreground"
+        class="grid grid-cols-[10px_16px_minmax(0,1fr)_auto] items-center gap-2 text-sm text-foreground"
       >
         <span class="h-2.5 w-2.5 rounded-sm" :style="{ background: item.color }" aria-hidden="true" />
         <img :src="item.icon" alt="" class="h-4 w-4" />
         <span class="truncate">{{ item.label }}</span>
         <span class="tabular-nums">
           <b class="font-bold text-foreground">{{ item.count }}</b>
-          <small class="ml-1">({{ item.percent }}%)</small>
+          <span class="ml-1 text-muted-foreground">({{ item.percent }}%)</span>
         </span>
       </li>
     </ul>

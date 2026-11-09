@@ -17,7 +17,6 @@ export const defaultSettings = {
   // รัศมีแจ้งเตือนเหตุใกล้ตัว (เมตร)
   notifyRadius: 5000,
   showNameOnReports: false,
-  shareLocation: true,
 }
 
 export const radiusOptions = [1000, 5000, 10000, 25000]

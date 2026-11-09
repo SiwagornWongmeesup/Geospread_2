@@ -7,15 +7,22 @@
         <template v-else>{{ initial }}</template>
       </span>
       <div class="profile-summary__text">
-        <h1 :id="titleId">{{ displayName }}</h1>
+        <h2 :id="titleId">{{ displayName }}</h2>
         <p>
           <span class="profile-summary__role">{{ roleLabel }}</span>
           <span v-if="memberSince" class="profile-summary__since">{{ t('profilePage.memberSince', { date: memberSince }) }}</span>
         </p>
       </div>
 
-      <!-- คะแนนความน่าเชื่อถือ 0–100 -->
-      <div v-if="trustScore !== null" class="trust" :class="`trust--${trustLevel}`">
+      <!-- คะแนนความน่าเชื่อถือ 0–100: ยังไม่เคยรายงาน = ยังไม่มีคะแนน (100 เป็นแค่ค่าเริ่มต้นของระบบ) -->
+      <div v-if="showTrust && account.isLoaded && !isScored" class="trust trust--unscored">
+        <div class="trust__head">
+          <span>{{ t('profilePage.trustTitle') }}</span>
+          <strong>{{ t('profilePage.trustUnscored') }}</strong>
+        </div>
+        <p class="trust__hint">{{ t('profilePage.trustUnscoredHint') }}</p>
+      </div>
+      <div v-else-if="showTrust && account.isLoaded && trustScore !== null" class="trust" :class="`trust--${trustLevel}`">
         <div class="trust__head">
           <span>{{ t('profilePage.trustTitle') }}</span>
           <strong>{{ trustScore }}<small>/100</small></strong>
@@ -29,7 +36,7 @@
           :aria-valuetext="`${trustScore}/100 ${trustLevelLabel}`"
           :aria-label="t('profilePage.trustTitle')"
         >
-          <span :style="{ width: `${trustScore}%` }" />
+          <span :style="{ transform: `scaleX(${trustScore / 100})` }" />
         </div>
         <p class="trust__level">{{ trustLevelLabel }}</p>
         <p class="trust__hint">{{ t('profilePage.trustHint') }}</p>
@@ -41,7 +48,7 @@
         <img src="/icons/User.svg" alt="" />
       </span>
       <div class="profile-summary__text">
-        <h1 :id="titleId">{{ t('profilePage.guestTitle') }}</h1>
+        <h2 :id="titleId">{{ t('profilePage.guestTitle') }}</h2>
         <p>{{ t('profilePage.guestText') }}</p>
       </div>
       <div class="profile-summary__actions">
@@ -56,6 +63,14 @@
 const props = defineProps({
   // ข้อมูลโปรไฟล์จาก useProfile { name, lastname, email, role, avatarUrl, trustScore, createdAt } หรือ null ถ้ายังไม่ล็อกอิน
   account: { type: Object, default: null },
+  // false = ไม่แสดงคะแนนความน่าเชื่อถือ (โปรไฟล์ของแอดมิน)
+  showTrust: { type: Boolean, default: true },
+})
+
+// มีคะแนนจริงก็ต่อเมื่อเคยส่งรายงานแล้ว
+const isScored = computed(() => {
+  const total = props.account?.reports?.total ?? 0
+  return total > 0
 })
 
 const { t, locale } = useLocale()
@@ -159,13 +174,13 @@ const memberSince = computed(() => {
   min-width: 0;
 }
 
-.profile-summary__text h1 {
+.profile-summary__text h2 {
   overflow: hidden;
   margin: 0;
   color: var(--gs-ink);
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 800;
-  line-height: 1.4;
+  line-height: 1.35;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -249,7 +264,17 @@ const memberSince = computed(() => {
   height: 100%;
   border-radius: inherit;
   background: var(--trust-color);
-  transition: width 300ms ease;
+  /* ใช้ scaleX แทนการเปลี่ยนความกว้าง จะได้ไม่ต้องคำนวณ layout ใหม่ */
+  transform-origin: left center;
+  transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.trust--unscored {
+  --trust-color: var(--gs-ink-2);
+}
+
+.trust--unscored .trust__head strong {
+  font-size: 18px;
 }
 
 .trust__level {

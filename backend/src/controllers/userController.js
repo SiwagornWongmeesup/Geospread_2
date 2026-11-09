@@ -15,6 +15,16 @@ const getAllUsers = async (req, res, next) => {
     }
 };
 
+// GET /users/me — โปรไฟล์ของผู้ใช้ที่ล็อกอินอยู่
+const getMyProfile = async (req, res, next) => {
+    try {
+        const profile = await userService.getMyProfile(req.user.id);
+        res.status(200).json({ success: true, data: profile });
+    } catch (error) {
+        next(error);
+    }
+};
+
 const getUserById = async (req, res, next) => {
     try {
         const user = await userService.getUserById(req.params.id);
@@ -100,6 +110,7 @@ const resetPassword = async (req, res, next) => {
 module.exports = {
     getAllUsers,
     getUserById,
+    getMyProfile,
     createUser,
     loginUser,
     verifyEmail,

@@ -96,7 +96,7 @@
           aria-controls="header-profile"
           @click="toggleMenu('profile')"
         >
-          <span class="profile-avatar">{{ userInitial }}</span>
+          <span class="profile-avatar"><img v-if="userAvatarUrl" :src="userAvatarUrl" alt="" class="profile-avatar__image" /><template v-else>{{ userInitial }}</template></span>
           <span class="profile-avatar__status" aria-hidden="true" />
         </button>
 
@@ -108,7 +108,7 @@
           >
             <div class="profile-card">
               <span class="profile-card__avatar">
-                <span class="profile-avatar">{{ userInitial }}</span>
+                <span class="profile-avatar"><img v-if="userAvatarUrl" :src="userAvatarUrl" alt="" class="profile-avatar__image" /><template v-else>{{ userInitial }}</template></span>
                 <span class="profile-avatar__status" aria-hidden="true" />
               </span>
               <span class="profile-card__text">
@@ -188,6 +188,12 @@ const pageTitles = {
   '/admin/incidents': 'admin.menu.incidents',
   '/admin/users': 'admin.menu.users',
   '/admin/profile': 'nav.profile',
+  '/admin/help-requests': 'admin.menu.requests',
+  '/admin/events': 'admin.menu.events',
+  '/admin/guides': 'admin.menu.guides',
+  '/admin/analytics': 'admin.menu.analytics',
+  '/admin/notifications': 'admin.menu.notifications',
+  '/admin/settings': 'admin.menu.settings',
 }
 
 const pageTitle = computed(() => {
@@ -224,10 +230,27 @@ const currentAuthPage = computed(() => {
 
 const currentUser = computed(() => getUser()?.user)
 
+// ข้อมูลโปรไฟล์ชุดเดียวกับหน้าโปรไฟล์ (GET /users/me) ชื่อใน header จะได้ตรงกับหน้าโปรไฟล์
+// cookie มีแค่อีเมลและสิทธิ์ ไม่มีชื่อที่ผู้ใช้ตั้งไว้
+const { profile, loadProfile } = useProfile()
+
+// ชื่อที่แสดง: ชื่อ-นามสกุลที่ตั้งไว้ ถ้ายังไม่ได้ตั้งใช้อีเมล
 const userDisplayName = computed(() => {
-  if (!currentUser.value) return t('common.user')
-  return currentUser.value.name || currentUser.value.email?.split('@')[0] || t('common.user')
+  const fullName = [profile.value?.name, profile.value?.lastname].filter(Boolean).join(' ')
+  if (fullName) {
+    return fullName
+  }
+  if (profile.value?.email) {
+    return profile.value.email
+  }
+  if (currentUser.value?.email) {
+    return currentUser.value.email
+  }
+  return t('common.user')
 })
+
+// รูปโปรไฟล์ (ถ้ามี) แทนตัวอักษรย่อ
+const userAvatarUrl = computed(() => profile.value?.avatarUrl ?? null)
 
 const userInitial = computed(() => {
   return userDisplayName.value.charAt(0).toUpperCase()
@@ -260,6 +283,10 @@ const handleKeydown = (event) => {
 }
 
 onMounted(() => {
+  // หน้าอื่นที่ไม่ใช่หน้าโปรไฟล์ยังไม่ได้โหลดข้อมูลโปรไฟล์ ให้ header โหลดเอง
+  if (isLoggedIn.value && !profile.value?.isLoaded) {
+    loadProfile()
+  }
   document.addEventListener('click', handleDocumentClick)
   document.addEventListener('keydown', handleKeydown)
 })
@@ -546,6 +573,16 @@ const handleLogout = () => {
   color: #ffffff;
   font-size: 16px;
   font-weight: 700;
+}
+
+.profile-avatar {
+  overflow: hidden;
+}
+
+.profile-avatar__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 /* จุดสถานะออนไลน์ที่มุมขวาล่างของรูปโปรไฟล์ */

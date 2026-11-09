@@ -224,8 +224,35 @@ Database (PostgreSQL + PostGIS)
 
 | Method | Path | คำอธิบาย | จำเป็นต้องยืนยันตัวตน |
 |--------|------|-------------|---------------|
-| GET | `/users/me` | ดึงข้อมูลโปรไฟล์ผู้ใช้ปัจจุบัน | ใช่ |
-| PATCH | `/users/me` | อัปเดตข้อมูลโปรไฟล์ | ใช่ |
+| GET | `/users/me` | ดึงข้อมูลโปรไฟล์ผู้ใช้ปัจจุบัน (ใช้ id จาก token เท่านั้น) พร้อมจำนวนรายงานของตัวเอง | ใช่ |
+| PATCH | `/users/me` | อัปเดตข้อมูลโปรไฟล์ (ยังไม่ได้ทำ — หน้าโปรไฟล์ตอนนี้บันทึกการแก้ไขไว้ในเครื่องก่อน) | ใช่ |
+
+#### `GET /users/me` — โปรไฟล์ของผู้ใช้ที่ล็อกอินอยู่
+
+- ต้องส่ง `Authorization: Bearer <token>` (ไม่มี token ได้ 401, ไม่พบผู้ใช้ได้ 404)
+- ใช้ `id` จาก token เท่านั้น ผู้ใช้จึงดูได้แค่ข้อมูลของตัวเอง ไม่ส่งรหัสผ่านกลับมา
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": 19,
+    "email": "user@example.com",
+    "name": "สมชาย",
+    "lastname": "ใจดี",
+    "profile": null,
+    "phone": "0812345678",
+    "role": "user",
+    "trust_score": 100,
+    "email_verified": true,
+    "created_at": "2026-11-04T12:45:58.636Z",
+    "report_count": 1,
+    "verified_report_count": 0,
+    "pending_report_count": 1,
+    "rejected_report_count": 0
+  }
+}
+```
 
 ---
 
@@ -242,10 +269,40 @@ Database (PostgreSQL + PostGIS)
 
 | Method | Path | คำอธิบาย | จำเป็นต้องยืนยันตัวตน |
 |--------|------|-------------|---------------|
+| GET | `/incidents/admin/overview` | ข้อมูลสรุปสำหรับแดชบอร์ดผู้ดูแลระบบ (`/admin`): รายงานรอตรวจ เหตุที่ดำเนินอยู่ คำขอช่วยเหลือ ผู้ใช้ กราฟ 7 วัน และรายการล่าสุด | ใช่ (Admin) |
 | GET | `/users` | ดึงรายชื่อผู้ใช้ทั้งหมดพร้อมสรุปการรายงาน สำหรับหน้าจัดการผู้ใช้ (`/admin/users`) | ใช่ (Admin) |
 | GET | `/admin/reports` | ดึงรายการรายงานของชุมชนที่รอการตรวจสอบ (Verify) | ใช่ (Admin) |
 | PATCH | `/admin/incidents/:id/verify`| อัปเดตสถานะการตรวจสอบความถูกต้องของ Incident | ใช่ (Admin) |
 | PATCH | `/admin/incidents/:id/reject`| ปฏิเสธรายงานที่เป็นสแปมหรือเท็จ | ใช่ (Admin) |
+
+#### `GET /incidents/admin/overview` — ข้อมูลสรุปแดชบอร์ดผู้ดูแลระบบ (เฉพาะ Admin)
+
+- ต้องส่ง `Authorization: Bearer <token>` ของผู้ใช้ role `admin` (ไม่ใช่ admin ได้ 403)
+- `daily_reports` มีครบทุกวันย้อนหลัง `trend_days` วัน (รวมวันนี้) วันที่ไม่มีรายงานได้ 0
+- `reports_by_type` นับรายงานใน `type_days` วันล่าสุด ประเภทใช้ `final_type_id` ก่อน ถ้าไม่มีใช้ `user_selected_type_id`; `type_code = null` คือยังไม่ระบุประเภท
+- `latest_reports` ไม่ส่งตำแหน่งของผู้รายงาน (Reporter Location เป็นข้อมูลภายใน)
+
+```json
+{
+  "success": true,
+  "data": {
+    "summary": {
+      "pending_reports": 8,
+      "oldest_pending_at": "2026-10-29T03:29:57.839Z",
+      "active_incidents": 7,
+      "open_help_requests": 0,
+      "total_users": 16,
+      "new_users_7d": 5
+    },
+    "trend_days": 7,
+    "daily_reports": [{ "day": "2026-11-06", "total": 2, "verified": 2, "pending": 0, "rejected": 0 }],
+    "type_days": 30,
+    "reports_by_type": [{ "type_code": "flood", "type_name": "น้ำท่วม", "total": 3 }],
+    "latest_reports": [{ "report_id": 82, "incident_id": null, "description": "…", "report_status": "pending", "is_suspicious": false, "created_at": "2026-11-07T08:06:38.384Z", "type_code": null, "type_name": null }],
+    "latest_help_requests": [{ "help_request_id": 5, "help_type": "food", "custom_help_type": null, "description": "…", "people_count": 3, "request_status": "pending", "created_at": "2026-11-05T06:10:11.659Z" }]
+  }
+}
+```
 
 #### `GET /users` — รายชื่อผู้ใช้ทั้งหมด (เฉพาะ Admin)
 

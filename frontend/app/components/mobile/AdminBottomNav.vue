@@ -56,8 +56,6 @@
             >
               <img :src="item.icon" alt="" />
               <span>{{ t(item.label) }}</span>
-              <small v-if="!item.to">{{ t('common.inDevelopment') }}</small>
-              <b v-else-if="item.badge">{{ item.badge }}</b>
             </component>
           </section>
         </div>
@@ -67,13 +65,14 @@
 </template>
 
 <script setup>
-import { adminBottomNavItems, adminMenuGroups, adminSystemItems } from '~/utils/adminNavMenu'
+import { adminAccountItems, adminBottomNavItems, adminMenuGroups, adminSystemItems } from '~/utils/adminNavMenu'
 
 const NuxtLink = resolveComponent('NuxtLink')
 const { t } = useLocale()
 const route = useRoute()
 
-const groups = [...adminMenuGroups, { label: 'admin.system', items: adminSystemItems }]
+// แผ่น "เมนูอื่น" แสดงทุกเมนูเหมือน sidebar + โปรไฟล์ (บนมือถือไม่มีเมนูบัญชีใน header)
+const groups = [...adminMenuGroups, { label: 'admin.system', items: [...adminSystemItems, ...adminAccountItems] }]
 
 // ตัวเลขแจ้งเตือนของเมนูที่ไม่อยู่ในแถบล่าง แสดงที่ปุ่ม "เมนูอื่น"
 // เมนูนี้อยู่ในแถบล่างแล้วหรือยัง (ถ้าอยู่แล้ว ตัวเลขของมันไม่ต้องนับรวมที่ปุ่ม "เมนูอื่น")
@@ -102,7 +101,9 @@ const moreButton = ref(null)
 
 const closeMenu = (returnFocus) => {
   menuOpen.value = false
-  if (returnFocus) moreButton.value?.focus()
+  if (returnFocus) {
+    moreButton.value?.focus()
+  }
 }
 
 // เปลี่ยนหน้าแล้วปิดเมนูเสมอ
@@ -116,7 +117,7 @@ watch(() => route.path, () => { menuOpen.value = false })
 .bottom-nav__icon img { width:22px; height:22px; object-fit:contain; opacity:.72; }
 .bottom-nav__icon svg { width:23px; height:23px; fill:none; stroke:currentColor; stroke-linecap:round; stroke-linejoin:round; stroke-width:2; }
 /* ภาษาไทยมีวรรณยุกต์ซ้อนบน-ล่าง บรรทัดต้องสูง 1.4 เท่า ไม่อย่างนั้นส่วนที่ซ่อน (overflow) จะตัดวรรณยุกต์ทิ้ง */
-.bottom-nav__label { max-width:100%; overflow:hidden; font-size:12px; font-weight:600; line-height:1.4; text-overflow:ellipsis; white-space:nowrap; }
+.bottom-nav__label { max-width:100%; overflow:hidden; font-size:13px; font-weight:600; line-height:1.4; text-overflow:ellipsis; white-space:nowrap; }
 .bottom-nav__item--current { color:var(--gs-action); }
 .bottom-nav__item--current .bottom-nav__icon { background:var(--gs-action-tint); }
 .bottom-nav__item--current .bottom-nav__icon img { opacity:1; }
@@ -132,11 +133,11 @@ watch(() => route.path, () => { menuOpen.value = false })
 .more-menu__close:hover { background:var(--gs-surface-sunken); }
 .more-menu__close svg { width:20px; height:20px; fill:none; stroke:currentColor; stroke-linecap:round; stroke-width:2; }
 .more-menu__group { display:grid; gap:2px; }
-.more-menu__group h2 { margin:0 0 4px; padding:0 8px; color:var(--gs-muted); font-size:12px; font-weight:800; }
+.more-menu__group h2 { margin:0 0 4px; padding:0 8px; color:var(--gs-ink-2); font-size:13px; font-weight:800; }
 .more-menu__item { display:flex; width:100%; min-height:46px; align-items:center; gap:12px; padding:8px 10px; border:0; border-radius:var(--gs-radius-sm); background:transparent; color:var(--gs-ink-2); font:inherit; font-size:15px; font-weight:650; text-align:left; text-decoration:none; cursor:pointer; }
 .more-menu__item img { width:20px; height:20px; flex:0 0 auto; object-fit:contain; }
 .more-menu__item span { flex:1; min-width:0; line-height:1.45; }
-.more-menu__item small { color:var(--gs-muted); font-size:12px; font-weight:600; }
+.more-menu__item small { color:var(--gs-ink-2); font-size:13px; font-weight:600; }
 .more-menu__item b { display:grid; min-width:21px; height:21px; padding:0 5px; place-items:center; border-radius:999px; background:var(--gs-danger); color:#fff; font-size:12px; }
 .more-menu__item:active:not(:disabled) { background:var(--gs-surface-sunken); }
 .more-menu__item:disabled { cursor:not-allowed; opacity:.5; }

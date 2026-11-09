@@ -1,19 +1,17 @@
 <template>
-  <!-- บัญชีและความปลอดภัย: สถานะอีเมล การเข้าสู่ระบบล่าสุด สิทธิ์ และลิงก์ไปเปลี่ยนรหัสผ่าน/ตั้งค่า -->
+  <!-- บัญชีและความปลอดภัย: สถานะอีเมล (จริงจากฐานข้อมูล) สิทธิ์ และลิงก์ไปเปลี่ยนรหัสผ่าน/ตั้งค่า -->
   <section class="account-card" :aria-labelledby="titleId">
     <h2 :id="titleId">{{ t('profilePage.accountTitle') }}</h2>
 
     <dl class="account-list">
       <div class="account-list__row">
         <dt>{{ t('profilePage.fields.email') }}</dt>
-        <dd class="account-list__verified">
+        <dd v-if="!account.isLoaded" aria-busy="true">–</dd>
+        <dd v-else-if="account.emailVerified" class="account-list__verified">
           <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3.5 8.5 3 3 6-7" /></svg>
           {{ t('profilePage.emailVerified') }}
         </dd>
-      </div>
-      <div class="account-list__row">
-        <dt>{{ t('profilePage.lastLogin') }}</dt>
-        <dd>{{ t('profilePage.lastLoginValue') }}</dd>
+        <dd v-else class="account-list__unverified">{{ t('profilePage.emailUnverified') }}</dd>
       </div>
       <div class="account-list__row">
         <dt>{{ t('profilePage.accountRole') }}</dt>
@@ -26,7 +24,8 @@
         {{ t('profilePage.changePassword') }}
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
       </NuxtLink>
-      <NuxtLink to="/settings" class="account-link">
+      <!-- หน้าตั้งค่าเป็นของผู้ใช้ทั่วไป แอดมินไม่ต้องเห็นลิงก์นี้ -->
+      <NuxtLink v-if="account.role !== 'admin'" to="/settings" class="account-link">
         {{ t('profilePage.openSettings') }}
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
       </NuxtLink>
@@ -64,7 +63,7 @@ const roleLabel = computed(() => {
 .account-card h2 {
   margin: 0;
   color: var(--gs-ink);
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 800;
 }
 
@@ -94,6 +93,10 @@ const roleLabel = computed(() => {
   font-size: 14px;
   font-weight: 700;
   text-align: right;
+}
+
+.account-list .account-list__unverified {
+  color: var(--gs-pending);
 }
 
 .account-list .account-list__verified {
