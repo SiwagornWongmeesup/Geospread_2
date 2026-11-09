@@ -108,6 +108,8 @@ const config = useRuntimeConfig()
 const apiBase = config.public.apiBase || 'http://localhost:5000'
 const { getToken } = useAuth()
 const { t } = useLocale()
+// ส่งคำขอเสร็จแล้วบอกหน้าหลักว่าให้โฟกัสหมุดไหนบนแผนที่
+const { setPendingMapFocus } = useHomeDashboard()
 // ชื่อและคำอธิบายของแต่ละประเภทอยู่ใน locales: requestHelp.types.<id>
 const types = [
   { id: 'evacuation', icon: '/icons/Internally-displaced.svg' },
@@ -228,24 +230,39 @@ const submit = async () => {
   feedback.value = ''
 
   try {
+    // ส่งเป็น FormData เพราะมีรูปแนบไปด้วย (รูปอยู่ในช่อง media ได้หลายไฟล์)
+    const formData = new FormData()
+    formData.append('help_type', type.value)
+    if (type.value === 'other') {
+      formData.append('custom_help_type', customType.value.trim())
+    }
+    formData.append('description', description)
+    formData.append('people_count', String(people))
+    formData.append('lat', String(location.lat))
+    formData.append('lng', String(location.lng))
+    formData.append('location_source', location.source ?? 'unknown')
+    for (const item of selectedFiles.value) {
+      formData.append('media', item.file)
+    }
+
     const response = await $fetch(`${apiBase}/help-requests`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${authToken}` },
-      body: {
-        help_type: type.value,
-        custom_help_type: type.value === 'other' ? customType.value.trim() : null,
-        description,
-        people_count: people,
-        lat: location.lat,
-        lng: location.lng,
-        location_source: location.source ?? 'unknown',
-      },
+      body: formData,
     })
 
     const helpRequestId = response.data?.help_request_id
     feedback.value = helpRequestId
       ? t('requestHelp.submittedWithId', { id: helpRequestId })
       : t('requestHelp.submitted')
+
+    // ให้หน้าหลักโฟกัสหมุดคำขอนี้ (ถ้าหาหมุดไม่เจอ ใช้จุดที่ส่งแทน)
+    let itemId = null
+    if (helpRequestId) {
+      itemId = `help-${helpRequestId}`
+    }
+    setPendingMapFocus({ itemId, lat: location.lat, lng: location.lng })
+
     clearSelectedFiles()
     setTimeout(() => navigateTo('/'), 1500)
   } catch (error) {

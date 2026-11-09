@@ -12,7 +12,8 @@ cloudinary.config(cloudinaryConfiguration);
 
 const isCloudinaryConfigured = () => Object.values(cloudinaryConfiguration).every(Boolean);
 
-const uploadIncidentMedia = async (file) => {
+// folder = โฟลเดอร์บน Cloudinary (คำขอความช่วยเหลือใช้ 'geospread/help-requests')
+const uploadIncidentMedia = async (file, folder = 'geospread/incident-reports') => {
     if (!file) return null;
 
     if (!allowedMediaMimeTypes.has(file.mimetype)) {
@@ -28,7 +29,7 @@ const uploadIncidentMedia = async (file) => {
     const result = await new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
             {
-                folder: 'geospread/incident-reports',
+                folder,
                 resource_type: mediaType,
                 use_filename: true,
                 unique_filename: true,

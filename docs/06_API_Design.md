@@ -178,7 +178,7 @@ Database (PostgreSQL + PostGIS)
 | Method | Path | คำอธิบาย | จำเป็นต้องยืนยันตัวตน |
 |--------|------|-------------|---------------|
 | GET | `/incidents` | ดึงรายการ Incident ตามพื้นที่หรือรัศมีระยะทาง | — |
-| POST | `/incidents` | สร้างรายงาน Incident จากข้อความอิสระ พร้อมตำแหน่ง; category และ severity ต้องไม่เป็นข้อมูลบังคับจากผู้ใช้ | ใช่ |
+| POST | `/incidents` | สร้างรายงาน Incident จากข้อความอิสระ พร้อมตำแหน่ง; category และ severity ต้องไม่เป็นข้อมูลบังคับจากผู้ใช้ ตอบกลับ `report_id`, `incident_id` (เหตุการณ์ที่รายงานถูกรวมเข้าไป หรือ `null` ถ้ายังเป็นรายงานเดี่ยว), `status`, `created_at` | ใช่ |
 
 > สัญญา request/response ฉบับจริงต้องรองรับ `reportedObservation`, `suggestedCategory`, `customReportType`, `credibility`, `severity`, `mapDisplayMode` และ `impactRadius` ตาม [13_Incident_Reporting_Concept.md](./13_Incident_Reporting_Concept.md) ก่อนนำ endpoint นี้ไป implement ใหม่
 | GET | `/events` | ดึงรายการ Event ศูนย์กลางเหตุการณ์สำคัญ | — |
@@ -203,10 +203,125 @@ Database (PostgreSQL + PostGIS)
 
 | Method | Path | คำอธิบาย | จำเป็นต้องยืนยันตัวตน |
 |--------|------|-------------|---------------|
-| POST | `/help-requests` | ส่งคำขอความช่วยเหลือ (อาจแนบเข้ากับ Event/Incident) | ใช่ |
-| GET | `/help-requests` | ดึงรายการขอความช่วยเหลือในบริเวณใกล้เคียง | — |
-| PATCH | `/help-requests/:id/accept` | ผู้ใช้ตอบรับการช่วยเหลือ (Offer Help) | ใช่ |
-| PATCH | `/help-requests/:id/status` | อัปเดตสถานะ (In Progress / Resolved) | ใช่ |
+| POST | `/help-requests` | ส่งคำขอความช่วยเหลือ — `multipart/form-data`: `help_type`, `custom_help_type` (เมื่อเป็น other), `description`, `people_count`, `lat`, `lng`, `location_source` และรูปในช่อง `media` (JPG/PNG สูงสุด 5 รูป รูปละไม่เกิน 20 MB) | ใช่ |
+| GET | `/help-requests/map` | คำขอที่ยังไม่หมดอายุ สถานะ `pending` (รอความช่วยเหลือ) และ `accepted` (มีผู้ช่วยแล้ว) สำหรับหมุดบนแผนที่ มี `request_status`, `offer_count` และ**พิกัดคร่าวๆ** (ปัดลงตาราง 0.005° ราว 500 ม.) | — |
+| GET | `/help-requests/mine` | คำขอของฉัน + คำขอที่ฉันเสนอช่วย ทุกสถานะ (การ์ด "ความช่วยเหลือของฉัน" ในหน้าโปรไฟล์) | ใช่ |
+| GET | `/help-requests/:id` | รายละเอียดเต็มของคำขอ ข้อมูลที่ได้ขึ้นกับคนที่เปิดดู (ดูด้านล่าง) | ไม่บังคับ |
+| POST | `/help-requests/:id/offers` | เสนอช่วยเหลือ `{ message? }` (ไม่เกิน 500 ตัว) | ใช่ |
+| PATCH | `/help-requests/:id/offers/:offerId` | เจ้าของคำขอรับ/ปฏิเสธ `{ action: 'accept' \| 'decline', share_phone?, share_line? }` หรือผู้ช่วยถอนข้อเสนอของตัวเอง `{ action: 'withdraw' }` | ใช่ |
+| PATCH | `/help-requests/:id/status` | เจ้าของเปลี่ยนสถานะ `{ action: 'resolve' \| 'cancel' \| 'release_helper' }` | ใช่ (เจ้าของคำขอ) |
+| POST | `/help-requests/:id/reports` | รายงานผู้ใช้ที่น่าสงสัย `{ offer_id?, reason, details? }` | ใช่ |
+
+วงจรสถานะของคำขอ:
+
+```
+pending ──เจ้าของรับข้อเสนอ──▶ accepted ──resolve──▶ resolved
+   │                            ├─release_helper / ผู้ช่วย withdraw──▶ pending (ต่ออายุ 24 ชม.)
+   └──────────── cancel (ได้ทั้ง pending และ accepted) ──────────▶ cancelled
+```
+
+#### `GET /help-requests/:id` — รายละเอียดคำขอ
+
+- ไม่ต้องล็อกอินก็เปิดได้ ถ้าส่ง `Authorization: Bearer <token>` มาด้วย จะได้ข้อมูลตามสิทธิ์
+- ไม่ส่ง `user_id`, `accepted_by` และเบอร์ / LINE ดิบของผู้ขอออกไป
+- **พิกัด:** เจ้าของและผู้ช่วยที่ได้รับเลือกได้พิกัดจริง คนอื่นได้พิกัดคร่าวๆ พร้อม `location_is_approximate: true`
+- `offers` ส่งให้เฉพาะเจ้าของคำขอ (คนอื่นได้ `null`) แต่ละข้อเสนอมี:
+  - `helper_since` (วันที่สมัครสมาชิก)
+  - `helped_count` (จำนวนคำขอที่ปิดเป็น `resolved` โดยมีคนนี้เป็นผู้ช่วย)
+  - `is_reported` (เจ้าของเคยรายงานคนนี้ในคำขอนี้แล้วหรือยัง)
+  - `contact` = `{ phone, line_id }` จากโปรไฟล์ผู้ช่วย เฉพาะข้อเสนอที่รับแล้ว
+- `contact` = `{ name, phone, line_id }` ของผู้ขอ ส่งให้เฉพาะผู้ช่วยที่ได้รับเลือก และมีเฉพาะช่องที่ผู้ขอเลือกแชร์ไว้ (`share_phone`, `share_line`)
+- `viewer`:
+  - `can_report_requester`: เคยเสนอช่วยคำขอนี้และยังไม่เคยรายงานผู้ขอ
+  - `my_contact`: เฉพาะเจ้าของ บอกว่าโปรไฟล์มีเบอร์ / LINE ไหม ใช้เปิดช่องติ๊กตอนรับข้อเสนอ
+- ไม่พบคำขอ → 404
+
+```json
+{
+  "success": true,
+  "data": {
+    "help_request_id": 13,
+    "help_type": "food",
+    "custom_help_type": null,
+    "description": "ติดอยู่ในบ้าน น้ำท่วมสูง ไม่มีอาหาร",
+    "people_count": 3,
+    "lat": 13.755,
+    "lng": 100.5,
+    "location_is_approximate": true,
+    "request_status": "accepted",
+    "accepted_at": "2026-11-09T12:20:00.000Z",
+    "resolved_at": null,
+    "cancelled_at": null,
+    "share_phone": false,
+    "share_line": true,
+    "expires_at": "2026-11-10T12:20:00.000Z",
+    "is_expired": false,
+    "created_at": "2026-11-09T12:00:00.000Z",
+    "requester_name": "สมชาย ใจดี",
+    "offer_count": 2,
+    "media": [{ "media_id": 1, "media_type": "image", "media_url": "https://res.cloudinary.com/…", "created_at": "…" }],
+    "offers": null,
+    "contact": null,
+    "viewer": {
+      "is_logged_in": true,
+      "is_owner": false,
+      "is_accepted_helper": false,
+      "my_offer": { "offer_id": 5, "offer_status": "declined", "message": "มีรถกระบะ", "created_at": "…" },
+      "can_offer": false,
+      "can_report_requester": true,
+      "my_contact": null
+    }
+  }
+}
+```
+
+#### `GET /help-requests/mine` — ความช่วยเหลือของฉัน
+
+- `requested`: คำขอที่ฉันส่ง (สูงสุด 50 รายการล่าสุด) มี `request_status`, `is_expired`, `offer_count`
+- `offered`: คำขอที่ฉันเสนอช่วย พร้อม `offer_id`, `offer_status`, `offered_at` ของข้อเสนอของฉัน
+
+#### `POST /help-requests/:id/offers` — เสนอช่วยเหลือ
+
+- เสนอคำขอของตัวเอง → 400
+- คำขอไม่ได้อยู่ในสถานะรอความช่วยเหลือ หรือหมดอายุแล้ว → 409
+- เสนอซ้ำ (1 คนเสนอได้ครั้งเดียวต่อคำขอ รวมถึงคนที่ถอนตัวหรือถูกปลดแล้ว) → 409
+- สำเร็จ → 201 พร้อมข้อเสนอที่สร้าง
+
+#### `PATCH /help-requests/:id/offers/:offerId` — รับ/ปฏิเสธ/ถอนข้อเสนอ
+
+- `accept` (เจ้าของ):
+  - ต้องส่ง `share_phone` และ/หรือ `share_line` เป็น `true` อย่างน้อย 1 ช่อง และช่องนั้นต้องมีในโปรไฟล์ ไม่งั้นได้ 400
+  - ผลลัพธ์: ข้อเสนอนี้เป็น `accepted`, ข้อเสนออื่นที่รอตอบเป็น `declined`
+  - คำขอเป็น `accepted` (บันทึก `accepted_by`, `accepted_at`) และต่ออายุอย่างน้อย 24 ชม.
+- `decline` (เจ้าของ): ข้อเสนอนี้เป็น `declined`
+- `withdraw` (ผู้ช่วยเจ้าของข้อเสนอ):
+  - ข้อเสนอเป็น `withdrawn`
+  - ถ้าเป็นผู้ช่วยที่ได้รับเลือกอยู่ คำขอจะกลับเป็น `pending` และต่ออายุ 24 ชม.
+- error:
+  - ไม่ใช่เจ้าของคำขอ (`accept` / `decline`) หรือไม่ใช่เจ้าของข้อเสนอ (`withdraw`) → 403
+  - ข้อเสนอไม่ได้อยู่ในสถานะที่ทำได้ → 409
+- ตอบกลับรายละเอียดล่าสุดในรูปแบบเดียวกับ `GET /help-requests/:id`
+
+#### `PATCH /help-requests/:id/status` — เจ้าของเปลี่ยนสถานะคำขอ
+
+- `resolve`: ได้รับความช่วยเหลือแล้ว ต้องเป็น `accepted` อยู่ → `resolved` (บันทึก `resolved_at`)
+- `release_helper`: ผู้ช่วยไม่มาหรือขอเปลี่ยนผู้ช่วย ต้องเป็น `accepted` อยู่
+  - ข้อเสนอที่รับไว้เป็น `released`
+  - คำขอกลับเป็น `pending` ต่ออายุ 24 ชม. และล้าง `share_phone` / `share_line`
+- `cancel`: ได้ทั้ง `pending` และ `accepted` → `cancelled` (บันทึก `cancelled_at`) ข้อเสนอที่ยังรอเป็น `declined`
+- error:
+  - ไม่ใช่เจ้าของ → 403
+  - สถานะไม่ตรงเงื่อนไข → 409
+- ทุกครั้งที่สถานะเปลี่ยน บันทึกลง `tb_help_request_updates`
+- ตอบกลับรายละเอียดล่าสุดในรูปแบบเดียวกับ `GET /help-requests/:id`
+
+#### `POST /help-requests/:id/reports` — รายงานผู้ใช้
+
+- `reason`: `asked_money` | `no_show` | `fake_request` | `harassment` | `other`, `details` ไม่บังคับ (≤ 500 ตัว)
+- ส่ง `offer_id`: เจ้าของคำขอรายงานผู้ช่วยคนนั้น (ไม่ใช่เจ้าของ → 403)
+- ไม่ส่ง `offer_id`: ผู้ที่เคยเสนอช่วยคำขอนี้รายงานผู้ขอ (ไม่เคยเสนอ → 403)
+- รายงานคนเดิมในคำขอเดิมซ้ำ → 409
+- สำเร็จ → 201 (เก็บใน `tb_user_reports` สถานะ `open` รอแอดมินตรวจ ยังไม่มีหน้าแอดมิน)
 
 ---
 
@@ -225,7 +340,7 @@ Database (PostgreSQL + PostGIS)
 | Method | Path | คำอธิบาย | จำเป็นต้องยืนยันตัวตน |
 |--------|------|-------------|---------------|
 | GET | `/users/me` | ดึงข้อมูลโปรไฟล์ผู้ใช้ปัจจุบัน (ใช้ id จาก token เท่านั้น) พร้อมจำนวนรายงานของตัวเอง | ใช่ |
-| PATCH | `/users/me` | อัปเดตข้อมูลโปรไฟล์ (ยังไม่ได้ทำ — หน้าโปรไฟล์ตอนนี้บันทึกการแก้ไขไว้ในเครื่องก่อน) | ใช่ |
+| PATCH | `/users/me` | แก้ข้อมูลส่วนตัว (ชื่อ นามสกุล เบอร์ LINE ID Instagram) ของผู้ใช้ปัจจุบัน แก้อีเมล/รหัสผ่าน/สิทธิ์ไม่ได้ | ใช่ |
 
 #### `GET /users/me` — โปรไฟล์ของผู้ใช้ที่ล็อกอินอยู่
 
@@ -242,6 +357,8 @@ Database (PostgreSQL + PostGIS)
     "lastname": "ใจดี",
     "profile": null,
     "phone": "0812345678",
+    "line_id": "somchai.j",
+    "instagram": null,
     "role": "user",
     "trust_score": 100,
     "email_verified": true,
@@ -253,6 +370,27 @@ Database (PostgreSQL + PostGIS)
   }
 }
 ```
+
+#### `PATCH /users/me` — แก้ข้อมูลส่วนตัว
+
+- ต้องส่ง `Authorization: Bearer <token>` ใช้ `id` จาก token เท่านั้น แก้บัญชีคนอื่นไม่ได้
+- ส่งทุกช่องที่ต้องการเก็บ ช่องที่ส่งเป็นข้อความว่างหรือ `null` จะถูกล้างเป็น `null` (ยกเว้น `name` ที่บังคับกรอก)
+- ตอบกลับโปรไฟล์ล่าสุดในรูปแบบเดียวกับ `GET /users/me`
+
+| ช่อง | กฎ |
+|---|---|
+| `name` | บังคับ, ไม่เกิน 50 ตัวอักษร |
+| `lastname` | ไม่บังคับ, ไม่เกิน 50 ตัวอักษร |
+| `phone` | ไม่บังคับ, เบอร์ขึ้นต้นด้วย 0 ตัวเลข 9–10 หลัก (เว้นวรรค/ขีดได้) |
+| `line_id` | ไม่บังคับ, ตัวอักษรอังกฤษ ตัวเลข `.` `_` `-` ยาว 4–20 ตัว |
+| `instagram` | ไม่บังคับ, ตัวอักษรอังกฤษ ตัวเลข `.` `_` ไม่เกิน 30 ตัว (ใส่ `@` นำหน้ามาได้ ระบบตัดออกให้) |
+
+```json
+// Request
+{ "name": "สมชาย", "lastname": "ใจดี", "phone": "0812345678", "line_id": "somchai.j", "instagram": "" }
+```
+
+ข้อมูลไม่ผ่านการตรวจได้ 400 พร้อม `errors: [{ field, message }]`
 
 ---
 

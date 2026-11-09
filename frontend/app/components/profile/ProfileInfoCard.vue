@@ -49,13 +49,16 @@
             :inputmode="field === 'phone' ? 'tel' : undefined"
             :autocomplete="autocomplete[field]"
             :placeholder="t(`profilePage.placeholders.${field}`)"
+            :readonly="field === 'email'"
             :aria-invalid="errors[field] ? 'true' : undefined"
             :aria-describedby="errors[field] || field === 'email' ? `${titleId}-${field}-note` : undefined"
           />
           <small v-if="errors[field]" :id="`${titleId}-${field}-note`" class="info-form__error">{{ errors[field] }}</small>
-          <small v-else-if="field === 'email' && form.email !== profile.email" :id="`${titleId}-${field}-note`">{{ t('profilePage.emailHint') }}</small>
+          <small v-else-if="field === 'email'" :id="`${titleId}-${field}-note`">{{ t('profilePage.emailHint') }}</small>
         </label>
       </div>
+
+      <p v-if="saveError" class="info-form__error" role="alert">{{ saveError }}</p>
 
       <div class="info-form__actions">
         <button type="button" class="info-form__button info-form__button--ghost" :disabled="isSaving" @click="cancelEdit">
@@ -75,19 +78,21 @@ const props = defineProps({
   isSaving: { type: Boolean, default: false },
   // ฟังก์ชันบันทึกจากหน้าโปรไฟล์ รับข้อมูลที่แก้ แล้วคืน Promise<boolean> ว่าสำเร็จไหม
   save: { type: Function, required: true },
-  // true = แสดงช่อง LINE ID และ Instagram ด้วย (ใช้ในหน้าโปรไฟล์ของแอดมิน)
+  // true = แสดงช่อง Instagram ด้วย (ใช้ในหน้าโปรไฟล์ของแอดมิน)
+  // LINE ID แสดงให้ทุกคน เพราะใช้แชร์ให้ผู้ช่วยตอนขอความช่วยเหลือ
   showSocial: { type: Boolean, default: false },
+  // ข้อความ error ตอนบันทึกไม่สำเร็จ (จาก useProfile)
+  saveError: { type: String, default: '' },
 })
 
 const { t } = useLocale()
 const titleId = useId()
 
-// ช่องข้อมูลที่แสดง: ช่องพื้นฐานทุกคน + ช่องโซเชียลเฉพาะเมื่อเปิด showSocial
-const baseFields = ['name', 'lastname', 'phone', 'email']
-const socialFields = ['lineId', 'instagram']
+// ช่องข้อมูลที่แสดง: ช่องพื้นฐาน + LINE ID ทุกคน, Instagram เฉพาะเมื่อเปิด showSocial
+const baseFields = ['name', 'lastname', 'phone', 'email', 'lineId']
 const fields = computed(() => {
   if (props.showSocial) {
-    return [...baseFields, ...socialFields]
+    return [...baseFields, 'instagram']
   }
   return baseFields
 })
@@ -199,13 +204,6 @@ const checkPhone = () => {
   return ''
 }
 
-const checkEmail = () => {
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-    return t('profilePage.errors.emailInvalid')
-  }
-  return ''
-}
-
 // LINE ID: ตัวอักษรอังกฤษ ตัวเลข จุด ขีด ขีดล่าง 4–20 ตัว ไม่บังคับกรอก
 const checkLineId = () => {
   if (!form.lineId) {
@@ -234,9 +232,8 @@ const validate = () => {
   clearErrors()
   errors.name = checkName()
   errors.phone = checkPhone()
-  errors.email = checkEmail()
+  errors.lineId = checkLineId()
   if (props.showSocial) {
-    errors.lineId = checkLineId()
     errors.instagram = checkInstagram()
   }
 
@@ -248,10 +245,13 @@ const validate = () => {
 }
 
 // ส่งเฉพาะช่องที่แสดงอยู่ (ผู้ใช้ทั่วไปไม่มีช่องโซเชียล จึงไม่ส่งค่าว่างไปทับ)
+// อีเมลแก้ไม่ได้ จึงไม่ส่งไป
 const buildChanges = () => {
   const changes = { avatarUrl: form.avatarUrl }
   for (const field of fields.value) {
-    changes[field] = form[field]
+    if (field !== 'email') {
+      changes[field] = form[field]
+    }
   }
   return changes
 }

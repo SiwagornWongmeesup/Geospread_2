@@ -2,15 +2,16 @@
 // -------------------------------------------------------------------------
 // ข้อมูลส่วนตัวของผู้ใช้ที่ล็อกอินอยู่ (หน้าโปรไฟล์)
 // - ข้อมูลจริงมาจาก GET /users/me (ชื่อ อีเมล เบอร์ คะแนน สถานะอีเมล วันที่สมัคร จำนวนรายงาน)
-// - การแก้ไขยังไม่มี API (PATCH /users/me) จึงเก็บเฉพาะช่องที่แก้ไว้ใน localStorage ของเครื่องนี้
-//   แล้วเอามาทับข้อมูลจริง (ช่องที่ไม่ได้แก้ยังเป็นค่าจริงจากฐานข้อมูลเสมอ)
-// TODO: เมื่อมี PATCH /users/me ให้ saveProfile ส่งไปที่ API แทน localStorage
+// - กดบันทึก: ชื่อ นามสกุล เบอร์ LINE ID Instagram ส่งไปที่ PATCH /users/me (เก็บในฐานข้อมูล)
+// - รูปโปรไฟล์ยังไม่มี API อัปโหลด จึงเก็บไว้ใน localStorage ของเครื่องนี้อย่างเดียว
+// - อีเมลแก้ที่นี่ไม่ได้ (ต้องมีขั้นยืนยันอีเมลใหม่ก่อน)
+// TODO: เมื่อมี API อัปโหลดรูปโปรไฟล์ ให้ส่งรูปไปที่ API แทน localStorage
 // -------------------------------------------------------------------------
 
 const STORAGE_KEY = 'geospread-profile-edits'
 
-// ช่องที่ผู้ใช้แก้ได้ในหน้าโปรไฟล์
-const EDITABLE_FIELDS = ['name', 'lastname', 'phone', 'email', 'lineId', 'instagram', 'avatarUrl']
+// ช่องที่ยังเก็บในเครื่องนี้อย่างเดียว (ยังไม่มี API)
+const LOCAL_ONLY_FIELDS = ['avatarUrl']
 
 const readStoredEdits = () => {
   try {
@@ -42,8 +43,8 @@ const toProfile = (user, isLoaded) => {
     lastname: user.lastname ?? '',
     email: user.email ?? '',
     phone: user.phone ?? '',
-    lineId: '',
-    instagram: '',
+    lineId: user.line_id ?? '',
+    instagram: user.instagram ?? '',
     avatarUrl: user.profile ?? null,
     role: user.role ?? 'user',
     trustScore: user.trust_score ?? null,
@@ -61,6 +62,7 @@ const toProfile = (user, isLoaded) => {
 export const useProfile = () => {
   const config = useRuntimeConfig()
   const { getUser, getToken } = useAuth()
+  const { t } = useLocale()
   const profile = useState('profile-data', () => null)
   const isLoadingProfile = useState('profile-loading', () => false)
   const isSaving = ref(false)
@@ -71,13 +73,34 @@ export const useProfile = () => {
     return saved?.user ?? saved ?? null
   }
 
-  // เอาช่องที่เคยแก้ไว้ในเครื่องนี้ (ของบัญชีเดียวกัน) มาทับข้อมูลจริง
+  // เอารูปโปรไฟล์ที่เคยเลือกไว้ในเครื่องนี้ (ของบัญชีเดียวกัน) มาใส่
+  // ใช้เฉพาะช่องใน LOCAL_ONLY_FIELDS ช่องอื่นต้องมาจากฐานข้อมูลเสมอ
+  // (เครื่องที่เคยเก็บชื่อ/เบอร์ไว้ตอนยังไม่มี API จะไม่เอาค่าเก่านั้นมาทับ)
   const applyStoredEdits = (baseProfile) => {
     const stored = readStoredEdits()
     if (!stored || stored.owner !== baseProfile.id) {
       return baseProfile
     }
-    return { ...baseProfile, ...stored.edits }
+
+    const result = { ...baseProfile }
+    for (const field of LOCAL_ONLY_FIELDS) {
+      if (field in stored.edits) {
+        result[field] = stored.edits[field]
+      }
+    }
+    return result
+  }
+
+  // เก็บรูปโปรไฟล์ไว้ในเครื่องนี้
+  const saveLocalOnlyFields = (changes) => {
+    const edits = {}
+    for (const field of LOCAL_ONLY_FIELDS) {
+      if (field in changes) {
+        edits[field] = changes[field]
+      }
+    }
+    writeStoredEdits({ owner: profile.value.id, edits })
+    return edits
   }
 
   const loadProfile = async () => {
@@ -111,27 +134,59 @@ export const useProfile = () => {
     }
   }
 
-  // changes: ช่องจากฟอร์มแก้ไข เก็บเฉพาะช่องที่แก้ได้
+  // ข้อความ error ตอนบันทึกไม่สำเร็จ (ว่าง = ไม่มี error)
+  const saveError = ref('')
+
+  // ข้อความ error จาก API: ถ้าข้อมูลไม่ผ่านการตรวจ ใช้ข้อความของช่องแรกที่ผิด
+  const getSaveErrorMessage = (error) => {
+    const fieldErrors = error?.data?.errors
+    if (Array.isArray(fieldErrors) && fieldErrors.length > 0) {
+      return fieldErrors[0].message
+    }
+    if (error?.statusCode === 401) {
+      return t('profilePage.errors.sessionExpired')
+    }
+    return t('profilePage.errors.saveFailed')
+  }
+
+  // ช่องที่ฟอร์มไม่ได้ส่งมา (เช่น ผู้ใช้ทั่วไปไม่มีช่อง LINE/Instagram) ใช้ค่าเดิม จะได้ไม่ถูกลบทิ้ง
+  const pickValue = (changes, field) => {
+    if (field in changes) {
+      return changes[field]
+    }
+    return profile.value[field]
+  }
+
+  // changes: ช่องจากฟอร์มแก้ไข คืน true ถ้าบันทึกสำเร็จ
   const saveProfile = async (changes) => {
     isSaving.value = true
+    saveError.value = ''
     try {
-      const stored = readStoredEdits()
-      let edits = {}
-      if (stored && stored.owner === profile.value.id) {
-        edits = { ...stored.edits }
+      const body = {
+        name: pickValue(changes, 'name'),
+        lastname: pickValue(changes, 'lastname'),
+        phone: pickValue(changes, 'phone'),
+        line_id: pickValue(changes, 'lineId'),
+        instagram: pickValue(changes, 'instagram'),
       }
-      for (const field of EDITABLE_FIELDS) {
-        if (field in changes) {
-          edits[field] = changes[field]
-        }
-      }
-      writeStoredEdits({ owner: profile.value.id, edits })
-      profile.value = { ...profile.value, ...edits }
+      const response = await $fetch(`${config.public.apiBase}/users/me`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${getToken()}` },
+        body,
+      })
+
+      // ข้อมูลล่าสุดจากฐานข้อมูล + รูปโปรไฟล์ที่เก็บในเครื่อง
+      const localEdits = saveLocalOnlyFields(changes)
+      profile.value = { ...toProfile(response.data, true), ...localEdits }
       return true
+    } catch (error) {
+      console.error('Unable to save profile', error)
+      saveError.value = getSaveErrorMessage(error)
+      return false
     } finally {
       isSaving.value = false
     }
   }
 
-  return { profile, isLoadingProfile, isSaving, loadProfile, saveProfile }
+  return { profile, isLoadingProfile, isSaving, saveError, loadProfile, saveProfile }
 }

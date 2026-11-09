@@ -1,6 +1,6 @@
 <script setup>
 // เนื้อหาโปรไฟล์ ใช้ร่วมกันระหว่างหน้าโปรไฟล์ของผู้ใช้ (/profile) และของแอดมิน (/admin/profile)
-// - ผู้ใช้ทั่วไป: ข้อมูลส่วนตัว + การรายงานของฉัน + พื้นที่ที่ติดตาม
+// - ผู้ใช้ทั่วไป: ข้อมูลส่วนตัว + การรายงานของฉัน + พื้นที่ที่ติดตาม + ความช่วยเหลือของฉัน
 // - แอดมิน: ข้อมูลบัญชีและช่องติดต่อ (LINE ID, Instagram) เท่านั้น ไม่มีส่วนที่เป็นของพลเมือง
 // ข้อมูลจริงมาจาก GET /users/me (ดู composables/useProfile.js)
 import ProfileSummary from '~/components/profile/ProfileSummary.vue'
@@ -8,6 +8,7 @@ import ProfileInfoCard from '~/components/profile/ProfileInfoCard.vue'
 import ProfileAccountCard from '~/components/profile/ProfileAccountCard.vue'
 import ProfileActivityCard from '~/components/profile/ProfileActivityCard.vue'
 import ProfileFollowedCard from '~/components/profile/ProfileFollowedCard.vue'
+import ProfileHelpCard from '~/components/profile/ProfileHelpCard.vue'
 
 const props = defineProps({
   // 'user' = โปรไฟล์ผู้ใช้ทั่วไป, 'admin' = โปรไฟล์ผู้ดูแลระบบ
@@ -19,7 +20,7 @@ const { isMobile } = useResponsiveView()
 
 const { t } = useLocale()
 const { isLoggedIn } = useAuth()
-const { profile, isSaving, loadProfile, saveProfile } = useProfile()
+const { profile, isSaving, saveError, loadProfile, saveProfile } = useProfile()
 
 // ตอน SSR แสดงเท่าที่รู้จาก cookie แล้วดึงข้อมูลจริงในเบราว์เซอร์
 loadProfile()
@@ -47,11 +48,13 @@ const account = computed(() => {
 
     <div v-if="account" class="profile-content__main">
       <div class="profile-content__cards">
-        <ProfileInfoCard class="profile-content__wide" :profile="account" :is-saving="isSaving" :save="saveProfile" :show-social="isAdminProfile" />
+        <ProfileInfoCard class="profile-content__wide" :profile="account" :is-saving="isSaving" :save="saveProfile" :save-error="saveError" :show-social="isAdminProfile" />
         <template v-if="!isAdminProfile">
           <ProfileActivityCard v-if="account.isLoaded" :reports="account.reports" />
           <!-- มือถือมีลิงก์พื้นที่ติดตามในเมนูด้านล่างของหน้าแล้ว จึงไม่แสดงซ้ำ -->
           <ProfileFollowedCard v-if="!isMobile" />
+          <!-- คำขอความช่วยเหลือของฉัน + ที่ฉันเสนอช่วย (กลับไปดูได้แม้คำขอหายจากแผนที่แล้ว) -->
+          <ProfileHelpCard class="profile-content__wide" />
         </template>
       </div>
     </div>

@@ -9,7 +9,8 @@ const {
     forgotPasswordValidator,
     resetPasswordValidator,
     getUserByIdValidator,
-    getMyProfileValidator
+    getMyProfileValidator,
+    updateMyProfileValidator
 } = require('../validators/userValidator');
 const authMiddleware = require('../middlewares/authMiddleware');
 const checkRole = require('../middlewares/checkRole');
@@ -45,6 +46,9 @@ router.get('/', authMiddleware, checkRole('admin'), userController.getAllUsers);
 
 // GET /users/me — โปรไฟล์ของผู้ใช้ที่ล็อกอินอยู่ (ต้องอยู่ก่อน /:id ไม่งั้น "me" จะถูกมองเป็น id)
 router.get('/me', authMiddleware, getMyProfileValidator, userController.getMyProfile);
+
+// PATCH /users/me — แก้ข้อมูลส่วนตัว (ชื่อ นามสกุล เบอร์ LINE ID Instagram) ของผู้ใช้ที่ล็อกอินอยู่
+router.patch('/me', authMiddleware, updateMyProfileValidator, userController.updateMyProfile);
 
 // GET /users/:id — ดูข้อมูลผู้ใช้ตาม ID (ต้อง login)
 router.get('/:id', authMiddleware, getUserByIdValidator, userController.getUserById);

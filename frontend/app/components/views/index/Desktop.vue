@@ -15,6 +15,7 @@
         @select-group="showGroupItems"
         @close-popup="clearSelectedIncident"
         @open-report="openReportDetail"
+        @open-help-request="openHelpRequestPage"
       />
       <!-- กดกลุ่มหมุดที่ติดกัน: แสดงเหตุในกลุ่มเป็นรายการ กดรายการแล้วเปิดการ์ดบนแผนที่ -->
       <MapGroupPanel
@@ -64,6 +65,7 @@ import NearbyIncidents from '~/components/dashboard/NearbyIncidents.vue'
 import RecentActivity from '~/components/dashboard/RecentActivity.vue'
 import MapLocationSearch from '~/components/map/MapLocationSearch.vue'
 import { useGeolocation } from '~/composables/useGeolocation'
+import { openHelpRequestPage } from '~/composables/useHomeDashboard'
 
 const {
   selectedIncident,
@@ -79,6 +81,7 @@ const {
   clearSelectedIncident,
   setUserLocation,
   fetchPublicMapItems,
+  takePendingMapFocus,
 } = useHomeDashboard()
 const { t } = useLocale()
 
@@ -146,8 +149,23 @@ const focusCurrentLocation = async () => {
   }
 }
 
-onMounted(() => {
-  void fetchPublicMapItems()
+// เพิ่งส่งรายงาน/ขอความช่วยเหลือมา: เปิดหมุดนั้นบนแผนที่
+// ถ้าหาหมุดไม่เจอ (เช่น ยังไม่ขึ้นแผนที่) ให้เลื่อนแผนที่ไปจุดที่ส่งแทน
+const focusJustSubmittedItem = () => {
+  const focus = takePendingMapFocus()
+  if (!focus) {
+    return
+  }
+  if (focus.item) {
+    selectMapItem(focus.item)
+    return
+  }
+  focusedCenter.value = [focus.lng, focus.lat]
+}
+
+onMounted(async () => {
+  await fetchPublicMapItems()
+  focusJustSubmittedItem()
 })
 </script>
 

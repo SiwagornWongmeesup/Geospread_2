@@ -25,6 +25,16 @@ const getMyProfile = async (req, res, next) => {
     }
 };
 
+// แก้ข้อมูลส่วนตัวของผู้ใช้ที่ล็อกอินอยู่ (ใช้ id จาก token เท่านั้น แก้บัญชีคนอื่นไม่ได้)
+const updateMyProfile = async (req, res, next) => {
+    try {
+        const profile = await userService.updateMyProfile(req.user.id, req.body);
+        res.status(200).json({ success: true, message: 'บันทึกข้อมูลส่วนตัวแล้ว', data: profile });
+    } catch (error) {
+        next(error);
+    }
+};
+
 const getUserById = async (req, res, next) => {
     try {
         const user = await userService.getUserById(req.params.id);
@@ -111,6 +121,7 @@ module.exports = {
     getAllUsers,
     getUserById,
     getMyProfile,
+    updateMyProfile,
     createUser,
     loginUser,
     verifyEmail,

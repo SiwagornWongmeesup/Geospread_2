@@ -47,6 +47,8 @@ const getProfileById = async (id) => {
             u.lastname,
             u.profile,
             u.phone,
+            u.line_id,
+            u.instagram,
             u.role,
             u.trust_score,
             u.email_verified,
@@ -156,6 +158,25 @@ const updateUser = async (id, updateData) => {
     return result.rows[0];
 }
 
+// แก้ข้อมูลส่วนตัวของเจ้าของบัญชี (หน้าโปรไฟล์)
+// อีเมล รหัสผ่าน สิทธิ์ และคะแนน แก้ที่นี่ไม่ได้
+const updateMyProfile = async (id, profileData) => {
+    const { name, lastname, phone, lineId, instagram } = profileData;
+    const result = await db.query(
+        `UPDATE tb_users
+         SET name = $1,
+             lastname = $2,
+             phone = $3,
+             line_id = $4,
+             instagram = $5,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = $6
+         RETURNING id`,
+        [name, lastname, phone, lineId, instagram, id]
+    );
+    return result.rows[0];
+};
+
 //ลบข้อมูล user
 const deleteUser = async (id) => {
     const result = await db.query('DELETE FROM tb_users WHERE id = $1 RETURNING id', [id]);
@@ -182,5 +203,6 @@ module.exports = {
     deletePasswordReset: passwordResets.remove,
     updatePasswordAndVerify,
     updateUser,
+    updateMyProfile,
     deleteUser
 };

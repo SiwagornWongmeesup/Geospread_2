@@ -1,4 +1,4 @@
-# Storm / lightning
+# Storm
 
 > Get indoors · Stay away from trees · Stay away from flying objects
 
@@ -8,9 +8,9 @@
 
 ### Warning signs
 
-- The Thai Meteorological Department issues a thunderstorm or strong wind warning
-- The sky turns dark, the wind gusts hard, and you hear thunder
-- **The 30-second rule** When you see lightning, count the seconds until you hear thunder. If it is less than 30 seconds, lightning can reach you. Take shelter now
+- The Thai Meteorological Department issues a storm or strong wind warning
+- The sky turns dark, the wind gusts hard, and it rains heavily
+- Trees sway hard, and branches or objects fly in the wind
 - People report a storm near you in the app
 
 ### Get ready
@@ -21,12 +21,6 @@
 4. **Have a flashlight ready** In case the power goes out
 5. **Know where to shelter** Find the nearest strong building
 
-### Get it right
-
-- **Phones do not attract lightning** The danger is standing in an open area
-- **A car is safe because of its metal roof and body around you** Not because of the tires. Convertibles and motorcycles are not safe
-- **Lightning can strike the same place again** Especially tall things like poles, buildings and big trees
-
 ## During
 
 > Get indoors · Stay away from trees · Stay away from flying objects
@@ -35,41 +29,33 @@
 
 1. **Get inside a strong building** Or a car with a hard roof, with the windows closed
 2. **Close doors and windows** Then stay away from the glass
-3. **Unplug electrical devices** That you do not need
-4. **Stay inside until the storm passes** Do not go out to collect things
+3. **Stay inside until the storm passes** Do not go out to collect things
+4. **Follow official updates** From the Thai Meteorological Department and DDPM
 
 ### Don't
 
 - Don't shelter under big trees, billboards or steel structures
-- Don't stay in open areas, rice fields, beaches, or in the water
-- Don't shower, wash dishes, or touch metal pipes
-- Don't use devices that are plugged in
-
-### If you are outside and cannot find shelter
-
-1. **Always look for shelter first** Crouching lowers the risk only a little
-2. **Crouch down with your feet together** Head down, cover your ears. Do not lie flat
-3. **Spread out several meters apart** If you are in a group
+- Don't go out to fix the roof or collect things during strong wind
+- Don't drive through fast-flowing water or water of unknown depth
+- Don't go near broken or sagging power lines
 
 ### If you are driving
 
-1. **Park away from trees and signs**
-2. **Turn on your hazard lights**
-3. **Stay in the car** And do not touch metal parts
+1. **Slow down and turn on your headlights** It is hard to see in heavy rain
+2. **Park away from trees and signs** If the wind is too strong to drive
+3. **Use hazard lights only when parked** And stay in the car
 
-### If someone is struck by lightning
+### If there is thunder and lightning too
 
-1. **Touch and help them right away** A person struck by lightning does not carry electricity
-2. **Call 1669**
-3. **Do CPR** If they are unconscious and not breathing
+1. **See the lightning guide** Sheltering from lightning is different from sheltering from wind
 
 ## After
 
-> Wait 30 minutes · Stay away from power lines · Check your home
+> Avoid power lines · Check your home · Take photos
 
 ### In this order
 
-1. **Wait 30 minutes after the last thunder** Before going outside
+1. **Wait until the wind has really calmed down** Before going outside
 2. **Check for damage** The roof, trees and signs around your home
 3. **Take photos of the damage** Use them as evidence to claim aid from the district or local office
 

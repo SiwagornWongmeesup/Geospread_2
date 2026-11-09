@@ -11,10 +11,11 @@ for (const [path, source] of Object.entries(guideFiles)) {
 }
 
 // หมวดและหัวข้อของคู่มือ ใช้ร่วมกันทั้งเมนูด้านข้างและหน้า /safety-guide
+// แต่ละหัวข้อเป็นเรื่องเดียว (เดิมรวม 2 เรื่องไว้ด้วยกัน เช่น อาคาร/ป้ายถล่ม ผู้ใช้อ่านแล้วงง จึงแยกออก)
 export const guideCategories = [
-  { id: 'natural', topics: ['flood', 'storm', 'earthquake', 'landslide'] },
-  { id: 'accident', topics: ['fire', 'collapse', 'crowd'] },
-  { id: 'violence', topics: ['violence'] },
+  { id: 'natural', topics: ['flood', 'storm', 'lightning', 'earthquake', 'landslide'] },
+  { id: 'accident', topics: ['fire', 'explosion', 'collapse', 'sign', 'crowd'] },
+  { id: 'violence', topics: ['shooting', 'violence'] },
 ]
 
 export const emergencyNumbers = [
@@ -50,6 +51,7 @@ const guideTopicByTypeCode = {
   wildfire: 'fire',
   chemical_leak: 'fire',
   abnormal_smoke: 'fire',
+  suspicious_object: 'explosion',
   building_collapse: 'collapse',
   violent_incident: 'violence',
   conflict: 'violence',

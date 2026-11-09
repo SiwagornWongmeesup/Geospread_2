@@ -290,6 +290,23 @@ const cancelReport = () => {
   navigateTo('/')
 }
 
+// เลือกหมุดที่ต้องโฟกัสหลังกลับหน้าหลัก
+// รายงานที่ถูกรวมเข้าเหตุการณ์แล้ว = หมุดของเหตุการณ์นั้น, ยังไม่ถูกรวม = หมุดรายงานรอตรวจ
+const rememberReportForMapFocus = (responseData, submittedLocation) => {
+  let itemId = null
+  if (responseData?.incident_id) {
+    itemId = `incident-${responseData.incident_id}`
+  } else if (responseData?.report_id) {
+    itemId = `report-${responseData.report_id}`
+  }
+
+  setPendingMapFocus({
+    itemId,
+    lat: submittedLocation.lat,
+    lng: submittedLocation.lng,
+  })
+}
+
 // กด Enter ในช่องกรอกระหว่างขั้น = ไปขั้นถัดไป ไม่ส่งรายงานก่อนถึงขั้นสุดท้าย
 const onFormSubmit = () => {
   if (isWizard.value && !isLastStep.value) {
@@ -319,6 +336,8 @@ const config = useRuntimeConfig()
 // Nuxt dev server ที่เปิดก่อนเพิ่ม runtime config ยังไม่มี apiBase จึงต้องมีค่า fallback
 const apiBase = config.public.apiBase || 'http://localhost:5000'
 const { getToken, isLoggedIn } = useAuth()
+// ส่งรายงานเสร็จแล้วบอกหน้าหลักว่าให้โฟกัสหมุดไหนบนแผนที่
+const { setPendingMapFocus } = useHomeDashboard()
 const maxMediaFiles = 5
 const maxMediaFileSizeBytes = 20 * 1024 * 1024
 const needsLogin = ref(false)
@@ -560,6 +579,12 @@ const submitReport = async () => {
 
   for (const item of selectedFiles.value) formData.append('media', item.file)
 
+  // จำจุดที่ส่งไว้ก่อน เผื่อหาหมุดบนแผนที่ไม่เจอ จะได้เลื่อนแผนที่ไปจุดนี้แทน
+  const submittedLocation = {
+    lat: incidentLocation.value.lat,
+    lng: incidentLocation.value.lng,
+  }
+
   isSubmitting.value = true
   feedback.value = ''
   needsLogin.value = false
@@ -572,6 +597,7 @@ const submitReport = async () => {
     })
     const reportId = response.data?.report_id
     feedback.value = reportId ? t('report.submittedWithId', { id: reportId }) : t('report.submitted')
+    rememberReportForMapFocus(response.data, submittedLocation)
     details.value = ''
     clearSelectedFiles()
     if (fileInput.value) fileInput.value.value = ''

@@ -34,6 +34,12 @@ CREATE TABLE IF NOT EXISTS tb_users (
 ALTER TABLE tb_users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT TRUE;
 ALTER TABLE tb_users ALTER COLUMN email_verified SET DEFAULT FALSE;
 
+-- ช่องติดต่อเพิ่มเติมที่ผู้ใช้กรอกเองในหน้าโปรไฟล์ (ไม่บังคับ)
+-- LINE ID: ตัวอักษรอังกฤษ ตัวเลข . _ - ยาว 4–20 ตัว
+ALTER TABLE tb_users ADD COLUMN IF NOT EXISTS line_id VARCHAR(20);
+-- ชื่อผู้ใช้ Instagram (เก็บแบบไม่มี @ นำหน้า) ไม่เกิน 30 ตัว
+ALTER TABLE tb_users ADD COLUMN IF NOT EXISTS instagram VARCHAR(30);
+
 -- รหัสยืนยันอีเมล 6 หลักที่ยังไม่ได้ใช้ (หนึ่งแถวต่อผู้ใช้ ส่งรหัสใหม่จะเขียนทับของเดิม)
 CREATE TABLE IF NOT EXISTS tb_email_verifications (
     -- ผู้ใช้ที่ต้องยืนยันอีเมล
@@ -360,6 +366,10 @@ CREATE TABLE IF NOT EXISTS tb_help_requests (
     accepted_by INT REFERENCES tb_users(id) ON DELETE SET NULL,
     accepted_at TIMESTAMPTZ,
     resolved_at TIMESTAMPTZ,
+    cancelled_at TIMESTAMPTZ,
+    -- ช่องทางติดต่อที่ผู้ขอเลือกแชร์ให้ผู้ช่วยตอนกดรับข้อเสนอ (ดึงจากโปรไฟล์ของผู้ขอ)
+    share_phone BOOLEAN NOT NULL DEFAULT FALSE,
+    share_line BOOLEAN NOT NULL DEFAULT FALSE,
     -- เมื่อถึงเวลานี้ให้ซ่อนหมุดจากแผนที่ แต่เก็บ record และประวัติไว้
     expires_at TIMESTAMPTZ NOT NULL DEFAULT (CURRENT_TIMESTAMP + INTERVAL '24 hours'),
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -397,6 +407,54 @@ CREATE TABLE IF NOT EXISTS tb_help_request_updates (
     CONSTRAINT chk_help_request_update_status CHECK (status_after IN ('pending', 'accepted', 'in_progress', 'resolved', 'cancelled', 'expired'))
 );
 
+-- รูปที่ผู้ขอแนบมากับคำขอความช่วยเหลือ (โครงเดียวกับ tb_incident_media)
+CREATE TABLE IF NOT EXISTS tb_help_request_media (
+    media_id SERIAL PRIMARY KEY,
+    help_request_id INT NOT NULL REFERENCES tb_help_requests(help_request_id) ON DELETE CASCADE,
+    -- ตอนนี้รับเฉพาะรูปภาพ
+    media_type VARCHAR(20) NOT NULL DEFAULT 'image',
+    media_url TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_help_media_type CHECK (media_type IN ('image'))
+);
+
+-- ข้อเสนอช่วยเหลือ: คนอื่นกดเสนอช่วย แล้วผู้ขอเลือกรับ 1 คน
+-- ผู้ช่วยที่ได้รับอนุมัติจึงจะเห็นเบอร์ติดต่อของผู้ขอ
+CREATE TABLE IF NOT EXISTS tb_help_offers (
+    offer_id SERIAL PRIMARY KEY,
+    help_request_id INT NOT NULL REFERENCES tb_help_requests(help_request_id) ON DELETE CASCADE,
+    helper_id INT NOT NULL REFERENCES tb_users(id) ON DELETE CASCADE,
+    -- ข้อความถึงผู้ขอ เช่น "มีรถกระบะ ไปถึงใน 20 นาที" (ไม่บังคับ)
+    message TEXT,
+    -- pending = รอผู้ขอตอบ, accepted = ผู้ขอรับแล้ว, declined = ผู้ขอปฏิเสธ หรือรับคนอื่นไปแล้ว
+    -- withdrawn = ผู้ช่วยถอนตัวเอง, released = ผู้ขอปลดผู้ช่วยออก (เช่น ผู้ช่วยไม่มา)
+    offer_status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    -- 1 คนเสนอได้ครั้งเดียวต่อคำขอ (ถอนตัวหรือถูกปลดแล้วก็เสนอซ้ำไม่ได้)
+    CONSTRAINT uq_help_offer_helper UNIQUE (help_request_id, helper_id),
+    CONSTRAINT chk_help_offer_status CHECK (offer_status IN ('pending', 'accepted', 'declined', 'withdrawn', 'released')),
+    CONSTRAINT chk_help_offer_message CHECK (message IS NULL OR char_length(message) <= 500)
+);
+
+-- รายงานผู้ใช้ที่น่าสงสัยจากคำขอความช่วยเหลือ เช่น ขอให้โอนเงิน ไม่มาตามนัด
+-- แอดมินเป็นคนตรวจ (report_status: open → reviewed)
+CREATE TABLE IF NOT EXISTS tb_user_reports (
+    report_id SERIAL PRIMARY KEY,
+    reporter_id INT NOT NULL REFERENCES tb_users(id) ON DELETE CASCADE,
+    reported_user_id INT NOT NULL REFERENCES tb_users(id) ON DELETE CASCADE,
+    help_request_id INT REFERENCES tb_help_requests(help_request_id) ON DELETE SET NULL,
+    reason VARCHAR(30) NOT NULL,
+    details TEXT,
+    report_status VARCHAR(20) NOT NULL DEFAULT 'open',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    -- รายงานคนเดิมในคำขอเดิมได้ครั้งเดียว
+    CONSTRAINT uq_user_report UNIQUE (reporter_id, reported_user_id, help_request_id),
+    CONSTRAINT chk_user_report_reason CHECK (reason IN ('asked_money', 'no_show', 'fake_request', 'harassment', 'other')),
+    CONSTRAINT chk_user_report_details CHECK (details IS NULL OR char_length(details) <= 500),
+    CONSTRAINT chk_user_report_status CHECK (report_status IN ('open', 'reviewed'))
+);
+
 CREATE INDEX IF NOT EXISTS idx_types_category ON tb_incident_types(category_id);
 CREATE INDEX IF NOT EXISTS idx_keywords_active ON tb_incident_keywords(keyword) WHERE is_active;
 CREATE INDEX IF NOT EXISTS idx_main_incidents_location ON tb_incidents USING GIST (incident_location);
@@ -408,8 +466,13 @@ CREATE INDEX IF NOT EXISTS idx_reports_event_status_expiry ON tb_incident_report
 CREATE INDEX IF NOT EXISTS idx_report_updates_report_created ON tb_incident_report_updates(report_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_media_report ON tb_incident_media(report_id);
 CREATE INDEX IF NOT EXISTS idx_help_requests_location ON tb_help_requests USING GIST (help_location);
+CREATE INDEX IF NOT EXISTS idx_help_requests_user ON tb_help_requests(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_help_offers_helper ON tb_help_offers(helper_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_user_reports_reported ON tb_user_reports(reported_user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_help_requests_status_expiry ON tb_help_requests(request_status, expires_at);
 CREATE INDEX IF NOT EXISTS idx_help_request_updates_request_created ON tb_help_request_updates(help_request_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_help_request_media_request ON tb_help_request_media(help_request_id);
+CREATE INDEX IF NOT EXISTS idx_help_offers_request ON tb_help_offers(help_request_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_report_candidates_pending_target
     ON tb_incident_report_candidates(target_incident_id, created_at DESC)
     WHERE candidate_status = 'pending';

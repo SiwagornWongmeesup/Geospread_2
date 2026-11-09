@@ -316,8 +316,10 @@ const onPhaseKeydown = async (event) => {
   text-wrap: balance;
 }
 
+/* แต่ละวลีพยายามอยู่บรรทัดเดียวกัน แต่ถ้าวลียาวเกินกว้างการ์ด ให้ตัดบรรทัดได้ ไม่ล้นออกนอกการ์ด */
 .guide-desktop__command-word {
-  white-space: nowrap;
+  display: inline-block;
+  max-width: 100%;
 }
 
 .guide-desktop__phase[aria-selected='true'] {

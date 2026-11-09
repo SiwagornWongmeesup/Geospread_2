@@ -13,6 +13,9 @@ const createIncident = async (req, res, next) => {
             message: 'ส่งรายงานเหตุการณ์สำเร็จ',
             data: {
                 report_id: report.report_id,
+                // เหตุการณ์ที่รายงานนี้ถูกรวมเข้าไป (null = ยังเป็นรายงานเดี่ยวที่รอตรวจ)
+                // หน้าเว็บใช้เลือกหมุดที่ต้องโฟกัสบนแผนที่หลังส่งรายงาน
+                incident_id: report.incident_id ?? null,
                 status: report.report_status,
                 created_at: report.created_at,
             }

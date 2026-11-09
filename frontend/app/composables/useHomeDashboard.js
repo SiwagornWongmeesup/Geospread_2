@@ -174,34 +174,68 @@ const normalizePendingReport = (report, t) => ({
   time: formatRelativeTime(report.created_at, t),
   occurredAt: report.created_at || null,
 })
-const normalizeHelpRequest = (helpRequest, t) => ({
-  id: `help-${helpRequest.help_request_id}`,
-  kind: 'help_request',
-  title: helpRequest.custom_help_type || getHelpRequestLabel(helpRequest.help_type, t),
-  category: t('help.category'),
-  statusLabel: t('status.helpOpen'),
-  tone: 'orange',
-  iconName: null,
-  displayMode: 'marker',
-  radiusM: null,
-  radiusLabel: t('units.notSpecified'),
-  reportCount: 1,
-  distance: t('help.peopleNeedHelp', { count: helpRequest.people_count }),
-  // จำนวนคนเป็นตัวเลข ใช้แสดงใน popup ขอความช่วยเหลือ
-  peopleCount: Number(helpRequest.people_count) || 1,
-  description: helpRequest.description,
-  lat: toNumber(helpRequest.lat),
-  lng: toNumber(helpRequest.lng),
-  markerColor: '#f97316',
-  // "other" intentionally falls back to the existing generic help icon.
-  iconUrl: getHelpRequestIcon(helpRequest.help_type),
-  imageUrl: null,
-  reporterLabel: t('common.community'),
-  location: formatCoordinate(helpRequest.lat, helpRequest.lng, t),
-  areaLabel: helpRequest.location_name || helpRequest.area_name || helpRequest.province_name || t('place.reportedArea'),
-  time: formatRelativeTime(helpRequest.created_at, t),
-  occurredAt: helpRequest.created_at || null,
-})
+// สีหมุดคำขอความช่วยเหลือ: รอความช่วยเหลือ = ส้ม, มีผู้ช่วยแล้ว = เขียวเทา (ไม่ต้องรีบเหมือนส้ม)
+const HELP_MARKER_COLORS = { pending: '#f97316', accepted: '#5f8f7f' }
+
+const normalizeHelpRequest = (helpRequest, t) => {
+  // API แผนที่ส่งมา 2 สถานะ: pending (รอความช่วยเหลือ), accepted (มีผู้ช่วยแล้ว)
+  let helpStatus = 'pending'
+  if (helpRequest.request_status === 'accepted') {
+    helpStatus = 'accepted'
+  }
+
+  let statusLabel = t('status.helpOpen')
+  if (helpStatus === 'accepted') {
+    statusLabel = t('status.helpAccepted')
+  }
+
+  return {
+    id: `help-${helpRequest.help_request_id}`,
+    // ใช้เปิดหน้ารายละเอียด /help-requests/:id
+    helpRequestId: helpRequest.help_request_id,
+    kind: 'help_request',
+    helpStatus,
+    // จำนวนคนที่เสนอช่วยแล้ว (รอตอบ + รับแล้ว)
+    offerCount: Number(helpRequest.offer_count) || 0,
+    title: helpRequest.custom_help_type || getHelpRequestLabel(helpRequest.help_type, t),
+    category: t('help.category'),
+    statusLabel,
+    tone: 'orange',
+    iconName: null,
+    displayMode: 'marker',
+    radiusM: null,
+    radiusLabel: t('units.notSpecified'),
+    reportCount: 1,
+    distance: t('help.peopleNeedHelp', { count: helpRequest.people_count }),
+    // จำนวนคนเป็นตัวเลข ใช้แสดงใน popup ขอความช่วยเหลือ
+    peopleCount: Number(helpRequest.people_count) || 1,
+    description: helpRequest.description,
+    lat: toNumber(helpRequest.lat),
+    lng: toNumber(helpRequest.lng),
+    markerColor: HELP_MARKER_COLORS[helpStatus],
+    // "other" intentionally falls back to the existing generic help icon.
+    iconUrl: getHelpRequestIcon(helpRequest.help_type),
+    imageUrl: null,
+    reporterLabel: t('common.community'),
+    location: formatCoordinate(helpRequest.lat, helpRequest.lng, t),
+    areaLabel: helpRequest.location_name || helpRequest.area_name || helpRequest.province_name || t('place.reportedArea'),
+    time: formatRelativeTime(helpRequest.created_at, t),
+    occurredAt: helpRequest.created_at || null,
+  }
+}
+
+// เปิดหน้ารายละเอียดคำขอความช่วยเหลือ (offer = true → ไปที่กล่องเสนอช่วยทันที)
+// ใช้จากปุ่มใน popup ของหมุด ทั้งบนคอมและมือถือ
+export const openHelpRequestPage = ({ helpRequestId, offer }) => {
+  if (!helpRequestId) {
+    return
+  }
+  if (offer) {
+    navigateTo({ path: `/help-requests/${helpRequestId}`, query: { offer: '1' } })
+    return
+  }
+  navigateTo(`/help-requests/${helpRequestId}`)
+}
 
 // สถานะของรายงานแต่ละชิ้นใน popup (มาจาก report.report_status) — ใช้ t(`status.${tone}`) เป็นข้อความ
 export const getReportStatusTone = (reportStatus) => {
@@ -253,6 +287,42 @@ export const useHomeDashboard = () => {
 
   const clearSelectedIncident = () => {
     selectedIncident.value = null
+  }
+
+  // ---- โฟกัสหมุดที่ผู้ใช้เพิ่งส่ง (รายงานเหตุ / ขอความช่วยเหลือ) ----
+  // ฟอร์มเก็บ id ของหมุดไว้ก่อนกลับหน้าหลัก แล้วหน้าหลักค่อยหาหมุดนั้นหลังโหลดแผนที่เสร็จ
+  // ใช้ id ไม่ใช้ลำดับที่ 0 ของรายการ เพราะหมุดแรกในรายการอาจเป็นเหตุของคนอื่น
+  // รูปแบบ: { itemId: 'report-12' | 'incident-5' | 'help-3', lat, lng }
+  const pendingMapFocus = useState('home-pending-map-focus', () => null)
+
+  const setPendingMapFocus = (focus) => {
+    pendingMapFocus.value = focus
+  }
+
+  const hasPendingMapFocus = () => {
+    if (pendingMapFocus.value) {
+      return true
+    }
+    return false
+  }
+
+  // หยิบคำขอโฟกัสออกมาใช้ครั้งเดียว: เจอหมุดในแผนที่ส่งหมุดกลับไป ไม่เจอส่งแค่พิกัดกลับไป
+  const takePendingMapFocus = () => {
+    const focus = pendingMapFocus.value
+    pendingMapFocus.value = null
+    if (!focus) {
+      return null
+    }
+
+    let matchedItem = null
+    for (const item of publicMapItems.value) {
+      if (item.id === focus.itemId) {
+        matchedItem = item
+        break
+      }
+    }
+
+    return { item: matchedItem, lat: focus.lat, lng: focus.lng }
   }
 
   const setUserLocation = (location) => {
@@ -334,6 +404,24 @@ export const useHomeDashboard = () => {
     return { ...item, distanceMeters, distanceFromUserLabel: formatDistanceFromMeters(distanceMeters, t) }
   }
 
+  // เหตุการณ์ทั้งหมดสำหรับหน้า /incidents: เหตุการณ์ที่รวมแล้ว + รายงานที่รอตรวจ (ไม่รวมคำขอความช่วยเหลือ)
+  // เรียงจากล่าสุดไปเก่าสุด และมีระยะห่างจากผู้ใช้ถ้ารู้ตำแหน่ง
+  const allIncidentCards = computed(() => {
+    const cards = []
+    for (const item of publicMapItems.value) {
+      if (item.kind === 'incident' || item.kind === 'pending_report') {
+        cards.push(withDistance(item))
+      }
+    }
+
+    cards.sort((firstCard, secondCard) => {
+      const firstTime = new Date(firstCard.occurredAt || 0).getTime()
+      const secondTime = new Date(secondCard.occurredAt || 0).getTime()
+      return secondTime - firstTime
+    })
+    return cards
+  })
+
   const byDistanceThenRecent = (first, second) => {
     const distanceDifference = (first.distanceMeters ?? Number.POSITIVE_INFINITY)
       - (second.distanceMeters ?? Number.POSITIVE_INFINITY)
@@ -342,10 +430,15 @@ export const useHomeDashboard = () => {
   }
 
   // คำขอความช่วยเหลือจริงจาก /help-requests/map เรียงจากใกล้ไปไกล
-  const helpRequestCards = computed(() => publicMapItems.value
+  // คำขอความช่วยเหลือทั้งหมดบนแผนที่ (รอความช่วยเหลือ + มีผู้ช่วยแล้ว) ใช้ในหน้า /help-requests
+  const allHelpRequestCards = computed(() => publicMapItems.value
     .filter((item) => item.kind === 'help_request')
     .map(withDistance)
-    .sort(byDistanceThenRecent)
+    .sort(byDistanceThenRecent))
+
+  // การ์ดหน้าหลัก: แสดงเฉพาะคำขอที่ยังรอความช่วยเหลือ 3 รายการที่ใกล้ที่สุด
+  const helpRequestCards = computed(() => allHelpRequestCards.value
+    .filter((item) => item.helpStatus === 'pending')
     .slice(0, 3))
 
 
@@ -428,8 +521,10 @@ export const useHomeDashboard = () => {
     publicMapItems,
     userLocation,
     nearbyIncidentCards,
+    allIncidentCards,
     nearbySort,
     helpRequestCards,
+    allHelpRequestCards,
     sheetIncidentList,
     sheetHelpRequestList,
     nearbyRadiusMeters,
@@ -443,5 +538,8 @@ export const useHomeDashboard = () => {
     clearSelectedIncident,
     setUserLocation,
     fetchPublicMapItems,
+    setPendingMapFocus,
+    hasPendingMapFocus,
+    takePendingMapFocus,
   }
 }

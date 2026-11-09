@@ -23,6 +23,41 @@ const getMyProfile = async (userId) => {
     return profile;
 };
 
+// ช่องที่ไม่ได้กรอก (ข้อความว่าง) เก็บเป็น null ในฐานข้อมูล
+const emptyToNull = (value) => {
+    if (value === undefined || value === null) {
+        return null;
+    }
+    const text = String(value).trim();
+    if (text === '') {
+        return null;
+    }
+    return text;
+};
+
+// แก้ข้อมูลส่วนตัว แล้วส่งโปรไฟล์ล่าสุดกลับไป (รูปแบบเดียวกับ GET /users/me)
+const updateMyProfile = async (userId, profileData) => {
+    // Instagram เก็บแบบไม่มี @ นำหน้า
+    let instagram = emptyToNull(profileData.instagram);
+    if (instagram) {
+        instagram = instagram.replace(/^@+/, '');
+    }
+
+    const cleanData = {
+        name: emptyToNull(profileData.name),
+        lastname: emptyToNull(profileData.lastname),
+        phone: emptyToNull(profileData.phone),
+        lineId: emptyToNull(profileData.line_id),
+        instagram: emptyToNull(instagram),
+    };
+
+    const updated = await userRepository.updateMyProfile(userId, cleanData);
+    if (!updated) {
+        throw new AppError('ไม่เจอผู้ใช้งาน', 404);
+    }
+    return getMyProfile(userId);
+};
+
 const getUserById = async (id) => {
     const user = await userRepository.getUserById(id);
     if (!user) {
@@ -124,6 +159,7 @@ module.exports = {
     getAllUsers,
     getUserById,
     getMyProfile,
+    updateMyProfile,
     createUser,
     loginUser,
     verifyEmail,

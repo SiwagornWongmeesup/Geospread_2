@@ -1,15 +1,14 @@
-# Fire / explosion
+# Fire
 
 > Get out now · Stay low · Call 199
 
 ## Before
 
-> Know your way out · Keep an extinguisher · Check the gas
+> Know your way out · Keep an extinguisher · Check your plugs
 
 ### Warning signs
 
 - You smell burning, or see smoke from a plug, wire or electrical device
-- You smell leaking gas
 - The building fire alarm goes off
 - People report a fire near you in the app
 
@@ -20,8 +19,7 @@
 3. **Keep a fire extinguisher at home** And know how to use it
 4. **Install a smoke alarm** And check that it works
 5. **Don't plug power strips into each other** Unplug devices you are not using
-6. **Turn off the gas valve after cooking**
-7. **Agree on a meeting point outside** So you can check everyone got out
+6. **Agree on a meeting point outside** So you can check everyone got out
 
 ## During
 
@@ -61,19 +59,6 @@
 1. **Stop** Do not run
 2. **Drop to the ground** Cover your face with your hands
 3. **Roll** Until the fire is out
-
-### If you smell gas
-
-1. **Don't flip switches or unplug anything** A spark can cause an explosion
-2. **Turn off the gas valve**
-3. **Open doors and windows** To let the gas out
-4. **Leave the house** Then call a technician or 199 from outside
-
-### If you hear an explosion
-
-1. **Drop and cover your head**
-2. **Move away from the blast area** There may be another explosion
-3. **Don't go closer to look**
 
 ## After
 

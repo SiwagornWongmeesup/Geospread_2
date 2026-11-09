@@ -14,7 +14,7 @@ definePageMeta({
       <p>{{ t('pages.helpRequests') }}</p>
     </header>
 
-    <HelpRequests />
+    <HelpRequests :title="t('helpList.allTitle')" full-list />
   </section>
 </template>
 

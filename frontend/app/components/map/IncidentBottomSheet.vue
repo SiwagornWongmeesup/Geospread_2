@@ -26,6 +26,7 @@
         :t="t"
         in-sheet
         @close="$emit('close')"
+        @open-help-request="openHelpRequestPage"
       />
       <IncidentMapPopup
         v-else
@@ -53,6 +54,7 @@ import HelpRequestMapPopup from '~/components/map/HelpRequestMapPopup.vue'
 import QuickGuide from '~/components/guide/QuickGuide.vue'
 import { getEmergencyGuideForType } from '~/utils/emergencyGuides'
 import { usePlaceNames } from '~/composables/usePlaceNames'
+import { openHelpRequestPage } from '~/composables/useHomeDashboard'
 
 const props = defineProps({
   // เหตุการณ์ที่เลือกอยู่ ถ้าเป็น null จะซ่อน sheet

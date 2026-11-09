@@ -1,10 +1,10 @@
-# Building / sign collapse
+# Building collapse
 
-> Get clear · Protect your head · Call 1669
+> Get out · Protect your head · Call 1669
 
 ## Before
 
-> Watch for cracks · Avoid signs in strong wind · Report it
+> Watch for cracks · Know the exits · Report it
 
 ### Warning signs
 
@@ -12,18 +12,17 @@
 - Loud creaking or cracking sounds from the structure
 - Doors or windows no longer close properly, or the floor tilts
 - Dust or bits of plaster fall from the ceiling
-- A billboard or steel frame sways or leans, has loose bolts, or is badly rusted
-- People report a building or sign collapse near you in the app
+- People report a building collapse near you in the app
 
 ### Get ready
 
-1. **Report it to the district or municipal office** If a building or sign looks unsafe
+1. **Report it to the district or municipal office** If a building looks unsafe
 2. **Know the exits of buildings you use** Home, work and malls you visit often
-3. **Stay away from billboards and scaffolding** During heavy rain or strong wind
+3. **Keep stairs and fire exits clear**
 
 ## During
 
-> Get clear · Protect your head · Call 1669
+> Get out · Protect your head · Call 1669
 
 ### Do now
 
@@ -56,7 +55,7 @@
 
 ## After
 
-> Stay away · Report missing people · Wait for the all-clear
+> Stay away · Report missing people · Wait for an engineer
 
 ### In this order
 

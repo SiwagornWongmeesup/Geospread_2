@@ -11,8 +11,9 @@
       >
         <span class="guide-topic__name">{{ t(`guideTopics.${topic}`) }}</span>
         <span class="guide-topic__summary">{{ guide ? guide.summary : t('safetyGuidePage.comingSoon') }}</span>
-        <svg v-if="guide" class="guide-topic__chevron" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
+        <!-- ลูกศรชี้ขวา = กดแล้วเข้าไปหน้าคู่มือเรื่องนั้น (ตอนเปิดอ่านอยู่ไม่ต้องมีลูกศร) -->
+        <svg v-if="guide && !isOpen" class="guide-topic__chevron" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
         </svg>
       </button>
     </h3>
@@ -175,10 +176,6 @@ const onTabKeydown = async (event) => {
   height: 1.25rem;
   color: var(--gs-muted);
   transition: transform 200ms ease;
-}
-
-.guide-topic--open .guide-topic__chevron {
-  transform: rotate(180deg);
 }
 
 .guide-topic__body {

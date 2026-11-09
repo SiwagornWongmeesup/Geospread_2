@@ -38,14 +38,17 @@
 
 | เอนทิตี (Entity) | ชื่อตาราง (Table Name) | คำอธิบาย |
 |--------|-------------|-------------|
-| **User** | `tb_users` | ผู้ใช้งานระบบ (id, email, password, name, lastname, profile, phone, role, trust_score, created_at, updated_at, last_login_at) |
+| **User** | `tb_users` | ผู้ใช้งานระบบ (id, email, password, name, lastname, profile, phone, line_id, instagram, role, trust_score, created_at, updated_at, last_login_at) — `line_id` VARCHAR(20) และ `instagram` VARCHAR(30) เป็นช่องติดต่อที่ผู้ใช้กรอกเองในหน้าโปรไฟล์ ไม่บังคับ (migration: `backend/db/migrateProfileContacts.js`) |
 | **IncidentCategory** | `tb_incident_categories` | หมวดใหญ่สำหรับจัดกลุ่ม Type (code, name, icon, active, sort order) |
 | **IncidentType** | `tb_incident_types` | Type มาตรฐานที่กำหนด icon, marker color, display mode และ default radius |
 | **IncidentKeyword** | `tb_incident_keywords` | Keyword ที่เสนอ Type จากข้อความของผู้ใช้ |
 | **IncidentReport** | `tb_incident_reports` | ข้อมูลดิบที่ผู้ใช้ส่ง พร้อม Type ที่เลือก/ระบบเสนอ, PostGIS location และสถานะ Report |
 | **IncidentMedia** | `tb_incident_media` | รูปภาพหรือวิดีโอหลายไฟล์ของ IncidentReport |
 | **Incident** | `tb_incidents` | เหตุการณ์หลักที่รวม Report หนึ่งรายการหรือหลายรายการ พร้อม severity, credibility, verification และสถานะเหตุ |
-| **HelpRequest** | `tb_help_requests` | คำขอความช่วยเหลือที่ระบุพิกัด (id, event_id, user_id, desc, location, status) |
+| **HelpRequest** | `tb_help_requests` | คำขอความช่วยเหลือที่ระบุพิกัด (id, user_id, help_type, description, people_count, help_location, request_status, accepted_by, accepted_at, resolved_at, cancelled_at, share_phone, share_line, expires_at) — สถานะ: `pending` → `accepted` → `resolved` หรือ `cancelled` / หมดเวลา ถ้าผู้ช่วยถอนตัวหรือผู้ขอปลดผู้ช่วย จะกลับเป็น `pending` และต่ออายุ 24 ชม. `share_phone` / `share_line` คือช่องทางในโปรไฟล์ที่ผู้ขอเลือกแชร์ให้ผู้ช่วยตอนรับข้อเสนอ — migration: `backend/db/migrateHelpLifecycle.js` |
+| **HelpRequestMedia** | `tb_help_request_media` | รูปที่แนบกับคำขอความช่วยเหลือ (media_id, help_request_id, media_type = 'image', media_url, created_at) โครงเดียวกับ `tb_incident_media` |
+| **HelpOffer** | `tb_help_offers` | ข้อเสนอช่วยเหลือ (offer_id, help_request_id, helper_id, message ≤ 500 ตัว, offer_status = pending / accepted / declined / withdrawn / released, created_at, updated_at) 1 คนเสนอได้ครั้งเดียวต่อคำขอ (`UNIQUE (help_request_id, helper_id)`) ถอนตัว (`withdrawn`) หรือถูกปลด (`released`) แล้วก็เสนอซ้ำไม่ได้ เมื่อเจ้าของรับข้อเสนอ คำขอจะเป็น `accepted` และบันทึก `accepted_by` — migration: `backend/db/migrateHelpOffersAndMedia.js`, `backend/db/migrateHelpLifecycle.js` |
+| **UserReport** | `tb_user_reports` | รายงานผู้ใช้ที่น่าสงสัยจากคำขอความช่วยเหลือ (report_id, reporter_id, reported_user_id, help_request_id, reason = asked_money / no_show / fake_request / harassment / other, details ≤ 500 ตัว, report_status = open / reviewed, created_at) รายงานคนเดิมในคำขอเดิมได้ครั้งเดียว — migration: `backend/db/migrateHelpLifecycle.js` |
 | **Event** | `tb_events` | ศูนย์กลางเหตุการณ์ใหญ่ (รวบรวมหลาย Incident) (id, category, severity, status) |
 | **EventIncident** | `tb_event_incidents` | ตารางเชื่อม (Join table) ผูก Incident ย่อยเข้ากับ Event ใหญ่ |
 | **ChatMessage** | `tb_chat_messages` | ข้อความใน Event Room (id, event_id, user_id, message, created_at) |

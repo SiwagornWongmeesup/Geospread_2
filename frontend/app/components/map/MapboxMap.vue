@@ -56,7 +56,7 @@ const props = defineProps({
   showPopup: { type: Boolean, default: true },
 })
 
-const emit = defineEmits(['select-item', 'select-group', 'location-select', 'close-popup','open-report'])
+const emit = defineEmits(['select-item', 'select-group', 'location-select', 'close-popup', 'open-report', 'open-help-request'])
 
 const toNumber = (value) => {
   const number = Number(value)
@@ -119,6 +119,7 @@ const renderIncidentPopup = () => {
       getPlaceLabel,
       t,
       onClose: () => clearIncidentPopup({ notifyParent: true }),
+      onOpenHelpRequest: (target) => { emit('open-help-request', target) },
     })
   } else {
     // ส่งไปใช้ต่อหน้าdestop
@@ -221,15 +222,22 @@ const createMarkerElement = (item) => {
     : markerKind === 'help'
       ? '#f97316'
       : '#1479ef'
-  const badgeLabel = item.kind === 'pending_report'
-    ? t('status.pending')
-    : item.kind === 'help_request'
-      ? t('help.category')
-      : null
+  let badgeLabel = null
+  if (item.kind === 'pending_report') {
+    badgeLabel = t('status.pending')
+  } else if (item.kind === 'help_request' && item.helpStatus === 'accepted') {
+    // คำขอที่มีผู้ช่วยแล้ว: ป้ายบอกให้รู้ว่าไม่ต้องเสนอช่วยเพิ่ม
+    badgeLabel = t('status.helpAccepted')
+  } else if (item.kind === 'help_request') {
+    badgeLabel = t('help.category')
+  }
 
   const marker = document.createElement('button')
   marker.type = 'button'
   marker.className = `incident-map-marker incident-map-marker--${markerKind}`
+  if (item.kind === 'help_request' && item.helpStatus === 'accepted') {
+    marker.classList.add('incident-map-marker--help-accepted')
+  }
   marker.style.setProperty('--marker-color', item.markerColor || fallbackMarkerColor)
   const ariaCount = Number(item.reportCount) > 1 ? ` (${t('units.reports', { count: Number(item.reportCount) })})` : ''
   marker.setAttribute('aria-label', (badgeLabel ? `${badgeLabel}: ${item.title || t('map.markerFallback')}` : (item.title || t('map.markerIncident'))) + ariaCount)
@@ -656,6 +664,15 @@ watch(locale, () => {
 
 :global(.incident-map-marker__badge--help) {
   color: #c2410c;
+}
+
+/* คำขอที่มีผู้ช่วยแล้ว: ไม่มีวงเรืองแสงสีส้ม และป้ายสีเขียวเทา */
+:global(.incident-map-marker--help-accepted .incident-map-marker__pin) {
+  box-shadow: 0 6px 14px rgb(15 23 42 / 18%);
+}
+
+:global(.incident-map-marker--help-accepted .incident-map-marker__badge--help) {
+  color: #2f5d4f;
 }
 
 /* เหมือนตัวหมุด: ไม่ตั้ง position ให้ Mapbox วางตำแหน่งเอง */

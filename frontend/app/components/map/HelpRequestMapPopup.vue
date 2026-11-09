@@ -14,10 +14,14 @@ const props = defineProps({
 });
 const t = (...args) => props.t(...args);
 
-defineEmits(["close"]);
+// open-help-request = ขอให้หน้าแม่เปิดหน้ารายละเอียด (popup ถูก mount แยก เรียก router เองไม่ได้)
+const emit = defineEmits(["close", "open-help-request"]);
 
-// จำนวนผู้เสนอช่วย: ตอนนี้ยังไม่มีระบบจริง ใช้ตัวเลขสมมติไปก่อน
-const MOCK_OFFER_COUNT = 1;
+// จำนวนคนที่เสนอช่วยแล้ว (จาก API แผนที่)
+const offerCount = computed(() => props.incident.offerCount || 0);
+
+// มีผู้ช่วยแล้ว: ไม่ต้องแสดงปุ่มเสนอช่วย
+const isAccepted = computed(() => props.incident.helpStatus === "accepted");
 
 // ชื่อสถานที่ พอ Mapbox ส่งชื่อมา ค่านี้จะเปลี่ยนเองอัตโนมัติ
 const placeLabel = computed(() => {
@@ -45,7 +49,8 @@ const metaLine = computed(() => {
 // (ประเภทความช่วยเหลือแสดงเป็นหัวข้ออยู่แล้ว จึงไม่ใส่ซ้ำในป้าย)
 const tags = computed(() => {
   const tagList = [];
-  tagList.push(t("units.people", { count: props.incident.peopleCount || 1 }));
+  // บอกให้ชัดว่าตัวเลขคือจำนวนคนที่ต้องการความช่วยเหลือ (เดิมเขียนแค่ "2 คน" คนอ่านอาจงง)
+  tagList.push(t("help.peopleNeedHelp", { count: props.incident.peopleCount || 1 }));
   return tagList;
 });
 
@@ -57,13 +62,13 @@ const description = computed(() => {
   return t("incident.noDetails");
 });
 
-// ปุ่มยังไม่ได้ต่อระบบจริง กดแล้วยังไม่ทำอะไร
+// เสนอช่วย: เปิดหน้ารายละเอียดแล้วไปที่กล่องเสนอช่วยทันที (ต้องล็อกอินและพิมพ์ข้อความได้ที่หน้านั้น)
 const offerHelp = () => {
-  // TODO: ต่อกับระบบเสนอความช่วยเหลือเมื่อมี API
+  emit("open-help-request", { helpRequestId: props.incident.helpRequestId, offer: true });
 };
 
 const openDetail = () => {
-  // TODO: ไปหน้ารายละเอียดคำขอความช่วยเหลือเมื่อมีหน้านี้
+  emit("open-help-request", { helpRequestId: props.incident.helpRequestId, offer: false });
 };
 </script>
 
@@ -75,9 +80,9 @@ const openDetail = () => {
   >
     <header class="help-popup__header">
       <!-- สถานะของคำขอ พร้อมไอคอนประเภทความช่วยเหลือ -->
-      <span class="help-popup__status">
+      <span class="help-popup__status" :class="{ 'help-popup__status--accepted': isAccepted }">
         <img :src="props.incident.iconUrl || '/icons/Help.svg'" alt="" aria-hidden="true" />
-        {{ t("help.waiting") }}
+        {{ isAccepted ? t("status.helpAccepted") : t("help.waiting") }}
       </span>
 
       <button
@@ -110,10 +115,13 @@ const openDetail = () => {
       {{ t("help.exactLocationHidden") }}
     </p>
 
-    <p class="help-popup__offers">{{ t("help.offersCount", { count: MOCK_OFFER_COUNT }) }}</p>
+    <!-- มีผู้ช่วยแล้ว: ไม่รับข้อเสนอเพิ่ม เหลือแค่ปุ่มดูรายละเอียด -->
+    <p v-if="isAccepted" class="help-popup__offers">{{ t("help.alreadyHasHelper") }}</p>
+    <p v-else-if="offerCount > 0" class="help-popup__offers">{{ t("help.offersCount", { count: offerCount }) }}</p>
+    <p v-else class="help-popup__offers">{{ t("help.noOffersYet") }}</p>
 
-    <div class="help-popup__actions">
-      <button type="button" class="help-popup__offer-button" @click="offerHelp">
+    <div class="help-popup__actions" :class="{ 'help-popup__actions--single': isAccepted }">
+      <button v-if="!isAccepted" type="button" class="help-popup__offer-button" @click="offerHelp">
         {{ t("help.offerHelp") }}
       </button>
       <button type="button" class="help-popup__detail-button" @click="openDetail">
@@ -154,6 +162,12 @@ const openDetail = () => {
   color: #b4232a;
   font-size: 14px;
   font-weight: 800;
+}
+
+/* มีผู้ช่วยแล้ว: สีเขียวเทา ไม่เร่งด่วนเท่าสีแดง */
+.help-popup__status--accepted {
+  background: #e3efe9;
+  color: #2f5d4f;
 }
 
 .help-popup__status img {
@@ -271,6 +285,11 @@ const openDetail = () => {
   grid-template-columns: 1fr 1fr;
   gap: 10px;
   margin-top: 12px;
+}
+
+/* เหลือปุ่มเดียว (มีผู้ช่วยแล้ว) ให้เต็มความกว้าง */
+.help-popup__actions--single {
+  grid-template-columns: 1fr;
 }
 
 .help-popup__offer-button,

@@ -6,6 +6,12 @@ export default {
     // กดย้อนกลับ/ไปข้างหน้า: กลับไปตำแหน่งเดิม
     if (savedPosition) return savedPosition
 
+    // หน้าคู่มือ: เปลี่ยน #หัวข้อ = เปิดคู่มือเรื่องใหม่ ให้เริ่มอ่านจากบนสุด
+    // (ไม่เลื่อนไปหา element ที่มี id เดียวกับหัวข้อ เพราะจะเลยปุ่มกลับไปรายการไป)
+    if (to.path === '/safety-guide' && from.path === '/safety-guide') {
+      return { top: 0 }
+    }
+
     if (to.hash && document.getElementById(to.hash.slice(1))) {
       return { el: to.hash, behavior: 'smooth' }
     }

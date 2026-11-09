@@ -20,6 +20,7 @@
         @select-group="showGroupItems"
         @close-popup="clearSelectedIncident"
         @open-report="openReportDetail"
+        @open-help-request="openHelpRequestPage"
       />
       <!-- ปุ่มนี้แทนปุ่มของ Mapbox ที่ขอสิทธิ์เข็มทิศเพิ่ม และถูกปิดถาวรเมื่อโดนปฏิเสธครั้งเดียว -->
       <button
@@ -78,6 +79,7 @@ import MapLocationSearch from "~/components/map/MapLocationSearch.vue";
 import IncidentBottomSheet from "~/components/map/IncidentBottomSheet.vue";
 import NearbySheet from "~/components/mobile/NearbySheet.vue";
 import { useGeolocation } from "~/composables/useGeolocation";
+import { openHelpRequestPage } from "~/composables/useHomeDashboard";
 
 const {
   selectedIncident,
@@ -95,6 +97,8 @@ const {
   clearSelectedIncident,
   setUserLocation,
   fetchPublicMapItems,
+  hasPendingMapFocus,
+  takePendingMapFocus,
 } = useHomeDashboard();
 const { getCurrentLocation, shouldAutoLocate, isLocating, locationError } = useGeolocation();
 const selectedArea = ref(null);
@@ -160,7 +164,28 @@ const focusCurrentLocation = async () => {
     /* MapLocationSearch renders the error. */
   }
 };
+// เพิ่งส่งรายงาน/ขอความช่วยเหลือมา: เปิดหมุดนั้นบนแผนที่
+// ถ้าหาหมุดไม่เจอ (เช่น ยังไม่ขึ้นแผนที่) ให้เลื่อนแผนที่ไปจุดที่ส่งแทน
+const focusJustSubmittedItem = () => {
+  const focus = takePendingMapFocus();
+  if (!focus) {
+    return;
+  }
+  if (focus.item) {
+    selectMapItem(focus.item);
+    return;
+  }
+  focusedCenter.value = [focus.lng, focus.lat];
+};
+
 onMounted(async () => {
+  // มีหมุดที่ต้องโฟกัส: ไม่ต้องเลื่อนไปตำแหน่งผู้ใช้ ไม่อย่างนั้นแผนที่จะเด้งหนีจากหมุดที่เพิ่งส่ง
+  if (hasPendingMapFocus()) {
+    await fetchPublicMapItems();
+    focusJustSubmittedItem();
+    return;
+  }
+
   void fetchPublicMapItems();
   // ถ้ารู้ตำแหน่งแล้วไม่ต้องขอซ้ำ และไม่เด้งถามทุกครั้งที่เปิดหน้า (ดู shouldAutoLocate)
   if (!userLocation.value && await shouldAutoLocate()) {
